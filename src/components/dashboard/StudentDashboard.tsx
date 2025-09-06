@@ -126,7 +126,10 @@ const StudentDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 bg-white rounded-lg px-3 py-1 shadow-sm inline-block">Welcome back, {profile?.full_name}!</p>
+          <div className="inline-flex items-center gap-3 bg-white rounded-full px-3 py-1 shadow-sm">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gray-100 text-xs font-medium text-gray-700">{profile?.full_name ? profile.full_name.charAt(0) : 'U'}</span>
+            <span className="text-gray-600 text-sm">Welcome back, {profile?.full_name}!</span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
