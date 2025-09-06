@@ -581,7 +581,6 @@ const MonitoringSection: React.FC = () => {
                       <option value="line">Line</option>
                       <option value="histogram">Histogram (binned)</option>
                       <option value="scatter">Scatter Plot</option>
-                      <option value="versus">Versus (X vs Y)</option>
                       <option value="heatmap">Heat Map</option>
                     </select>
                   </div>
