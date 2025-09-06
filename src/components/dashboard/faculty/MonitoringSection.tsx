@@ -288,6 +288,59 @@ const MonitoringSection: React.FC = () => {
       );
     }
 
+    if (g.type === 'scatter' || g.type === 'versus') {
+      const xKey = (g.xMetric as 'solved'|'contests'|'rating') || 'solved';
+      const yKey = (g.yMetric as 'solved'|'contests'|'rating') || 'contests';
+      const data = metrics.map((m) => ({ x: m[xKey] ?? 0, y: m[yKey] ?? 0, name: m.student }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" dataKey="x" name={xKey} />
+            <YAxis type="number" dataKey="y" name={yKey} />
+            <ChartTooltip />
+            <Scatter data={data} fill="#7C3AED" />
+          </ScatterChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'heatmap') {
+      // build a simple grid heatmap from two metrics (x and y)
+      const xKey = (g.xMetric as 'solved'|'contests'|'rating') || 'solved';
+      const yKey = (g.yMetric as 'solved'|'contests'|'rating') || 'contests';
+      const bins = heatmapBins || 5;
+      const xVals = metrics.map((m) => m[xKey] ?? 0);
+      const yVals = metrics.map((m) => m[yKey] ?? 0);
+      const xMin = Math.min(...xVals, 0);
+      const xMax = Math.max(...xVals, 1);
+      const yMin = Math.min(...yVals, 0);
+      const yMax = Math.max(...yVals, 1);
+      const matrix: number[][] = Array.from({ length: bins }, () => Array.from({ length: bins }, () => 0));
+      metrics.forEach((m) => {
+        const xv = m[xKey] ?? 0;
+        const yv = m[yKey] ?? 0;
+        const xi = Math.min(bins - 1, Math.floor(((xv - xMin) / (xMax - xMin || 1)) * bins));
+        const yi = Math.min(bins - 1, Math.floor(((yv - yMin) / (yMax - yMin || 1)) * bins));
+        matrix[yi][xi] = (matrix[yi][xi] || 0) + 1;
+      });
+      const maxCount = Math.max(...matrix.flat(), 1);
+      const cells = [] as JSX.Element[];
+      for (let r = bins - 1; r >= 0; r--) {
+        for (let c = 0; c < bins; c++) {
+          const v = matrix[r][c] || 0;
+          const intensity = Math.round((v / maxCount) * 220);
+          const color = `rgb(${255 - intensity}, ${230 - Math.round(intensity * 0.5)}, ${255})`;
+          cells.push(<div key={`${r}-${c}`} style={{ background: color }} className="h-12 w-12 border" />);
+        }
+      }
+      return (
+        <div className="grid grid-cols-5 gap-1 p-2" style={{ gridTemplateColumns: `repeat(${bins}, minmax(0, 1fr))` }}>
+          {cells}
+        </div>
+      );
+    }
+
     // default bar chart (students solved)
     return (
       <ResponsiveContainer width="100%" height={220}>
