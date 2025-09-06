@@ -419,10 +419,13 @@ const MonitoringSection: React.FC = () => {
                   <div>
                     <label className="block text-sm text-gray-700 mb-1">Graph Type</label>
                     <select className="w-full rounded-md border px-3 py-2" value={newGraphType} onChange={(e)=>setNewGraphType(e.target.value as any)}>
-                      <option value="bar">Bar (Histogram)</option>
+                      <option value="bar">Bar (by metric)</option>
                       <option value="pie">Pie</option>
                       <option value="line">Line</option>
                       <option value="histogram">Histogram (binned)</option>
+                      <option value="scatter">Scatter Plot</option>
+                      <option value="versus">Versus (X vs Y)</option>
+                      <option value="heatmap">Heat Map</option>
                     </select>
                   </div>
 
@@ -434,6 +437,32 @@ const MonitoringSection: React.FC = () => {
                       <option value="rating">Contest Rating</option>
                     </select>
                   </div>
+
+                  {/* If the graph needs X/Y metrics */}
+                  {(newGraphType === 'scatter' || newGraphType === 'versus' || newGraphType === 'heatmap') && (
+                    <div>
+                      <label className="block text-sm text-gray-700 mb-1">X Metric</label>
+                      <select className="w-full rounded-md border px-3 py-2 mb-2" value={newGraphXMetric} onChange={(e)=>setNewGraphXMetric(e.target.value as any)}>
+                        <option value="solved">Problems Solved</option>
+                        <option value="contests">Contests Given</option>
+                        <option value="rating">Contest Rating</option>
+                      </select>
+
+                      <label className="block text-sm text-gray-700 mb-1">Y Metric</label>
+                      <select className="w-full rounded-md border px-3 py-2" value={newGraphYMetric} onChange={(e)=>setNewGraphYMetric(e.target.value as any)}>
+                        <option value="solved">Problems Solved</option>
+                        <option value="contests">Contests Given</option>
+                        <option value="rating">Contest Rating</option>
+                      </select>
+
+                      {newGraphType === 'heatmap' && (
+                        <div className="mt-2">
+                          <label className="block text-sm text-gray-700 mb-1">Bins</label>
+                          <input type="number" min={2} max={10} value={heatmapBins} onChange={(e)=>setHeatmapBins(Number(e.target.value)||5)} className="w-24 rounded-md border px-3 py-2" />
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div className="flex justify-end gap-2">
                     <Button variant="outline" onClick={()=>setShowAddGraph(false)}>Cancel</Button>
