@@ -79,22 +79,35 @@ const MonitoringSection: React.FC = () => {
       .filter((r) => (classFilter ? (r.klass || '').toLowerCase().includes(classFilter.toLowerCase()) : true))
       .filter((r) => (filterStudent === 'all' ? true : r.studentId === filterStudent));
 
-    const items = base.map((r, idx) => ({
-      platform: r.platform,
-      student: r.studentId,
-      gender: r.gender,
-      section: r.section || '',
-      klass: r.klass || '',
-      solved: (idx + 1) * 7 % 53 + 5, // deterministic mock
-      hours: (idx % 5) + 2,
-      courses: (idx % 3),
-    }));
+    const items = base.map((r, idx) => {
+      const solved = ((idx + 1) * 7) % 53 + 5; // deterministic mock
+      const contests = ((idx + 2) * 3) % 20; // number of contests given/participated
+      const rating = Number((( (idx * 13) % 500 ) / 100).toFixed(2)); // mock rating 0.00 - 5.00
+      return ({
+        platform: r.platform,
+        student: r.studentId,
+        uid: r.studentId,
+        gender: r.gender,
+        section: r.section || '',
+        klass: r.klass || '',
+        solved,
+        contests,
+        rating,
+        hours: (idx % 5) + 2,
+        courses: (idx % 3),
+      });
+    });
 
-    const sorted = items.sort((a, b) => b.solved - a.solved);
+    const sorted = items.sort((a, b) => {
+      if (metricFilter === 'solved') return b.solved - a.solved;
+      if (metricFilter === 'contests') return b.contests - a.contests;
+      return b.rating - a.rating;
+    });
+
     const topN = topFilter === 'top10' ? 10 : topFilter === 'top25' ? 25 : topFilter === 'top50' ? 50 : Math.max(1, topCustom);
     const sliced = sorted.slice(0, topN);
 
-    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', gender: 'male', section: '', klass: '', solved: 12, hours: 6, courses: 1 }];
+    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', uid: 'demo', gender: 'male', section: '', klass: '', solved: 12, contests:0, rating:0.0, hours: 6, courses: 1 }];
   }, [rows, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
 
   const totals = useMemo(() => ({
