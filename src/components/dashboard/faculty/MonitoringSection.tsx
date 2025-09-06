@@ -211,7 +211,89 @@ const MonitoringSection: React.FC = () => {
     w.print();
   };
 
-  const inactive = metrics.every((m) => m.hours + m.solved + m.courses === 0);
+  const inactive = metrics.every((m) => (m.hours || 0) + (m.solved || 0) + (m.courses || 0) === 0);
+
+  // Custom graphs state
+  const [showAddGraph, setShowAddGraph] = useState(false);
+  const [newGraphType, setNewGraphType] = useState<'pie'|'bar'|'line'|'histogram'>('bar');
+  const [newGraphMetric, setNewGraphMetric] = useState<'solved'|'contests'|'rating'>('solved');
+  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric: string; title: string }>>([]);
+
+  const addGraph = () => {
+    const id = String(Date.now());
+    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, title: `${newGraphType.toUpperCase()} - ${newGraphMetric}` }]);
+    setShowAddGraph(false);
+  };
+
+  const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
+
+  const renderCustomGraph = (g: { id: string; type: string; metric: string; title: string }) => {
+    if (g.type === 'pie') {
+      // reuse pieData but map to metric value
+      const data = pieData.map((p) => ({ name: p.name, value: p.value }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RPieChart>
+            <Pie data={data} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40}>
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+          </RPieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'line') {
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RLineChart data={lineData} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="day" />
+            <YAxis />
+            <ChartTooltip />
+            <Line type="monotone" dataKey={g.metric === 'rating' ? 'hours' : 'hours'} stroke="#10B981" strokeWidth={2} dot={false} />
+          </RLineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'histogram') {
+      // bin solved into ranges
+      const bins: Record<string, number> = {};
+      metrics.forEach((m) => {
+        const v = m.solved || 0;
+        const bin = Math.floor(v / 10) * 10;
+        const key = `${bin}-${bin + 9}`;
+        bins[key] = (bins[key] || 0) + 1;
+      });
+      const data = Object.entries(bins).map(([k, v]) => ({ range: k, count: v }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RBarChart data={data} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="range" />
+            <YAxis />
+            <ChartTooltip />
+            <Bar dataKey="count" fill="#7C3AED" radius={[6,6,0,0]} />
+          </RBarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    // default bar chart (students solved)
+    return (
+      <ResponsiveContainer width="100%" height={220}>
+        <RBarChart data={barData} margin={{ left: 8, right: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <ChartTooltip />
+          <Bar dataKey={g.metric === 'rating' ? 'rating' : 'solved'} fill="#7C3AED" radius={[6,6,0,0]} />
+        </RBarChart>
+      </ResponsiveContainer>
+    );
+  };
 
   return (
     <div className="space-y-6">
