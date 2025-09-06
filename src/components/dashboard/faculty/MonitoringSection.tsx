@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Download, AlertTriangle, BarChart3, PieChart, LineChart } from 'lucide-react';
+import { fetchLeetCodeData, fetchCodeforcesData, fetchCodewarsData, fetchPlaceholderData, fetchGFGData, fetchCodeChefData, fetchHackerEarthData, fetchHackerRankData } from '@/services/platforms';
 import {
   BarChart as RBarChart,
   Bar,
@@ -22,14 +23,18 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
+// ⬇️ NEW: import services
+
 const PLATFORM_OPTIONS = [
   { key: 'leetcode', label: 'LeetCode' },
   { key: 'codeforces', label: 'Codeforces' },
-  { key: 'coursera', label: 'Coursera' },
-  { key: 'youtube', label: 'YouTube' },
-  { key: 'udemy', label: 'Udemy' },
-  { key: 'edx', label: 'edX' }
+  { key: 'codewars', label: 'Codewars' },
+  { key: 'gfg', label: 'GFG' },
+  { key: 'hackerrank', label: 'HackerRank' },
+  { key: 'hackerearth', label: 'HackerEarth' },
+  { key: 'codechef', label: 'CodeChef' },
 ];
+
 
 interface Row {
   platform: string;
@@ -51,6 +56,10 @@ const MonitoringSection: React.FC = () => {
   const [topCustom, setTopCustom] = useState<number>(10);
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
 
+  // ⬇️ NEW: metrics + loading state
+  const [metrics, setMetrics] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
   const handleTogglePlatform = (key: string, checked: boolean) => {
     setSelected((prev) => (checked ? [...new Set([...prev, key])] : prev.filter((p) => p !== key)));
     setRows((prev) => prev.map((r) => (r.platform === key ? r : r)));
@@ -58,59 +67,90 @@ const MonitoringSection: React.FC = () => {
 
   const addRow = () => setRows((r) => [...r, { platform: selected[0] || 'leetcode', studentId: '', gender: 'male', section: '', klass: '' }]);
 
+  // ⬇️ NEW: fetch metrics from APIs
+  const fetchMetrics = async () => {
+    setLoading(true);
+    try {
+      const results = await Promise.all(
+        rows
+          .filter(r => r.studentId.trim() && selected.includes(r.platform))
+          .map(async (r) => {
+            let data;
+if (r.platform === "leetcode") {
+  data = await fetchLeetCodeData(r.studentId);
+} else if (r.platform === "codeforces") {
+  data = await fetchCodeforcesData(r.studentId);
+} else if (r.platform === "codewars") {
+  data = await fetchCodewarsData(r.studentId);
+} else if (r.platform === "gfg") {
+  data = await fetchGFGData(r.studentId);
+} else if (r.platform === "hackerrank") {
+  data = await fetchHackerRankData(r.studentId);
+} else if (r.platform === "hackerearth") {
+  data = await fetchHackerEarthData(r.studentId);
+} else if (r.platform === "codechef") {
+  data = await fetchCodeChefData(r.studentId);
+} else {
+  data = await fetchPlaceholderData();
+}
+
+
+
+            return {
+              platform: r.platform,
+              student: r.studentId,
+              gender: r.gender,
+              section: r.section || "",
+              klass: r.klass || "",
+              ...data,
+            };
+          })
+      );
+      setMetrics(results);
+    } catch (err) {
+      console.error("Error fetching metrics:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ⬇️ UPDATED: submitIds triggers real fetch
   const submitIds = () => {
-    const payload = rows.filter((r) => r.studentId.trim()).filter((r) => selected.includes(r.platform));
-    // Placeholder submit — replace with API call later
-    console.log('Submitted IDs', { platforms: selected, range, rows: payload });
-    alert('Submitted IDs for processing. Check console for payload.');
+    fetchMetrics();
   };
 
   const studentsList = useMemo(() => Array.from(new Set(rows.map((r) => r.studentId).filter(Boolean))), [rows]);
 
-  // Mock metrics derived from inputs so UI is interactive
-  const metrics = useMemo(() => {
+  // Filtering applied to metrics (instead of mock data)
+  const filteredMetrics = useMemo(() => {
     const platforms = filterPlatform === 'all' ? selected : [filterPlatform];
-    const base = rows
-      .filter((r) => r.studentId.trim())
+    const base = metrics
       .filter((r) => platforms.includes(r.platform))
       .filter((r) => (genderFilter === 'all' ? true : r.gender === genderFilter))
       .filter((r) => (sectionFilter ? (r.section || '').toLowerCase().includes(sectionFilter.toLowerCase()) : true))
       .filter((r) => (classFilter ? (r.klass || '').toLowerCase().includes(classFilter.toLowerCase()) : true))
-      .filter((r) => (filterStudent === 'all' ? true : r.studentId === filterStudent));
+      .filter((r) => (filterStudent === 'all' ? true : r.student === filterStudent));
 
-    const items = base.map((r, idx) => ({
-      platform: r.platform,
-      student: r.studentId,
-      gender: r.gender,
-      section: r.section || '',
-      klass: r.klass || '',
-      solved: (idx + 1) * 7 % 53 + 5, // deterministic mock
-      hours: (idx % 5) + 2,
-      courses: (idx % 3),
-    }));
-
-    const sorted = items.sort((a, b) => b.solved - a.solved);
+    const sorted = base.sort((a, b) => b.solved - a.solved);
     const topN = topFilter === 'top10' ? 10 : topFilter === 'top25' ? 25 : topFilter === 'top50' ? 50 : Math.max(1, topCustom);
-    const sliced = sorted.slice(0, topN);
-
-    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', gender: 'male', section: '', klass: '', solved: 12, hours: 6, courses: 1 }];
-  }, [rows, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
+    return sorted.slice(0, topN);
+  }, [metrics, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
 
   const totals = useMemo(() => ({
-    students: new Set(metrics.map((m) => m.student)).size,
-    activity: metrics.reduce((s, m) => s + m.hours + m.solved + m.courses, 0),
-    top: metrics.slice().sort((a, b) => b.solved - a.solved)[0],
-  }), [metrics]);
+    students: new Set(filteredMetrics.map((m) => m.student)).size,
+    activity: filteredMetrics.reduce((s, m) => s + m.hours + m.solved + m.courses, 0),
+    top: filteredMetrics.slice().sort((a, b) => b.solved - a.solved)[0],
+  }), [filteredMetrics]);
 
-  const barData = useMemo(() => metrics.map((m) => ({ name: m.student, solved: m.solved })), [metrics]);
-  const lineData = useMemo(() => metrics.map((m, idx) => ({ day: idx + 1, hours: m.hours })), [metrics]);
+  const barData = useMemo(() => filteredMetrics.map((m) => ({ name: m.student, solved: m.solved })), [filteredMetrics]);
+  const lineData = useMemo(() => filteredMetrics.map((m, idx) => ({ day: idx + 1, hours: m.hours })), [filteredMetrics]);
   const pieData = useMemo(() => {
     const byPlatform: Record<string, number> = {};
-    metrics.forEach((m) => { byPlatform[m.platform] = (byPlatform[m.platform] || 0) + m.solved; });
+    filteredMetrics.forEach((m) => { byPlatform[m.platform] = (byPlatform[m.platform] || 0) + m.solved; });
     return Object.entries(byPlatform).map(([name, value]) => ({ name, value }));
-  }, [metrics]);
+  }, [filteredMetrics]);
 
-  const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6'];
+const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444', '#14B8A6'];
 
   const exportCSV = () => {
     const headers = ['platform', 'student', 'solved', 'hours', 'courses'];
