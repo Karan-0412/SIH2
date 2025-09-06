@@ -173,39 +173,57 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certifi
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {recommendations.map((rec) => (
-            <Card key={rec.id} className="transition-all hover:shadow-md border border-border/50">
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    {getCategoryIcon(rec.category)}
-                    <h3 className="font-semibold text-sm">{rec.title}</h3>
-                  </div>
-                  <Badge className={getPriorityColor(rec.priority)}>
-                    {rec.priority}
-                  </Badge>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {recommendations.map((rec, idx) => {
+            const isFeatured = idx === 1; // center card
+            const cardClass = isFeatured
+              ? 'rounded-3xl p-6 min-h-[220px] shadow-xl text-white'
+              : 'rounded-2xl p-6 min-h-[220px] shadow-sm bg-white';
+
+            const bgClass = isFeatured ? 'bg-[#7C3AED]' : 'bg-white';
+
+            const mentors = ['Kristin Watson', 'Cody Fisher', 'Jacob Jones'];
+            const mentor = mentors[idx % mentors.length];
+            const mentorInitial = mentor.split(' ').map(n=>n[0]).slice(0,2).join('');
+
+            return (
+              <div key={rec.id} className={`relative overflow-hidden ${cardClass} ${isFeatured ? bgClass : ''}`}>
+                {/* Top row: time + optional Now badge */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`${isFeatured ? 'text-white/90 text-sm' : 'text-gray-500 text-xs'}`}>13:00 — 14:00</div>
+                  {isFeatured && (
+                    <div className="inline-flex items-center gap-2 bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full text-xs font-medium">Now</div>
+                  )}
                 </div>
-                
-                <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
-                  {rec.description}
-                </p>
-                
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-1 text-xs text-muted-foreground">
-                    {getTypeIcon(rec.type)}
-                    <span className="capitalize">{rec.type}</span>
+
+                {/* Title and tag */}
+                <div className="mb-6">
+                  <h3 className={`${isFeatured ? 'text-2xl font-semibold' : 'text-lg font-semibold text-gray-900'}`}>{rec.title}</h3>
+                  <div className="mt-3">
+                    <span className={`${isFeatured ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'} inline-flex px-2 py-0.5 rounded-full text-xs`}>{rec.type === 'course' ? 'Advanced' : rec.type}</span>
                   </div>
-                  <Button size="sm" variant="outline" className="h-7 text-xs">
-                    {rec.actionLabel}
-                    <ExternalLink className="h-3 w-3 ml-1" />
-                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          ))}
+
+                {/* Bottom: mentor */}
+                <div className="absolute left-6 bottom-6 flex items-center gap-3">
+                  <div className={`relative flex h-10 w-10 items-center justify-center rounded-full ${isFeatured ? 'bg-white' : 'bg-gray-100'}`}>
+                    <span className={`${isFeatured ? 'text-[#7C3AED]' : 'text-gray-700'} font-medium`}>{mentorInitial}</span>
+                  </div>
+                  <div className={`${isFeatured ? 'text-white' : 'text-gray-900'}`}>
+                    <div className="text-sm font-medium">{mentor}</div>
+                    <div className={`${isFeatured ? 'text-white/80 text-xs' : 'text-gray-500 text-xs'}`}>Mentor</div>
+                  </div>
+                </div>
+
+                {/* Action button */}
+                <div className={`absolute right-6 bottom-6`}>
+                  <Button size="sm" className={`${isFeatured ? 'bg-white text-[#7C3AED] hover:bg-white/90' : ''}`}>{rec.actionLabel}</Button>
+                </div>
+              </div>
+            );
+          })}
         </div>
-        
+
         {recommendations.length === 0 && (
           <div className="text-center py-8">
             <Lightbulb className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
