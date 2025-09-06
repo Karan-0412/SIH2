@@ -126,6 +126,8 @@ const StudentDashboard = () => {
           <p className="text-gray-500">Welcome back, {profile?.full_name}!</p>
         </div>
         <div className="flex items-center gap-3">
+          <Button variant="outline" size="sm" onClick={() => document.getElementById('certificates')?.scrollIntoView({ behavior: 'smooth' })}>My Certificates</Button>
+          <Button variant="outline" size="sm" onClick={() => document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth' })}>Profile</Button>
           <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-[#6D28D9] hover:bg-[#5b21b6] text-white">
             <Upload className="h-4 w-4 mr-2" />
             {showUploadPanel ? 'Close Upload' : 'Upload Certificate'}
@@ -279,7 +281,9 @@ const StudentDashboard = () => {
           </div>
 
           {/* Profile + optional upload */}
-          <ProfileSection certificates={certificates} />
+          <div id="profile">
+            <ProfileSection certificates={certificates} />
+          </div>
           {showUploadPanel && (
             <UploadCertificateSection onUploadComplete={handleUploadComplete} />
           )}
@@ -287,30 +291,31 @@ const StudentDashboard = () => {
 
         {/* Right timeline (col-span-8) */}
         <div className="col-span-12 md:col-span-8 space-y-6">
-          {/* My schedule timeline - horizontal scroll */}
+          {/* Recommendations for you - horizontal like schedule */}
           <div className="rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">My schedule</h3>
+              <h3 className="font-semibold text-gray-900">Recommendations for you</h3>
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <button className="px-3 py-1 rounded-full bg-gray-100">Today</button>
               </div>
             </div>
             <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
-              {[{time:'10:30 ��� 12:00',title:'Technical English for Beginners',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Technical Spanish for Beginners',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'},{time:'19:00 — 20:00',title:'Spoken English Club',tag:'Intermediate',accent:'plain',mentor:'Jane Cooper'}].map((c,i)=> (
+              {[{time:'10:30 — 12:00',title:'Machine Learning Basics',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Data Visualization Essentials',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'},{time:'19:00 — 20:00',title:'Public Speaking Workshop',tag:'Intermediate',accent:'plain',mentor:'Jane Cooper'}].map((c,i)=> (
                 <div key={i} className={`relative min-w-[260px] sm:min-w-[300px] snap-start rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
                   <div className={`text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>{c.time}</div>
                   <div className="mt-1 font-semibold leading-snug">{c.title}</div>
                   <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${c.accent==='purple' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'}`}>{c.tag}</div>
                   <div className={`mt-4 text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>Mentor — {c.mentor}</div>
-                  {c.now && <span className="absolute top-2 right-2 text-xs bg-orange-500 text-white rounded-full px-2 py-0.5">Now</span>}
+                  {c.now && <span className="absolute top-2 right-2 text-xs bg-orange-500 text-white rounded-full px-2 py-0.5">New</span>}
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Certificates & recommendations under timeline */}
-          <CertificatesSection certificates={certificates} />
-          <RecommendationsSection certificates={certificates} />
+          {/* Certificates under recommendations */}
+          <div id="certificates">
+            <CertificatesSection certificates={certificates} />
+          </div>
         </div>
       </div>
     </div>
