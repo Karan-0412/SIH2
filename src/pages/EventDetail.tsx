@@ -51,7 +51,7 @@ export default function EventDetail() {
       <Navbar />
       <div className="relative">
         <div className="h-64 w-full overflow-hidden">
-          <img src={event.bannerUrl} alt={event.title} className="h-full w-full object-cover" />
+          <img src={event.bannerUrl || '/placeholder.svg'} alt={event.title} className="h-full w-full object-cover" />
         </div>
         <div className="backdrop-blur-sm bg-white/60 border-b">
           <div className="max-w-5xl mx-auto p-6">
