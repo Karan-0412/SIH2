@@ -49,7 +49,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      <Navbar />
       <main className="animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
         {profile?.role === 'student' ? <StudentDashboard /> : <FacultyDashboard />}
       </main>
