@@ -23,7 +23,7 @@ export default function EventDetail() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-[#D7D7E4]">
+      <div className="min-h-screen bg-gray-100">
         <Navbar />
         <main className="max-w-5xl mx-auto p-6">
           <Card className="p-8 text-center">
@@ -46,7 +46,7 @@ export default function EventDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#D7D7E4]">
+    <div className="min-h-screen bg-gray-100">
       <div className="relative">
         <div className="h-64 w-full overflow-hidden">
           <img src={event.bannerUrl || '/placeholder.svg'} alt={event.title} className="h-full w-full object-cover" />
