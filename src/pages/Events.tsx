@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { useEvents } from '@/hooks/useEvents';
 import { useProfile } from '@/hooks/useProfile';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, CalendarClock, MapPin, User2, Search, Filter, Flame, Sparkles } from 'lucide-react';
+import { Plus, Trash2, CalendarClock, MapPin, User2, Flame, Sparkles } from 'lucide-react';
 
 export default function EventsPage() {
   const { events, addEvent, removeEvent } = useEvents();
@@ -33,26 +33,12 @@ export default function EventsPage() {
     durationHours: 2,
   });
 
-  // Top search bar filters
-  const [q, setQ] = useState('');
+  // Keep only category filter
   const [cat, setCat] = useState<'all' | 'academic' | 'co_curricular' | 'outside_university'>('all');
-  const [dateFrom, setDateFrom] = useState<string>('');
-  const [dateTo, setDateTo] = useState<string>('');
-  const [loc, setLoc] = useState('');
-  const [dur, setDur] = useState<[number, number]>([0, 8]);
 
   const filtered = useMemo(() => {
-    return events.filter((e) => {
-      const nameOk = !q || e.title.toLowerCase().includes(q.toLowerCase());
-      const catOk = cat === 'all' || e.category === cat;
-      const locOk = !loc || e.venue.toLowerCase().includes(loc.toLowerCase());
-      const d = new Date(e.date).getTime();
-      const fromOk = !dateFrom || d >= new Date(dateFrom).getTime();
-      const toOk = !dateTo || d <= new Date(dateTo).getTime();
-      const durOk = e.durationHours == null || (e.durationHours >= dur[0] && e.durationHours <= dur[1]);
-      return nameOk && catOk && locOk && fromOk && toOk && durOk;
-    });
-  }, [events, q, cat, loc, dateFrom, dateTo, dur]);
+    return events.filter((e) => (cat === 'all' ? true : e.category === cat));
+  }, [events, cat]);
 
   const featured = filtered.slice(0, Math.min(6, filtered.length));
 
@@ -65,28 +51,17 @@ export default function EventsPage() {
     window.location.href = `/events/${id}`;
   };
 
-  const SearchBar = () => (
+  const CategoryBar = () => (
     <div className="rounded-2xl border bg-white p-3 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
-        <div className="relative md:flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input className="pl-9" placeholder="Search events by name" value={q} onChange={(e)=>setQ(e.target.value)} />
-        </div>
         <div>
-          <select className="w-full md:w-48 rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
+          <select className="w-full md:w-56 rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
             <option value="all">All Categories</option>
             <option value="academic">Academic</option>
             <option value="co_curricular">Co-Curricular</option>
             <option value="outside_university">Outside University</option>
           </select>
         </div>
-        <div>
-          <Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} />
-        </div>
-        <div>
-          <Input type="text" placeholder="Location" value={loc} onChange={(e)=>setLoc(e.target.value)} />
-        </div>
-        <Button variant="secondary" className="gap-2"><Filter className="h-4 w-4" /> Filters</Button>
       </div>
     </div>
   );
@@ -135,7 +110,7 @@ export default function EventsPage() {
       <main className="max-w-7xl mx-auto p-6 space-y-10">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
-            <SearchBar />
+            <CategoryBar />
           </div>
           {isFaculty && (
             <Dialog open={open} onOpenChange={setOpen}>
@@ -219,37 +194,15 @@ export default function EventsPage() {
             <div className="lg:pl-8">
               <div className="rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-black/5">
                 <div className="space-y-4">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label>Event Type</Label>
-                      <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
-                        <option value="all">All</option>
-                        <option value="academic">Academic</option>
-                        <option value="co_curricular">Co-Curricular</option>
-                        <option value="outside_university">Outside University</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <Label>Location</Label>
-                      <Input placeholder="City or venue" value={loc} onChange={(e)=>setLoc(e.target.value)} />
-                    </div>
+                  <div className="space-y-1">
+                    <Label>Event Type</Label>
+                    <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
+                      <option value="all">All</option>
+                      <option value="academic">Academic</option>
+                      <option value="co_curricular">Co-Curricular</option>
+                      <option value="outside_university">Outside University</option>
+                    </select>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label>From</Label>
-                      <Input type="date" value={dateFrom} onChange={(e)=>setDateFrom(e.target.value)} />
-                    </div>
-                    <div className="space-y-1">
-                      <Label>To</Label>
-                      <Input type="date" value={dateTo} onChange={(e)=>setDateTo(e.target.value)} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Duration</Label>
-                    <Slider value={dur} onValueChange={(v)=>setDur(v as [number, number])} min={0} max={8} step={0.5} />
-                    <div className="text-xs text-muted-foreground">{dur[0]}h – {dur[1]}h</div>
-                  </div>
-                  <Button className="w-full gap-2"><Search className="h-4 w-4" /> Search Event</Button>
                 </div>
               </div>
             </div>
@@ -294,7 +247,7 @@ export default function EventsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Explore Events</h2>
-              <p className="text-muted-foreground">Refine with filters to find your perfect match</p>
+              <p className="text-muted-foreground">Browse by category</p>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-amber-600">
               <Sparkles className="h-4 w-4" /> Luxury-curated experience
