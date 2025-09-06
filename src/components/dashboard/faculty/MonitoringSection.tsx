@@ -245,7 +245,77 @@ const MonitoringSection: React.FC = () => {
 
   const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
 
-  const renderCustomGraph = (g: { id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; title: string }) => {
+  // Export graph (tries SVG export first, falls back to foreignObject)
+  const exportGraphAsImage = (id: string) => {
+    const container = document.getElementById(`custom-graph-${id}`);
+    if (!container) return alert('Graph element not found');
+
+    const svg = container.querySelector('svg');
+    if (svg) {
+      try {
+        const serializer = new XMLSerializer();
+        let svgStr = serializer.serializeToString(svg as SVGElement);
+        if (!svgStr.match(/^<svg[^>]+xmlns=/)) {
+          svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width || (svg as SVGElement).clientWidth || 800;
+          canvas.height = img.height || (svg as SVGElement).clientHeight || 600;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return alert('Could not get canvas context');
+          ctx.fillStyle = getComputedStyle(container).backgroundColor || '#ffffff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img, 0, 0);
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = `graph-${id}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => alert('Failed to export SVG as image');
+        img.src = url;
+        return;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Fallback: serialize container as foreignObject
+    try {
+      const width = container.offsetWidth || 800;
+      const height = container.offsetHeight || 600;
+      const serialized = new XMLSerializer().serializeToString(container);
+      const svgWrap = `<?xml version="1.0" standalone="no"?>\n<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><foreignObject width='100%' height='100%'>${serialized}</foreignObject></svg>`;
+      const blob = new Blob([svgWrap], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return alert('Could not get canvas context');
+        ctx.drawImage(img, 0, 0);
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `graph-${id}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => alert('Failed to export graph');
+      img.src = url;
+      return;
+    } catch (e) {
+      console.error(e);
+      alert('Export not supported for this graph');
+    }
+  };
+
+  const renderCustomGraph = (g: { id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; mode?: string; groupBy?: string; title: string }) => {
     if (g.type === 'pie') {
       // reuse pieData but map to metric value
       const data = pieData.map((p) => ({ name: p.name, value: p.value }));
