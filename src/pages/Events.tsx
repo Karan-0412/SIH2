@@ -8,16 +8,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useEvents } from '@/hooks/useEvents';
 import { useProfile } from '@/hooks/useProfile';
 import { Link } from 'react-router-dom';
-import { Plus, Trash2, CalendarClock, MapPin, User2, Flame, Sparkles } from 'lucide-react';
+import { Plus, Trash2, CalendarClock, MapPin, User2, Flame, Sparkles, MoreVertical } from 'lucide-react';
 
 export default function EventsPage() {
-  const { events, addEvent, removeEvent } = useEvents();
+  const { events, addEvent, updateEvent, removeEvent } = useEvents();
   const { profile } = useProfile();
 
   const isFaculty = profile?.role === 'faculty';
@@ -47,6 +46,43 @@ export default function EventsPage() {
   }, [events, q, cat]);
 
   const featured = filtered.slice(0, Math.min(6, filtered.length));
+
+  const [editOpen, setEditOpen] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    title: '',
+    shortDescription: '',
+    description: '',
+    category: 'academic' as 'academic' | 'co_curricular' | 'outside_university',
+    date: '',
+    venue: '',
+    organizer: '',
+    bannerUrl: '',
+    durationHours: 2,
+  });
+
+  const openEdit = (ev: any) => {
+    setEditId(ev.id);
+    setEditForm({
+      title: ev.title,
+      shortDescription: ev.shortDescription,
+      description: ev.description,
+      category: ev.category,
+      date: ev.date,
+      venue: ev.venue,
+      organizer: ev.organizer,
+      bannerUrl: ev.bannerUrl,
+      durationHours: ev.durationHours ?? 2,
+    });
+    setEditOpen(true);
+  };
+
+  const handleEdit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editId) return;
+    updateEvent(editId, { ...editForm });
+    setEditOpen(false);
+  };
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,43 +116,51 @@ export default function EventsPage() {
     </div>
   );
 
-  const EventCard = ({ id, bannerUrl, title, shortDescription, date, venue, organizer }: any) => (
-    <Card className="group overflow-hidden border border-gray-200/70 hover:border-gray-300 transition-all duration-300 hover:shadow-xl rounded-2xl bg-white">
-      <div className="relative h-40 w-full overflow-hidden">
-        <img src={bannerUrl || '/placeholder.svg'} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
-      </div>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold tracking-tight">{title}</CardTitle>
-        <CardDescription>{shortDescription}</CardDescription>
-      </CardHeader>
-      <CardContent className="pt-0 space-y-3">
-        <div className="flex flex-col gap-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4" /> {new Date(date).toLocaleString()}</div>
-          <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {venue}</div>
-          <div className="flex items-center gap-2"><User2 className="h-4 w-4" /> {organizer}</div>
+  const EventCard = (ev: any) => {
+    const { id, bannerUrl, title, shortDescription, date, venue, organizer } = ev;
+    return (
+      <Card className="group overflow-hidden border border-gray-200/70 hover:border-gray-300 transition-all duration-300 hover:shadow-xl rounded-2xl bg-white">
+        <div className="relative h-40 w-full overflow-hidden">
+          <img src={bannerUrl || '/placeholder.svg'} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         </div>
-        <div className="flex items-center justify-between pt-2">
-          <Link to={`/events/${id}`} className="w-full">
-            <Button className="w-full transition-all duration-300 hover:-translate-y-0.5">Register Now</Button>
-          </Link>
-        </div>
-        <div className="flex items-center justify-between rounded-md border bg-gray-50 px-3 py-2">
-          <div className="flex items-center gap-2 text-sm">
-            <Switch id={`remind-${id}`} />
-            <label htmlFor={`remind-${id}`} className="text-sm text-muted-foreground">Remind me</label>
+        <CardHeader className="pb-2">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg font-semibold tracking-tight">{title}</CardTitle>
+              <CardDescription>{shortDescription}</CardDescription>
+            </div>
+            {isFaculty && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => openEdit(ev)}>Edit</DropdownMenuItem>
+                  <DropdownMenuItem className="text-red-600" onClick={() => removeEvent(id)}>
+                    Delete
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
           </div>
-          <div className="w-32">
-            <Slider defaultValue={[50]} max={100} step={10} aria-label="interest" />
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+            <div className="flex items-center gap-2"><CalendarClock className="h-4 w-4" /> {new Date(date).toLocaleString()}</div>
+            <div className="flex items-center gap-2"><MapPin className="h-4 w-4" /> {venue}</div>
+            <div className="flex items-center gap-2"><User2 className="h-4 w-4" /> {organizer}</div>
           </div>
-        </div>
-        {isFaculty && (
-          <Button variant="ghost" size="icon" aria-label="Delete" onClick={() => removeEvent(id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash2 className="h-5 w-5" />
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  );
+          <div className="flex items-center justify-between pt-2">
+            <Link to={`/events/${id}`} className="w-full">
+              <Button className="w-full transition-all duration-300 hover:-translate-y-0.5">Register Now</Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
@@ -257,6 +301,69 @@ export default function EventsPage() {
             ))}
           </div>
         </section>
+
+        {/* Edit Dialog */}
+        {isFaculty && (
+          <Dialog open={editOpen} onOpenChange={setEditOpen}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Edit Event</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleEdit} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="etitle">Title</Label>
+                    <Input id="etitle" value={editForm.title} onChange={(e)=>setEditForm(v=>({...v, title: e.target.value}))} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ecategory">Category</Label>
+                    <select id="ecategory" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={editForm.category} onChange={(e)=>setEditForm(v=>({...v, category: e.target.value as any}))}>
+                      <option value="academic">Academic</option>
+                      <option value="co_curricular">Co-Curricular</option>
+                      <option value="outside_university">Outside University</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eshort">Short Description</Label>
+                  <Input id="eshort" value={editForm.shortDescription} onChange={(e)=>setEditForm(v=>({...v, shortDescription: e.target.value}))} required />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edesc">Detailed Description</Label>
+                  <Textarea id="edesc" value={editForm.description} onChange={(e)=>setEditForm(v=>({...v, description: e.target.value}))} required />
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edate">Date & Time</Label>
+                    <Input id="edate" type="datetime-local" value={editForm.date} onChange={(e)=>setEditForm(v=>({...v, date: e.target.value}))} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="evenue">Venue</Label>
+                    <Input id="evenue" value={editForm.venue} onChange={(e)=>setEditForm(v=>({...v, venue: e.target.value}))} required />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="eorg">Organizer</Label>
+                    <Input id="eorg" value={editForm.organizer} onChange={(e)=>setEditForm(v=>({...v, organizer: e.target.value}))} required />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ebanner">Banner Image URL</Label>
+                    <Input id="ebanner" placeholder="https://..." value={editForm.bannerUrl} onChange={(e)=>setEditForm(v=>({...v, bannerUrl: e.target.value}))} />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edur">Duration (hours)</Label>
+                  <Input id="edur" type="number" min={0.5} step={0.5} value={editForm.durationHours} onChange={(e)=>setEditForm(v=>({...v, durationHours: Number(e.target.value)}))} />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button type="button" variant="outline" onClick={()=>setEditOpen(false)}>Cancel</Button>
+                  <Button type="submit">Save</Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
 
         {/* Bottom Promos */}
         <section className="grid gap-6 md:grid-cols-2">
