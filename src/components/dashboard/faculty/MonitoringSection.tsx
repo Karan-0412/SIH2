@@ -695,10 +695,10 @@ const MonitoringSection: React.FC = () => {
 
       {/* Add Graph and Versus buttons (separate) */}
       <div className="flex justify-end mb-4">
-        <Button variant="outline" size="sm" onClick={() => { setNewGraphType('versus'); setNewGraphVersusMode('group'); setShowAddGraph(true); }}>
+        <Button className="mr-2" onClick={() => { setNewGraphType('versus'); setNewGraphVersusMode('group'); setShowAddGraph(true); }}>
           Versus Graph
         </Button>
-        <Button className="ml-2" onClick={() => { setNewGraphType('bar'); setShowAddGraph(true); }}>
+        <Button onClick={() => { setNewGraphType('bar'); setShowAddGraph(true); }}>
           Add Graph
         </Button>
       </div>
