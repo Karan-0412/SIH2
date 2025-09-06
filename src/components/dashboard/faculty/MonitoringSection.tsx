@@ -400,8 +400,6 @@ const MonitoringSection: React.FC = () => {
             <div className="ml-auto flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />Export CSV</Button>
               <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />Export PDF</Button>
-              {/* Add Graph button */}
-              <Button size="sm" onClick={() => setShowAddGraph(true)}>Add Graph</Button>
             </div>
 
             {/* Add Graph Dialog */}
@@ -479,6 +477,11 @@ const MonitoringSection: React.FC = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Add Graph button (separate) */}
+      <div className="flex justify-end mb-4">
+        <Button onClick={() => setShowAddGraph(true)}>Add Graph</Button>
+      </div>
 
       {/* Dashboard placeholders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
