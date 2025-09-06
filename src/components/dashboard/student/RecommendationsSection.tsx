@@ -145,41 +145,46 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certifi
             const difficulty = rec.difficulty || 'Beginner';
 
             return (
-              <div key={rec.id} className={`relative overflow-hidden ${cardClass} ${isFeatured ? bgClass : ''}`}>
-                {/* Top row: time + optional Now badge */}
-                <div className="flex items-center justify-between mb-4">
+              <div key={rec.id} className={`relative overflow-hidden ${cardClass} ${isFeatured ? bgClass : ''} flex flex-col justify-between`}>
+                {/* Top row: time + Now badge + difficulty tag */}
+                <div className="flex items-center justify-between">
                   <div className={`${isFeatured ? 'text-white/90 text-sm' : 'text-gray-500 text-xs'}`}>{timeRange}</div>
                   {rec.isNow && (
                     <div className={`inline-flex items-center gap-2 ${isFeatured ? 'bg-amber-400 text-amber-900' : 'bg-amber-100 text-amber-800'} px-2 py-0.5 rounded-full text-xs font-medium`}>Now</div>
                   )}
                 </div>
 
-                {/* Title and tag */}
-                <div className="mb-6">
+                {/* Title and attractive difficulty tag below time */}
+                <div className="mt-3">
                   <h3 className={`${isFeatured ? 'text-2xl font-semibold' : 'text-lg font-semibold text-gray-900'}`}>{rec.title}</h3>
-                  <div className="mt-3">
-                    <span className={`${isFeatured ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'} inline-flex px-2 py-0.5 rounded-full text-xs`}>{difficulty}</span>
+                  <div className="mt-3 flex items-center gap-3">
+                    <span className={`${isFeatured ? 'bg-white/20 text-white' : 'bg-gradient-to-r from-blue-50 to-white text-blue-700 border border-blue-100'} inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-sm`}>{difficulty}</span>
+                    <span className={`${isFeatured ? 'bg-white/12 text-white/90' : 'bg-gray-50 text-gray-500'} px-2 py-0.5 rounded-full text-xs`}>{rec.type}</span>
                   </div>
                 </div>
 
-                {/* Bottom: mentor with image */}
-                <div className="absolute left-6 bottom-6 flex items-center gap-3">
-                  <div className={`relative flex h-10 w-10 items-center justify-center rounded-full ${isFeatured ? 'bg-white' : 'bg-gray-100'}`}>
-                    {rec.mentorImage ? (
-                      <img src={rec.mentorImage} alt={mentor} className="h-10 w-10 rounded-full object-cover" />
-                    ) : (
-                      <span className={`${isFeatured ? 'text-[#7C3AED]' : 'text-gray-700'} font-medium`}>{mentorInitial}</span>
-                    )}
-                  </div>
-                  <div className={`${isFeatured ? 'text-white' : 'text-gray-900'}`}>
-                    <div className="text-sm font-medium">{mentor}</div>
-                    <div className={`${isFeatured ? 'text-white/80 text-xs' : 'text-gray-500 text-xs'}`}>Mentor</div>
-                  </div>
-                </div>
+                {/* Fill spacer to reduce empty space - ensures footer sticks to bottom */}
+                <div className="flex-1" />
 
-                {/* Action button */}
-                <div className={`absolute right-6 bottom-6`}>
-                  <Button size="sm" className={`${isFeatured ? 'bg-white text-[#7C3AED] hover:bg-white/90' : ''}`}>{rec.actionLabel}</Button>
+                {/* Footer: mentor + action aligned horizontally */}
+                <div className="flex items-center justify-between pt-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`relative flex h-10 w-10 items-center justify-center rounded-full ${isFeatured ? 'bg-white' : 'bg-gray-100'}`}>
+                      {rec.mentorImage ? (
+                        <img src={rec.mentorImage} alt={mentor} className="h-10 w-10 rounded-full object-cover" />
+                      ) : (
+                        <span className={`${isFeatured ? 'text-[#7C3AED]' : 'text-gray-700'} font-medium`}>{mentorInitial}</span>
+                      )}
+                    </div>
+                    <div className={`${isFeatured ? 'text-white' : 'text-gray-900'}`}>
+                      <div className="text-sm font-medium">{mentor}</div>
+                      <div className={`${isFeatured ? 'text-white/80 text-xs' : 'text-gray-500 text-xs'}`}>Mentor</div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <Button size="sm" className={`${isFeatured ? 'bg-white text-[#7C3AED] hover:bg-white/90' : 'bg-white border'} py-1 px-3`}>{rec.actionLabel}</Button>
+                  </div>
                 </div>
               </div>
             );
