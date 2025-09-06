@@ -71,6 +71,7 @@ export function useEvents() {
   const byCategory = useMemo(() => ({
     academic: events.filter(e => e.category === 'academic'),
     co_curricular: events.filter(e => e.category === 'co_curricular'),
+    outside_university: events.filter(e => e.category === 'outside_university'),
   }), [events]);
 
   const getById = (id: string) => events.find(e => e.id === id) || null;
