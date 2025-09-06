@@ -162,7 +162,7 @@ export default function EventsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#D7D7E4]">
+    <div className="min-h-screen bg-gray-100">
       <main className="max-w-7xl mx-auto p-6 space-y-10 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
         <div className="flex items-center justify-between gap-4">
           <div className="flex-1">
