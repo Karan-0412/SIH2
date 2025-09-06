@@ -318,6 +318,26 @@ const StudentDashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Popups */}
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>My Profile</DialogTitle>
+          </DialogHeader>
+          <ProfileSection certificates={certificates} />
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={certsOpen} onOpenChange={setCertsOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>My Certificates</DialogTitle>
+          </DialogHeader>
+          <CertificatesSection certificates={certificates} />
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 };
