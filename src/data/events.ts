@@ -1,4 +1,4 @@
-export type EventCategory = 'academic' | 'co_curricular';
+export type EventCategory = 'academic' | 'co_curricular' | 'outside_university';
 
 export interface EventItem {
   id: string;
@@ -10,6 +10,7 @@ export interface EventItem {
   venue: string;
   organizer: string;
   bannerUrl: string;
+  durationHours?: number;
 }
 
 export const initialEvents: EventItem[] = [
@@ -25,6 +26,7 @@ export const initialEvents: EventItem[] = [
     organizer: 'Dept. of Computer Science',
     bannerUrl:
       'https://images.unsplash.com/photo-1515879218367-8466d910aaa4?q=80&w=1600&auto=format&fit=crop',
+    durationHours: 2,
   },
   {
     id: 'e-acad-math-colloq',
@@ -38,6 +40,21 @@ export const initialEvents: EventItem[] = [
     organizer: 'Dept. of Mathematics',
     bannerUrl:
       'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?q=80&w=1600&auto=format&fit=crop',
+    durationHours: 1.5,
+  },
+  {
+    id: 'e-outside-ai-summit',
+    title: 'National AI Summit',
+    shortDescription: 'Industry leaders discuss AI trends and career paths.',
+    description:
+      'A premium national-level summit featuring keynotes from industry leaders, startup showcases, and networking opportunities. Shuttle service available from campus.',
+    category: 'outside_university',
+    date: new Date(Date.now() + 1000 * 60 * 60 * 24 * 18).toISOString(),
+    venue: 'City Convention Center',
+    organizer: 'TechNation & Partners',
+    bannerUrl:
+      'https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1600&auto=format&fit=crop',
+    durationHours: 8,
   },
   {
     id: 'e-cc-hackathon',
@@ -51,6 +68,7 @@ export const initialEvents: EventItem[] = [
     organizer: 'Innovation Cell & ACM Student Chapter',
     bannerUrl:
       'https://images.unsplash.com/photo-1551836022-d5d88e9218df?q=80&w=1600&auto=format&fit=crop',
+    durationHours: 1,
   },
   {
     id: 'e-cc-cultural-night',
@@ -64,5 +82,6 @@ export const initialEvents: EventItem[] = [
     organizer: 'Students’ Cultural Council',
     bannerUrl:
       'https://images.unsplash.com/photo-1515165562835-c3b8f7d92555?q=80&w=1600&auto=format&fit=crop',
+    durationHours: 2.5,
   },
 ];
