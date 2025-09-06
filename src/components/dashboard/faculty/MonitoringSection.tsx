@@ -400,7 +400,43 @@ const MonitoringSection: React.FC = () => {
             <div className="ml-auto flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />Export CSV</Button>
               <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />Export PDF</Button>
+              {/* Add Graph button */}
+              <Button size="sm" onClick={() => setShowAddGraph(true)}>Add Graph</Button>
             </div>
+
+            {/* Add Graph Dialog */}
+            <Dialog open={showAddGraph} onOpenChange={setShowAddGraph}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Custom Graph</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Graph Type</label>
+                    <select className="w-full rounded-md border px-3 py-2" value={newGraphType} onChange={(e)=>setNewGraphType(e.target.value as any)}>
+                      <option value="bar">Bar (Histogram)</option>
+                      <option value="pie">Pie</option>
+                      <option value="line">Line</option>
+                      <option value="histogram">Histogram (binned)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Metric</label>
+                    <select className="w-full rounded-md border px-3 py-2" value={newGraphMetric} onChange={(e)=>setNewGraphMetric(e.target.value as any)}>
+                      <option value="solved">Problems Solved</option>
+                      <option value="contests">Contests Given</option>
+                      <option value="rating">Contest Rating</option>
+                    </select>
+                  </div>
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={()=>setShowAddGraph(false)}>Cancel</Button>
+                    <Button onClick={addGraph}>Add</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
