@@ -730,9 +730,14 @@ const MonitoringSection: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="graph-time">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><LineChart className="h-4 w-4" /> Time Spent</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><LineChart className="h-4 w-4" /> Time Spent</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-time')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
