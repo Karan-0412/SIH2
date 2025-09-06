@@ -207,28 +207,28 @@ const StudentDashboard = () => {
 
                 {/* Small stat cards */}
                 <div className="mt-6 grid grid-cols-3 gap-3">
-                  <div className="flex flex-col items-center p-3 rounded-xl bg-white border shadow-sm">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EDE9FE] text-[#6D28D9] mb-2">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".15"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                  <div className="flex flex-col items-center py-4 px-3 rounded-2xl bg-white border border-gray-100 shadow-sm min-h-[110px]">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#EDE9FE] text-[#6D28D9] mb-3">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".12"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
                     </span>
-                    <div className="text-lg font-semibold"><CountUp to={pending} /></div>
-                    <div className="text-xs text-gray-500">In progress</div>
+                    <div className="text-2xl font-semibold leading-tight"><CountUp to={pending} /></div>
+                    <div className="text-xs text-gray-500 mt-1">In progress</div>
                   </div>
 
-                  <div className="flex flex-col items-center p-3 rounded-xl bg-white border shadow-sm">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669] mb-2">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div className="flex flex-col items-center py-4 px-3 rounded-2xl bg-white border border-gray-100 shadow-sm min-h-[110px]">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669] mb-3">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </span>
-                    <div className="text-lg font-semibold"><CountUp to={approved} /></div>
-                    <div className="text-xs text-gray-500">Completed</div>
+                    <div className="text-2xl font-semibold leading-tight"><CountUp to={approved} /></div>
+                    <div className="text-xs text-gray-500 mt-1">Completed</div>
                   </div>
 
-                  <div className="flex flex-col items-center p-3 rounded-xl bg-white border shadow-sm">
-                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF7ED] text-[#D97706] mb-2">
-                      <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <div className="flex flex-col items-center py-4 px-3 rounded-2xl bg-white border border-gray-100 shadow-sm min-h-[110px]">
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#FFF7ED] text-[#D97706] mb-3">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </span>
-                    <div className="text-lg font-semibold"><CountUp to={rejected} /></div>
-                    <div className="text-xs text-gray-500">Upcoming</div>
+                    <div className="text-2xl font-semibold leading-tight"><CountUp to={rejected} /></div>
+                    <div className="text-xs text-gray-500 mt-1">Upcoming</div>
                   </div>
                 </div>
 
