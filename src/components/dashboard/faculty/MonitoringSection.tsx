@@ -754,9 +754,14 @@ const MonitoringSection: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="graph-platform">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><PieChart className="h-4 w-4" /> Platform Share</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><PieChart className="h-4 w-4" /> Platform Share</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-platform')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
