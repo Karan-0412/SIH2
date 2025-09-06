@@ -61,7 +61,7 @@ export default function EventDetail() {
         </div>
       </div>
 
-      <main className="max-w-5xl mx-auto p-6 grid lg:grid-cols-3 gap-6">
+      <main className="max-w-5xl mx-auto p-6 grid lg:grid-cols-3 gap-6 animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
         <div className="lg:col-span-2 space-y-6">
           <Card className="p-6 space-y-4">
             <h2 className="text-xl font-semibold tracking-tight">About this event</h2>
