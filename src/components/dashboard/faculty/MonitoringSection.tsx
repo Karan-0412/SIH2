@@ -223,12 +223,23 @@ const MonitoringSection: React.FC = () => {
   const [newGraphXMetric, setNewGraphXMetric] = useState<'solved'|'contests'|'rating'>('solved');
   const [newGraphYMetric, setNewGraphYMetric] = useState<'solved'|'contests'|'rating'>('contests');
   const [heatmapBins, setHeatmapBins] = useState<number>(5);
-  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; title: string }>>([]);
+  const [newGraphVersusMode, setNewGraphVersusMode] = useState<'xy'|'group'>('xy');
+  const [newGraphGroupBy, setNewGraphGroupBy] = useState<'gender'|'section'|'klass'>('gender');
+  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; mode?: string; groupBy?: string; title: string }>>([]);
 
   const addGraph = () => {
     const id = String(Date.now());
-    const title = newGraphType === 'versus' ? `Versus ${newGraphXMetric} vs ${newGraphYMetric}` : newGraphType === 'scatter' ? `Scatter ${newGraphXMetric} vs ${newGraphYMetric}` : `${newGraphType.toUpperCase()} - ${newGraphMetric}`;
-    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, xMetric: newGraphXMetric, yMetric: newGraphYMetric, title }]);
+    let title = '';
+    if (newGraphType === 'versus') {
+      if (newGraphVersusMode === 'group') title = `Compare by ${newGraphGroupBy} (${newGraphMetric})`;
+      else title = `Versus ${newGraphXMetric} vs ${newGraphYMetric}`;
+    } else if (newGraphType === 'scatter') {
+      title = `Scatter ${newGraphXMetric} vs ${newGraphYMetric}`;
+    } else {
+      title = `${newGraphType.toUpperCase()} - ${newGraphMetric}`;
+    }
+
+    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, xMetric: newGraphXMetric, yMetric: newGraphYMetric, mode: newGraphVersusMode, groupBy: newGraphGroupBy, title }]);
     setShowAddGraph(false);
   };
 
@@ -288,7 +299,7 @@ const MonitoringSection: React.FC = () => {
       );
     }
 
-    if (g.type === 'scatter' || g.type === 'versus') {
+    if (g.type === 'scatter' || (g.type === 'versus' && g.mode === 'xy')) {
       const xKey = (g.xMetric as 'solved'|'contests'|'rating') || 'solved';
       const yKey = (g.yMetric as 'solved'|'contests'|'rating') || 'contests';
       const data = metrics.map((m) => ({ x: m[xKey] ?? 0, y: m[yKey] ?? 0, name: m.student }));
@@ -301,6 +312,29 @@ const MonitoringSection: React.FC = () => {
             <ChartTooltip />
             <Scatter data={data} fill="#7C3AED" />
           </ScatterChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'versus' && g.mode === 'group') {
+      // aggregate metric by group (gender/section/klass)
+      const groupKey = g.groupBy || 'gender';
+      const metric = g.metric || 'solved';
+      const map: Record<string, number> = {};
+      metrics.forEach((m) => {
+        const k = (m as any)[groupKey] || 'unknown';
+        map[k] = (map[k] || 0) + ((m as any)[metric] || 0);
+      });
+      const data = Object.entries(map).map(([k, v]) => ({ group: k, value: v }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RBarChart data={data} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="group" />
+            <YAxis />
+            <ChartTooltip />
+            <Bar dataKey="value" fill="#7C3AED" radius={[6,6,0,0]} />
+          </RBarChart>
         </ResponsiveContainer>
       );
     }
@@ -494,6 +528,17 @@ const MonitoringSection: React.FC = () => {
                   {/* If the graph needs X/Y metrics */}
                   {(newGraphType === 'scatter' || newGraphType === 'versus' || newGraphType === 'heatmap') && (
                     <div>
+                      {/* For versus, allow group mode */}
+                      {newGraphType === 'versus' && (
+                        <div className="mb-2">
+                          <label className="block text-sm text-gray-700 mb-1">Versus Mode</label>
+                          <select className="w-full rounded-md border px-3 py-2" value={newGraphVersusMode} onChange={(e)=>setNewGraphVersusMode(e.target.value as any)}>
+                            <option value="xy">X vs Y (numeric)</option>
+                            <option value="group">Group comparison (categorical)</option>
+                          </select>
+                        </div>
+                      )}
+
                       <label className="block text-sm text-gray-700 mb-1">X Metric</label>
                       <select className="w-full rounded-md border px-3 py-2 mb-2" value={newGraphXMetric} onChange={(e)=>setNewGraphXMetric(e.target.value as any)}>
                         <option value="solved">Problems Solved</option>
@@ -512,6 +557,18 @@ const MonitoringSection: React.FC = () => {
                         <div className="mt-2">
                           <label className="block text-sm text-gray-700 mb-1">Bins</label>
                           <input type="number" min={2} max={10} value={heatmapBins} onChange={(e)=>setHeatmapBins(Number(e.target.value)||5)} className="w-24 rounded-md border px-3 py-2" />
+                        </div>
+                      )}
+
+                      {newGraphType === 'versus' && newGraphVersusMode === 'group' && (
+                        <div className="mt-3">
+                          <label className="block text-sm text-gray-700 mb-1">Group by</label>
+                          <select className="w-full rounded-md border px-3 py-2" value={newGraphGroupBy} onChange={(e)=>setNewGraphGroupBy(e.target.value as any)}>
+                            <option value="gender">Gender</option>
+                            <option value="section">Section</option>
+                            <option value="klass">Class</option>
+                          </select>
+                          <div className="text-xs text-gray-500 mt-1">This will aggregate the selected metric across groups (sum).</div>
                         </div>
                       )}
                     </div>
