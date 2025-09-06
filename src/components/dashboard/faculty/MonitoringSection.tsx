@@ -775,7 +775,7 @@ const MonitoringSection: React.FC = () => {
                   <div className="flex items-center justify-between w-full">
                     <CardTitle className="text-sm font-medium">{g.title}</CardTitle>
                     <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="sm" onClick={() => exportGraphAsImage(g.id)}><Download className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="sm" onClick={() => exportGraphAsImage(g.id)} title="Download graph" aria-label={`Download graph ${g.id}`}><Download className="h-4 w-4" /></Button>
                       <Button variant="outline" size="sm" onClick={() => removeGraph(g.id)}>Remove</Button>
                     </div>
                   </div>
