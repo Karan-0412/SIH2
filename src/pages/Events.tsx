@@ -47,7 +47,7 @@ export default function EventsPage() {
         {items.map((ev) => (
           <Card key={ev.id} className="group overflow-hidden border border-gray-200/70 hover:border-gray-300 transition-all duration-300 hover:shadow-xl rounded-xl bg-white">
             <div className="relative h-40 w-full overflow-hidden">
-              <img src={ev.bannerUrl} alt={ev.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <img src={ev.bannerUrl || '/placeholder.svg'} alt={ev.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
             </div>
             <CardHeader className="pb-2">
               <CardTitle className="text-lg">{ev.title}</CardTitle>
