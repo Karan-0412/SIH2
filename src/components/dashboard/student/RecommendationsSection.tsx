@@ -21,6 +21,12 @@ interface Recommendation {
   type: 'course' | 'competition' | 'certification' | 'event' | 'club' | 'volunteering';
   priority: 'high' | 'medium' | 'low';
   actionLabel: string;
+  // UI fields
+  timeRange?: string;
+  difficulty?: 'Beginner' | 'Advanced';
+  mentorName?: string;
+  mentorImage?: string | null;
+  isNow?: boolean;
 }
 
 const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certificates }) => {
@@ -29,105 +35,56 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certifi
     const approvedCertificates = certificates.filter(cert => cert.status === 'approved');
     const academicCount = approvedCertificates.filter(cert => cert.category === 'academic').length;
     const coCurricularCount = approvedCertificates.filter(cert => cert.category === 'co_curricular').length;
-    
+
     const recommendations: Recommendation[] = [];
 
-    // Academic recommendations
-    if (academicCount >= 3) {
-      recommendations.push({
-        id: '1',
-        title: 'Advanced Data Science Certification',
-        description: 'Based on your strong academic performance, consider pursuing advanced certifications in emerging fields.',
-        category: 'academic',
-        type: 'certification',
-        priority: 'high',
-        actionLabel: 'Learn More'
-      });
-      recommendations.push({
-        id: '2',
-        title: 'Research Project Opportunities',
-        description: 'Join ongoing research projects to enhance your academic portfolio and gain practical experience.',
-        category: 'academic',
-        type: 'course',
-        priority: 'medium',
-        actionLabel: 'Apply'
-      });
-    } else if (academicCount >= 1) {
-      recommendations.push({
-        id: '3',
-        title: 'Programming Fundamentals Course',
-        description: 'Strengthen your technical foundation with comprehensive programming courses.',
-        category: 'academic',
-        type: 'course',
-        priority: 'high',
-        actionLabel: 'Enroll'
-      });
-    } else {
-      recommendations.push({
-        id: '4',
-        title: 'Academic Writing Workshop',
-        description: 'Start building your academic portfolio with essential writing and research skills.',
-        category: 'academic',
-        type: 'course',
-        priority: 'high',
-        actionLabel: 'Register'
-      });
-    }
-
-    // Co-curricular recommendations
-    if (coCurricularCount >= 2) {
-      recommendations.push({
-        id: '5',
-        title: 'Leadership Development Program',
-        description: 'Your active participation in co-curricular activities makes you a great candidate for leadership roles.',
-        category: 'co_curricular',
-        type: 'event',
-        priority: 'high',
-        actionLabel: 'Apply'
-      });
-      recommendations.push({
-        id: '6',
-        title: 'Inter-University Competition',
-        description: 'Represent your institution in prestigious competitions and showcase your talents.',
-        category: 'co_curricular',
-        type: 'competition',
-        priority: 'medium',
-        actionLabel: 'Participate'
-      });
-    } else if (coCurricularCount >= 1) {
-      recommendations.push({
-        id: '7',
-        title: 'Community Service Initiative',
-        description: 'Expand your co-curricular involvement through meaningful community service projects.',
-        category: 'co_curricular',
-        type: 'volunteering',
-        priority: 'medium',
-        actionLabel: 'Join'
-      });
-    } else {
-      recommendations.push({
-        id: '8',
-        title: 'Student Clubs & Organizations',
-        description: 'Start your co-curricular journey by joining clubs that align with your interests.',
-        category: 'co_curricular',
-        type: 'club',
-        priority: 'high',
-        actionLabel: 'Explore'
-      });
-    }
-
-    // General recommendations
+    // Build a few sample recommendations (fields include time, difficulty, mentor)
     recommendations.push({
-      id: '9',
-      title: 'Skill Assessment Workshop',
-      description: 'Identify your strengths and areas for improvement with comprehensive skill evaluation.',
+      id: '1',
+      title: 'Technical English for Beginners',
+      description: 'Improve your technical vocabulary and communication skills.',
       category: 'academic',
       type: 'course',
-      priority: 'low',
-      actionLabel: 'Schedule'
+      priority: 'high',
+      actionLabel: 'Register',
     });
 
-    return recommendations.slice(0, 6); // Return top 6 recommendations
+    recommendations.push({
+      id: '2',
+      title: 'English punctuation made easy',
+      description: 'Punctuation basics with hands-on exercises.',
+      category: 'academic',
+      type: 'course',
+      priority: 'high',
+      actionLabel: 'Join',
+    });
+
+    recommendations.push({
+      id: '3',
+      title: 'Technical Spanish for Beginners',
+      description: 'Learn essential Spanish for technical contexts.',
+      category: 'academic',
+      type: 'course',
+      priority: 'medium',
+      actionLabel: 'Enroll',
+    });
+
+    // Additional generic recommendations
+    recommendations.push({ id: '4', title: 'Leadership Development Program', description: 'Develop leadership skills.', category: 'co_curricular', type: 'event', priority: 'medium', actionLabel: 'Apply' });
+    recommendations.push({ id: '5', title: 'Inter-University Competition', description: 'Compete with peers across universities.', category: 'co_curricular', type: 'competition', priority: 'low', actionLabel: 'Participate' });
+
+    // Enrich with UI fields and return top 6
+    const mentors = ['Kristin Watson', 'Cody Fisher', 'Jacob Jones', 'Alex Johnson', 'Taylor Smith'];
+    const enriched = recommendations.slice(0, 6).map((rec, i) => ({
+      ...rec,
+      timeRange: rec.timeRange || (i === 1 ? '13:00 — 14:00' : i === 0 ? '10:30 — 12:00' : '16:00 — 17:00'),
+      difficulty: rec.difficulty || (i === 1 ? 'Advanced' : 'Beginner'),
+      mentorName: rec.mentorName || mentors[i % mentors.length],
+      mentorImage: rec.mentorImage || null,
+      isNow: i === 1,
+    }));
+
+    return enriched;
   };
 
   const recommendations = generateRecommendations();
@@ -182,17 +139,18 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certifi
 
             const bgClass = isFeatured ? 'bg-[#7C3AED]' : 'bg-white';
 
-            const mentors = ['Kristin Watson', 'Cody Fisher', 'Jacob Jones'];
-            const mentor = mentors[idx % mentors.length];
-            const mentorInitial = mentor.split(' ').map(n=>n[0]).slice(0,2).join('');
+            const mentor = rec.mentorName || 'Mentor';
+            const mentorInitial = mentor.split(' ').map((n:any)=>n[0]).slice(0,2).join('');
+            const timeRange = rec.timeRange || '10:30 — 12:00';
+            const difficulty = rec.difficulty || 'Beginner';
 
             return (
               <div key={rec.id} className={`relative overflow-hidden ${cardClass} ${isFeatured ? bgClass : ''}`}>
                 {/* Top row: time + optional Now badge */}
                 <div className="flex items-center justify-between mb-4">
-                  <div className={`${isFeatured ? 'text-white/90 text-sm' : 'text-gray-500 text-xs'}`}>13:00 — 14:00</div>
-                  {isFeatured && (
-                    <div className="inline-flex items-center gap-2 bg-amber-400 text-amber-900 px-2 py-0.5 rounded-full text-xs font-medium">Now</div>
+                  <div className={`${isFeatured ? 'text-white/90 text-sm' : 'text-gray-500 text-xs'}`}>{timeRange}</div>
+                  {rec.isNow && (
+                    <div className={`inline-flex items-center gap-2 ${isFeatured ? 'bg-amber-400 text-amber-900' : 'bg-amber-100 text-amber-800'} px-2 py-0.5 rounded-full text-xs font-medium`}>Now</div>
                   )}
                 </div>
 
@@ -200,14 +158,18 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({ certifi
                 <div className="mb-6">
                   <h3 className={`${isFeatured ? 'text-2xl font-semibold' : 'text-lg font-semibold text-gray-900'}`}>{rec.title}</h3>
                   <div className="mt-3">
-                    <span className={`${isFeatured ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'} inline-flex px-2 py-0.5 rounded-full text-xs`}>{rec.type === 'course' ? 'Advanced' : rec.type}</span>
+                    <span className={`${isFeatured ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-700'} inline-flex px-2 py-0.5 rounded-full text-xs`}>{difficulty}</span>
                   </div>
                 </div>
 
-                {/* Bottom: mentor */}
+                {/* Bottom: mentor with image */}
                 <div className="absolute left-6 bottom-6 flex items-center gap-3">
                   <div className={`relative flex h-10 w-10 items-center justify-center rounded-full ${isFeatured ? 'bg-white' : 'bg-gray-100'}`}>
-                    <span className={`${isFeatured ? 'text-[#7C3AED]' : 'text-gray-700'} font-medium`}>{mentorInitial}</span>
+                    {rec.mentorImage ? (
+                      <img src={rec.mentorImage} alt={mentor} className="h-10 w-10 rounded-full object-cover" />
+                    ) : (
+                      <span className={`${isFeatured ? 'text-[#7C3AED]' : 'text-gray-700'} font-medium`}>{mentorInitial}</span>
+                    )}
                   </div>
                   <div className={`${isFeatured ? 'text-white' : 'text-gray-900'}`}>
                     <div className="text-sm font-medium">{mentor}</div>
