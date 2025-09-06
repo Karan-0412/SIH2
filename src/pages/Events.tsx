@@ -33,12 +33,17 @@ export default function EventsPage() {
     durationHours: 2,
   });
 
-  // Keep only category filter
+  // Filters: search + category
+  const [q, setQ] = useState('');
   const [cat, setCat] = useState<'all' | 'academic' | 'co_curricular' | 'outside_university'>('all');
 
   const filtered = useMemo(() => {
-    return events.filter((e) => (cat === 'all' ? true : e.category === cat));
-  }, [events, cat]);
+    return events.filter((e) => {
+      const nameOk = !q || e.title.toLowerCase().includes(q.toLowerCase());
+      const catOk = cat === 'all' || e.category === cat;
+      return nameOk && catOk;
+    });
+  }, [events, q, cat]);
 
   const featured = filtered.slice(0, Math.min(6, filtered.length));
 
@@ -54,6 +59,9 @@ export default function EventsPage() {
   const CategoryBar = () => (
     <div className="rounded-2xl border bg-white p-3 shadow-sm">
       <div className="flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="md:flex-1">
+          <Input placeholder="Search events" value={q} onChange={(e)=>setQ(e.target.value)} />
+        </div>
         <div>
           <select className="w-full md:w-56 rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
             <option value="all">All Categories</option>
@@ -181,7 +189,7 @@ export default function EventsPage() {
         {/* Hero Section */}
         <section className="relative overflow-hidden rounded-3xl bg-black text-white">
           <img src="https://images.unsplash.com/photo-1518600506278-4e8ef466b810?q=80&w=1600&auto=format&fit=crop" alt="Hero" className="absolute inset-0 h-full w-full object-cover opacity-60" />
-          <div className="relative grid gap-6 p-8 sm:p-12 lg:grid-cols-2">
+          <div className="relative p-8 sm:p-12">
             <div className="space-y-4">
               <Badge variant="secondary" className="bg-white/90 text-black">Premium</Badge>
               <h1 className="text-4xl sm:text-5xl font-bold tracking-tight">Discover World-Class Events</h1>
@@ -189,22 +197,6 @@ export default function EventsPage() {
               <a href="#explore">
                 <Button size="lg" className="mt-2 bg-white text-black hover:bg-white/90 transition-all duration-300 hover:-translate-y-0.5">Register Now</Button>
               </a>
-            </div>
-
-            <div className="lg:pl-8">
-              <div className="rounded-2xl bg-white p-5 shadow-2xl ring-1 ring-black/5">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <Label>Event Type</Label>
-                    <select className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
-                      <option value="all">All</option>
-                      <option value="academic">Academic</option>
-                      <option value="co_curricular">Co-Curricular</option>
-                      <option value="outside_university">Outside University</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
