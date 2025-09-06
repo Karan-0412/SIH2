@@ -216,8 +216,23 @@ export default function EventsPage() {
                       <Input id="organizer" value={form.organizer} onChange={(e)=>setForm(v=>({...v, organizer: e.target.value}))} required />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="banner">Banner Image URL</Label>
-                      <Input id="banner" placeholder="https://..." value={form.bannerUrl} onChange={(e)=>setForm(v=>({...v, bannerUrl: e.target.value}))} />
+                      <Label htmlFor="banner">Banner Image</Label>
+                      <input
+                        id="banner"
+                        type="file"
+                        accept="image/*"
+                        onChange={(e)=>{
+                          const f = e.target.files?.[0];
+                          if (!f) return;
+                          const r = new FileReader();
+                          r.onload = () => setForm(v=>({...v, bannerUrl: String(r.result)}));
+                          r.readAsDataURL(f);
+                        }}
+                        className="block w-full text-sm"
+                      />
+                      {form.bannerUrl && (
+                        <img src={form.bannerUrl} alt="Preview" className="mt-2 h-24 w-full object-cover rounded-md border" />
+                      )}
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -346,8 +361,23 @@ export default function EventsPage() {
                     <Input id="eorg" value={editForm.organizer} onChange={(e)=>setEditForm(v=>({...v, organizer: e.target.value}))} required />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="ebanner">Banner Image URL</Label>
-                    <Input id="ebanner" placeholder="https://..." value={editForm.bannerUrl} onChange={(e)=>setEditForm(v=>({...v, bannerUrl: e.target.value}))} />
+                    <Label htmlFor="ebanner">Banner Image</Label>
+                    <input
+                      id="ebanner"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e)=>{
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => setEditForm(v=>({...v, bannerUrl: String(r.result)}));
+                        r.readAsDataURL(f);
+                      }}
+                      className="block w-full text-sm"
+                    />
+                    {editForm.bannerUrl && (
+                      <img src={editForm.bannerUrl} alt="Preview" className="mt-2 h-24 w-full object-cover rounded-md border" />
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
