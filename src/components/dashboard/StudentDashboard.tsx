@@ -299,9 +299,9 @@ const StudentDashboard = () => {
                 <button className="px-3 py-1 rounded-full bg-gray-100">Today</button>
               </div>
             </div>
-            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
               {[{time:'10:30 — 12:00',title:'Machine Learning Basics',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Data Visualization Essentials',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'},{time:'19:00 — 20:00',title:'Public Speaking Workshop',tag:'Intermediate',accent:'plain',mentor:'Jane Cooper'}].map((c,i)=> (
-                <div key={i} className={`relative min-w-[260px] sm:min-w-[300px] min-h-[220px] snap-start rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
+                <div key={i} className={`relative min-w-[240px] md:min-w-[260px] min-h-[220px] snap-start rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
                   <div className={`text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>{c.time}</div>
                   <div className="mt-1 font-semibold leading-snug">{c.title}</div>
                   <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${c.accent==='purple' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'}`}>{c.tag}</div>
