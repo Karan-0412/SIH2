@@ -47,10 +47,21 @@ const Index = () => {
     );
   }
 
+  if (!profile) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
-        {profile?.role === 'student' ? <StudentDashboard /> : <FacultyDashboard />}
+        {profile.role === 'student' ? <StudentDashboard /> : <FacultyDashboard />}
       </main>
     </div>
   );
