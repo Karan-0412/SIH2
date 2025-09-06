@@ -13,7 +13,7 @@ const Index = () => {
 
   if (authLoading || profileLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#D7D7E4] animate-in fade-in duration-300">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 animate-in fade-in duration-300">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
           <p className="text-muted-foreground">Loading...</p>
@@ -24,7 +24,7 @@ const Index = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#D7D7E4] animate-in fade-in duration-300">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 animate-in fade-in duration-300">
         <div className="text-center space-y-6">
           <div>
             <h1 className="text-4xl font-bold mb-4">Student Management System</h1>
@@ -48,7 +48,7 @@ const Index = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#D7D7E4]">
+    <div className="min-h-screen bg-gray-100">
       <main className="animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
         {profile?.role === 'student' ? <StudentDashboard /> : <FacultyDashboard />}
       </main>
