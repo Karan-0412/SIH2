@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import { useProfile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -98,9 +97,8 @@ const StudentDashboard = () => {
 
   const weekTotal = last7.reduce((s, x) => s + x.count, 0) || 1;
   const pct = (n: number) => Math.round((n / (total || 1)) * 100);
-  const weekPct = (n: number) => Math.round((n / weekTotal) * 100);
   const maxCount = Math.max(...last7.map(x=>x.count)) || 1;
-  const avgCount = weekTotal / (last7.length || 1);
+  const avgCount = (weekTotal / (last7.length || 1));
 
   const CountUp: React.FC<{ to: number; duration?: number }> = ({ to, duration = 800 }) => {
     const [val, setVal] = React.useState(0);
@@ -120,6 +118,7 @@ const StudentDashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -134,11 +133,11 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[320px_minmax(0,_1fr)_360px] gap-6">
-        {/* Left rail */}
-        <div className="space-y-6">
-          {/* Activity card with vertical bars */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+      {/* Row 1: 3 equal cards (12-col grid) */}
+      <div className="grid grid-cols-12 gap-6 items-stretch">
+        {/* Activity (col-span-4) */}
+        <div className="col-span-12 md:col-span-4">
+          <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Activity</h3>
               <span className="text-xs px-3 py-1 rounded-full border bg-gray-50 text-gray-700">Last 7 days</span>
@@ -147,11 +146,11 @@ const StudentDashboard = () => {
               <div className="text-3xl font-bold text-gray-900 leading-none"><CountUp to={weekTotal} /> <span className="text-base font-medium text-gray-500">activities</span></div>
             </div>
             <div className="relative mt-4 h-40">
-              <div className="absolute left-0 right-0 border-t border-dashed border-gray-300" style={{ bottom: `${(avgCount / maxCount) * 100}%` }} />
-              <div className="absolute left-0 -translate-y-1/2 px-2 py-0.5 rounded-full bg-black text-white text-[10px]" style={{ bottom: `${(avgCount / maxCount) * 100}%` }}>{avgCount.toFixed(1)}</div>
+              <div className="absolute left-0 right-0 border-t border-dashed border-gray-300" style={{ bottom: `${(avgCount / (maxCount || 1)) * 100}%` }} />
+              <div className="absolute left-0 -translate-y-1/2 px-2 py-0.5 rounded-full bg-black text-white text-[10px]" style={{ bottom: `${(avgCount / (maxCount || 1)) * 100}%` }}>{avgCount.toFixed(1)}</div>
               <div className="absolute inset-0 flex items-end gap-3">
                 {last7.map((d) => {
-                  const h = (d.count / maxCount) * 100;
+                  const h = (d.count / (maxCount || 1)) * 100;
                   const isMax = d.count === maxCount && maxCount > 0;
                   return (
                     <div key={d.day} className="flex-1 flex flex-col items-center">
@@ -173,93 +172,44 @@ const StudentDashboard = () => {
               </div>
             </div>
           </div>
-
-          {/* By platform card (usage list) */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">By platform</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#7C3AED]" />
-                <span className="text-gray-700">Academic</span>
-                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='academic').length} h</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#10B981]" />
-                <span className="text-gray-700">Co-Curricular</span>
-                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='co_curricular').length} h</span>
-              </div>
-            </div>
-          </div>
-
-          <ProfileSection certificates={certificates} />
-          {showUploadPanel && (
-            <UploadCertificateSection onUploadComplete={handleUploadComplete} />
-          )}
         </div>
 
-        {/* Center column */}
-        <div className="space-y-6">
-          {/* Progress statistics */}
-          <div className="grid grid-cols-1 gap-6">
-            <div className="rounded-2xl bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
-              <div className="grid md:grid-cols-2 gap-6 items-center">
-                <div>
-                  <div className="text-4xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
-                  <div className="text-sm text-gray-500 mt-1">Total activity</div>
+        {/* Progress Statistics (col-span-4) */}
+        <div className="col-span-12 md:col-span-4">
+          <div className="h-full rounded-2xl bg-white p-6 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg">
+            <div className="grid md:grid-cols-2 gap-6 items-center h-full">
+              <div>
+                <div className="text-4xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
+                <div className="text-sm text-gray-500 mt-1">Total activity</div>
+              </div>
+              <div>
+                <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-200">
+                  <div className="h-full bg-[#7C3AED]" style={{ width: `${pct(approved)}%`, transition: 'width 800ms ease' }} />
+                  <div className="h-full bg-[#10B981]" style={{ width: `${pct(pending)}%`, transition: 'width 800ms ease 120ms' }} />
+                  <div className="h-full bg-[#F59E0B]" style={{ width: `${pct(rejected)}%`, transition: 'width 800ms ease 240ms' }} />
                 </div>
-                <div>
-                  <div className="flex w-full h-2 rounded-full overflow-hidden bg-gray-200">
-                    <div className="h-full bg-[#7C3AED]" style={{ width: `${pct(approved)}%`, transition: 'width 800ms ease' }} />
-                    <div className="h-full bg-[#10B981]" style={{ width: `${pct(pending)}%`, transition: 'width 800ms ease 120ms' }} />
-                    <div className="h-full bg-[#F59E0B]" style={{ width: `${pct(rejected)}%`, transition: 'width 800ms ease 240ms' }} />
+                <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#7C3AED]/10 text-[#7C3AED] font-semibold"><CountUp to={approved} /></span>
+                    <span className="text-gray-600">Completed</span>
                   </div>
-                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#7C3AED]/10 text-[#7C3AED] font-semibold"><CountUp to={approved} /></span>
-                      <span className="text-gray-600">Completed</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#10B981]/10 text-[#10B981] font-semibold"><CountUp to={pending} /></span>
-                      <span className="text-gray-600">In progress</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F59E0B]/10 text-[#F59E0B] font-semibold"><CountUp to={rejected} /></span>
-                      <span className="text-gray-600">Upcoming</span>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#10B981]/10 text-[#10B981] font-semibold"><CountUp to={pending} /></span>
+                    <span className="text-gray-600">In progress</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#F59E0B]/10 text-[#F59E0B] font-semibold"><CountUp to={rejected} /></span>
+                    <span className="text-gray-600">Upcoming</span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* My schedule */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">My schedule</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <button className="px-3 py-1 rounded-full bg-gray-100">Today</button>
-              </div>
-            </div>
-            <div className="grid md:grid-cols-3 gap-4">
-              {[{time:'10:30 — 12:00',title:'Technical English for Beginners',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Technical Spanish for Beginners',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'}].map((c,i)=> (
-                <div key={i} className={`relative rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
-                  <div className={`text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>{c.time}</div>
-                  <div className="mt-1 font-semibold leading-snug">{c.title}</div>
-                  <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${c.accent==='purple' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'}`}>{c.tag}</div>
-                  <div className={`mt-4 text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>Mentor — {c.mentor}</div>
-                  {c.now && <span className="absolute top-2 right-2 text-xs bg-orange-500 text-white rounded-full px-2 py-0.5">Now</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <CertificatesSection certificates={certificates} />
         </div>
 
-        {/* Right column */}
-        <div className="space-y-6">
-          {/* Course highlight */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+        {/* Course Highlight (col-span-4) */}
+        <div className="col-span-12 md:col-span-4">
+          <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-2 text-xs">
               <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700">Group course</span>
               <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Advanced</span>
@@ -281,7 +231,62 @@ const StudentDashboard = () => {
             </div>
             <Button className="w-full mt-5 bg-black hover:bg-black/80 text-white">Continue learning</Button>
           </div>
+        </div>
+      </div>
 
+      {/* Row 2: Left (stacked) 4 cols, Right (timeline) 8 cols */}
+      <div className="grid grid-cols-12 gap-6">
+        {/* Left stacked (col-span-4) */}
+        <div className="col-span-12 md:col-span-4 space-y-6">
+          {/* By platform */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <h3 className="font-semibold text-gray-900 mb-4">By platform</h3>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-center gap-3">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#7C3AED]" />
+                <span className="text-gray-700">Academic</span>
+                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='academic').length} h</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-block h-2 w-2 rounded-full bg-[#10B981]" />
+                <span className="text-gray-700">Co-Curricular</span>
+                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='co_curricular').length} h</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Profile + optional upload */}
+          <ProfileSection certificates={certificates} />
+          {showUploadPanel && (
+            <UploadCertificateSection onUploadComplete={handleUploadComplete} />
+          )}
+        </div>
+
+        {/* Right timeline (col-span-8) */}
+        <div className="col-span-12 md:col-span-8 space-y-6">
+          {/* My schedule timeline - horizontal scroll */}
+          <div className="rounded-2xl bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold text-gray-900">My schedule</h3>
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <button className="px-3 py-1 rounded-full bg-gray-100">Today</button>
+              </div>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 snap-x snap-mandatory">
+              {[{time:'10:30 — 12:00',title:'Technical English for Beginners',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Technical Spanish for Beginners',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'},{time:'19:00 — 20:00',title:'Spoken English Club',tag:'Intermediate',accent:'plain',mentor:'Jane Cooper'}].map((c,i)=> (
+                <div key={i} className={`relative min-w-[260px] sm:min-w-[300px] snap-start rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
+                  <div className={`text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>{c.time}</div>
+                  <div className="mt-1 font-semibold leading-snug">{c.title}</div>
+                  <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${c.accent==='purple' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'}`}>{c.tag}</div>
+                  <div className={`mt-4 text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>Mentor — {c.mentor}</div>
+                  {c.now && <span className="absolute top-2 right-2 text-xs bg-orange-500 text-white rounded-full px-2 py-0.5">Now</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Certificates & recommendations under timeline */}
+          <CertificatesSection certificates={certificates} />
           <RecommendationsSection certificates={certificates} />
         </div>
       </div>
