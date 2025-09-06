@@ -4,7 +4,7 @@ import Navbar from '@/components/layout/Navbar';
 
 export default function AppLayout() {
   return (
-    <div className="min-h-screen bg-[#F9FAFB]">
+    <div className="min-h-screen bg-[#F9FAFB] overflow-x-hidden">
       <Navbar />
       <Outlet />
     </div>
