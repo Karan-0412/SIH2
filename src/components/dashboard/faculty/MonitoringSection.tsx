@@ -245,12 +245,34 @@ const MonitoringSection: React.FC = () => {
 
   const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
 
-  // Export graph (tries to pick the largest SVG inside the container, to avoid grabbing icon svgs)
-  const exportGraphAsImage = (idOrId: string) => {
+  // Export full card as image using html2canvas; fallback to SVG/foreignObject if html2canvas unavailable
+  const loadHtml2Canvas = (): Promise<any> => new Promise((resolve, reject) => {
+    if ((window as any).html2canvas) return resolve((window as any).html2canvas);
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload = () => resolve((window as any).html2canvas);
+    s.onerror = () => reject(new Error('Failed to load html2canvas'));
+    document.head.appendChild(s);
+  });
+
+  const exportGraphAsImage = async (idOrId: string) => {
     const container = document.getElementById(idOrId) || document.getElementById(`custom-graph-${idOrId}`);
     if (!container) return alert('Graph element not found');
 
-    // find candidate SVGs and pick the largest by bounding box
+    // Try html2canvas first to capture full rendered card
+    try {
+      const html2canvas = await loadHtml2Canvas();
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: getComputedStyle(container).backgroundColor || null });
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `card-${idOrId}.png`;
+      a.click();
+      return;
+    } catch (err) {
+      console.warn('html2canvas failed, falling back to SVG/foreignObject export', err);
+    }
+
+    // Fallback: try to pick the largest SVG inside the container (avoid icon svgs)
     const svgs = Array.from(container.querySelectorAll('svg')) as SVGElement[];
     let svg: SVGElement | null = null;
     if (svgs.length === 1) svg = svgs[0];
@@ -264,7 +286,6 @@ const MonitoringSection: React.FC = () => {
           svg = s;
         }
       }
-      // if the chosen svg is very small (likely an icon), try to pick next larger one
       if (svg && maxArea < 4000) {
         svg = svgs.find((s) => (s as any).classList && !(s as any).classList.contains('lucide')) || svg;
       }
@@ -303,7 +324,7 @@ const MonitoringSection: React.FC = () => {
       }
     }
 
-    // Fallback: serialize container as foreignObject
+    // Final fallback: serialize container as foreignObject
     try {
       const width = container.offsetWidth || 800;
       const height = container.offsetHeight || 600;
@@ -321,7 +342,7 @@ const MonitoringSection: React.FC = () => {
         ctx.drawImage(img, 0, 0);
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
-        a.download = `graph-${idOrId}.png`;
+        a.download = `card-${idOrId}.png`;
         a.click();
         URL.revokeObjectURL(url);
       };
