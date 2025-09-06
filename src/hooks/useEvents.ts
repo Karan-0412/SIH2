@@ -62,6 +62,12 @@ export function useEvents() {
     return id;
   };
 
+  const updateEvent = (id: string, changes: Partial<EventItem>) => {
+    const next = events.map(e => (e.id === id ? { ...e, ...changes } : e));
+    setEvents(next);
+    saveEvents(next);
+  };
+
   const removeEvent = (id: string) => {
     const next = events.filter(e => e.id !== id);
     setEvents(next);
@@ -76,7 +82,7 @@ export function useEvents() {
 
   const getById = (id: string) => events.find(e => e.id === id) || null;
 
-  return { events, byCategory, addEvent, removeEvent, getById };
+  return { events, byCategory, addEvent, updateEvent, removeEvent, getById };
 }
 
 export function useEventRegistration(eventId: string | null) {
