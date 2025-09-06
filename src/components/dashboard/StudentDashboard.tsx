@@ -185,53 +185,51 @@ const StudentDashboard = () => {
           <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
             <h3 className="font-semibold text-gray-900 mb-3">Progress statistics</h3>
 
-            <div className="grid grid-cols-12 gap-4 items-start">
-              <div className="col-span-12 sm:col-span-4">
-                <div className="text-5xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
-                <div className="text-sm text-gray-500 mt-1">Total activity</div>
+            <div className="text-4xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
+            <div className="text-sm text-gray-500">Total activity</div>
+
+            {/* Segmented progress bar */}
+            <div className="mt-4 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
+              <div className="h-full bg-[#7C3AED]" style={{ width: `${pct(approved)}%`, transition: 'width 700ms ease' }} />
+              <div className="h-full bg-[#10B981]" style={{ width: `${pct(pending)}%`, transition: 'width 700ms ease 120ms' }} />
+              <div className="h-full bg-[#F59E0B]" style={{ width: `${pct(rejected)}%`, transition: 'width 700ms ease 240ms' }} />
+            </div>
+            <div className="mt-2 flex justify-between text-xs text-gray-500">
+              <span>{pct(approved)}%</span>
+              <span>{pct(pending)}%</span>
+              <span>{pct(rejected)}%</span>
+            </div>
+
+            {/* Stats row */}
+            <div className="mt-6 grid grid-cols-3 gap-4">
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EDE9FE] text-[#6D28D9]">
+                  {/* In progress icon */}
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".15"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
+                </span>
+                <div>
+                  <div className="text-xl font-semibold"><CountUp to={pending} /></div>
+                  <div className="text-xs text-gray-500">In progress</div>
+                </div>
               </div>
-
-              <div className="col-span-12 sm:col-span-8">
-                <div className="mt-1">
-                  <div className="h-3 w-full rounded-full bg-gray-100 overflow-hidden">
-                    <div className="h-full bg-[#7C3AED]" style={{ width: `${pct(approved)}%`, transition: 'width 700ms ease' }} />
-                    <div className="h-full bg-[#10B981]" style={{ width: `${pct(pending)}%`, transition: 'width 700ms ease 120ms' }} />
-                    <div className="h-full bg-[#F59E0B]" style={{ width: `${pct(rejected)}%`, transition: 'width 700ms ease 240ms' }} />
-                  </div>
-
-                  <div className="mt-2 flex items-center justify-between text-xs">
-                    <span className="text-[#7C3AED] font-medium">{pct(approved)}%</span>
-                    <span className="text-[#10B981] font-medium">{pct(pending)}%</span>
-                    <span className="text-[#F59E0B] font-medium">{pct(rejected)}%</span>
-                  </div>
-
-                  <div className="mt-4 rounded-2xl bg-white border border-gray-100 shadow-sm p-3">
-                    <div className="flex divide-x divide-gray-200 -mx-1">
-                      <div className="flex-1 px-3 text-center">
-                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#EDE9FE] text-[#6D28D9] mx-auto mb-2">
-                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".12"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                        </div>
-                        <div className="text-2xl font-semibold"><CountUp to={pending} /></div>
-                        <div className="text-xs text-gray-500 mt-1">In progress</div>
-                      </div>
-
-                      <div className="flex-1 px-3 text-center">
-                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669] mx-auto mb-2">
-                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
-                        <div className="text-2xl font-semibold"><CountUp to={approved} /></div>
-                        <div className="text-xs text-gray-500 mt-1">Completed</div>
-                      </div>
-
-                      <div className="flex-1 px-3 text-center">
-                        <div className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-[#FFF7ED] text-[#D97706] mx-auto mb-2">
-                          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </div>
-                        <div className="text-2xl font-semibold"><CountUp to={rejected} /></div>
-                        <div className="text-xs text-gray-500 mt-1">Upcoming</div>
-                      </div>
-                    </div>
-                  </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
+                  {/* Completed icon */}
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <div>
+                  <div className="text-xl font-semibold"><CountUp to={approved} /></div>
+                  <div className="text-xs text-gray-500">Completed</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF7ED] text-[#D97706]">
+                  {/* Upcoming icon */}
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <div>
+                  <div className="text-xl font-semibold"><CountUp to={rejected} /></div>
+                  <div className="text-xs text-gray-500">Upcoming</div>
                 </div>
               </div>
             </div>
