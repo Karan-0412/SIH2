@@ -245,13 +245,31 @@ const MonitoringSection: React.FC = () => {
 
   const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
 
-  // Export graph (tries SVG export first, falls back to foreignObject)
+  // Export graph (tries to pick the largest SVG inside the container, to avoid grabbing icon svgs)
   const exportGraphAsImage = (idOrId: string) => {
-    // try provided id first, then try custom-graph-{id}
     const container = document.getElementById(idOrId) || document.getElementById(`custom-graph-${idOrId}`);
     if (!container) return alert('Graph element not found');
 
-    const svg = container.querySelector('svg');
+    // find candidate SVGs and pick the largest by bounding box
+    const svgs = Array.from(container.querySelectorAll('svg')) as SVGElement[];
+    let svg: SVGElement | null = null;
+    if (svgs.length === 1) svg = svgs[0];
+    else if (svgs.length > 1) {
+      let maxArea = 0;
+      for (const s of svgs) {
+        const rect = (s as any).getBoundingClientRect ? (s as any).getBoundingClientRect() : { width: (s as any).clientWidth || 0, height: (s as any).clientHeight || 0 };
+        const area = (rect.width || 0) * (rect.height || 0);
+        if (area > maxArea) {
+          maxArea = area;
+          svg = s;
+        }
+      }
+      // if the chosen svg is very small (likely an icon), try to pick next larger one
+      if (svg && maxArea < 4000) {
+        svg = svgs.find((s) => (s as any).classList && !(s as any).classList.contains('lucide')) || svg;
+      }
+    }
+
     if (svg) {
       try {
         const serializer = new XMLSerializer();
