@@ -102,8 +102,8 @@ const StudentDashboard = () => {
   const avgCount = (weekTotal / (last7.length || 1));
 
   const CountUp: React.FC<{ to: number; duration?: number }> = ({ to, duration = 800 }) => {
-    const [val, setVal] = React.useState(0);
-    React.useEffect(() => {
+    const [val, setVal] = useState(0);
+    useEffect(() => {
       let raf = 0;
       const start = performance.now();
       const tick = (now: number) => {
