@@ -9,6 +9,7 @@ import RecommendationsSection from './student/RecommendationsSection';
 import UploadCertificateSection from './student/UploadCertificateSection';
 import NotificationsDropdown from './student/NotificationsDropdown';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Certificate {
   id: string;
@@ -28,6 +29,8 @@ const StudentDashboard = () => {
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [certsOpen, setCertsOpen] = useState(false);
 
   useEffect(() => {
     if (profile) {
@@ -126,8 +129,8 @@ const StudentDashboard = () => {
           <p className="text-gray-500">Welcome back, {profile?.full_name}!</p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => document.getElementById('certificates')?.scrollIntoView({ behavior: 'smooth' })}>My Certificates</Button>
-          <Button variant="outline" size="sm" onClick={() => document.getElementById('profile')?.scrollIntoView({ behavior: 'smooth' })}>Profile</Button>
+          <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
+          <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)}>My Certificates</Button>
           <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-[#6D28D9] hover:bg-[#5b21b6] text-white">
             <Upload className="h-4 w-4 mr-2" />
             {showUploadPanel ? 'Close Upload' : 'Upload Certificate'}
@@ -280,10 +283,7 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Profile + optional upload */}
-          <div id="profile">
-            <ProfileSection certificates={certificates} />
-          </div>
+          {/* Optional upload panel */}
           {showUploadPanel && (
             <UploadCertificateSection onUploadComplete={handleUploadComplete} />
           )}
@@ -312,10 +312,6 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Certificates under recommendations */}
-          <div id="certificates">
-            <CertificatesSection certificates={certificates} />
-          </div>
         </div>
       </div>
 
