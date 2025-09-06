@@ -19,7 +19,10 @@ import {
   PieChart as RPieChart,
   Pie,
   Cell,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  ZAxis
 } from 'recharts';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
