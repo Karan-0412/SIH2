@@ -127,14 +127,15 @@ const MonitoringSection: React.FC = () => {
   const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6'];
 
   const exportCSV = () => {
-    const headers = ['platform', 'student', 'solved', 'hours', 'courses'];
-    const rowsCsv = metrics.map((m) => [m.platform, m.student, m.solved, m.hours, m.courses].join(','));
+    // include uid and fields depending on metric
+    const headers = ['uid','platform','student','solved','contests','rating','hours','courses'];
+    const rowsCsv = metrics.map((m) => [m.uid || m.student, m.platform, m.student, m.solved ?? 0, m.contests ?? 0, (m.rating ?? 0).toFixed ? (m.rating as number).toFixed(2) : m.rating, m.hours, m.courses].join(','));
     const csv = [headers.join(','), ...rowsCsv].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'report.csv';
+    a.download = `report_${metricFilter}_${topFilter}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
