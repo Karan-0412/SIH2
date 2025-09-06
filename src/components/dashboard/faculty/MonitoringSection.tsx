@@ -314,9 +314,8 @@ const MonitoringSection: React.FC = () => {
             </Select>
 
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />CSV</Button>
-              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />CSV (UIDs)</Button>
-              <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />Export CSV</Button>
+              <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />Export PDF</Button>
             </div>
           </div>
 
