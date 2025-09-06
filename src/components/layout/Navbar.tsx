@@ -38,7 +38,7 @@ const Navbar = () => {
     { label: 'Dashboard', to: '/' },
     { label: 'Schedule', to: '/schedule' },
     { label: 'Message', to: '/messages' },
-    { label: 'Events', to: '/Events' },
+    { label: 'Events', to: '/events' },
   ];
 
   React.useLayoutEffect(() => {
