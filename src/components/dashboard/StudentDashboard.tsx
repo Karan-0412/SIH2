@@ -126,7 +126,7 @@ const StudentDashboard = () => {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500">Welcome back, {profile?.full_name}!</p>
+          <p className="text-gray-600 bg-white rounded-lg px-3 py-1 shadow-sm inline-block">Welcome back, {profile?.full_name}!</p>
         </div>
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
