@@ -294,6 +294,15 @@ const MonitoringSection: React.FC = () => {
               <Input className="w-24" type="number" min={1} value={topCustom} onChange={(e)=>setTopCustom(Number(e.target.value) || 1)} />
             )}
 
+            <Select value={metricFilter} onValueChange={(v: 'solved'|'contests'|'rating') => setMetricFilter(v)}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Metric" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solved">Problems Solved</SelectItem>
+                <SelectItem value="contests">Contests Given</SelectItem>
+                <SelectItem value="rating">Contest Rating</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={range} onValueChange={(v: '7d' | '30d' | '90d') => setRange(v)}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Range" /></SelectTrigger>
               <SelectContent>
@@ -305,6 +314,7 @@ const MonitoringSection: React.FC = () => {
 
             <div className="ml-auto flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />CSV</Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />CSV (UIDs)</Button>
               <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
             </div>
           </div>
