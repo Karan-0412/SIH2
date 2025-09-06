@@ -268,7 +268,7 @@ export default function EventsPage() {
               <h3 className="text-xl font-semibold tracking-tight">Featured</h3>
               <div className="text-sm text-muted-foreground">Top picks for you</div>
             </div>
-            <Carousel opts={{ align: 'start' }}>
+            <Carousel opts={{ align: 'start' }} className="overflow-x-hidden">
               <CarouselContent>
                 {featured.map((ev) => (
                   <CarouselItem key={ev.id} className="md:basis-1/2 lg:basis-1/3">
@@ -276,8 +276,8 @@ export default function EventsPage() {
                   </CarouselItem>
                 ))}
               </CarouselContent>
-              <CarouselPrevious />
-              <CarouselNext />
+              <CarouselPrevious className="left-2 top-1/2 -translate-y-1/2" />
+              <CarouselNext className="right-2 top-1/2 -translate-y-1/2" />
             </Carousel>
           </section>
         )}
