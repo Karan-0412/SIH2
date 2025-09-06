@@ -22,6 +22,8 @@ import {
   ResponsiveContainer
 } from 'recharts';
 
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
 const PLATFORM_OPTIONS = [
   { key: 'leetcode', label: 'LeetCode' },
   { key: 'codeforces', label: 'Codeforces' },
