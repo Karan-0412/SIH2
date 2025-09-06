@@ -770,11 +770,12 @@ const MonitoringSection: React.FC = () => {
           <h3 className="text-lg font-semibold mb-4">Custom Graphs</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {customGraphs.map((g) => (
-              <Card key={g.id}>
+              <Card key={g.id} id={`custom-graph-${g.id}`}>
                 <CardHeader>
                   <div className="flex items-center justify-between w-full">
                     <CardTitle className="text-sm font-medium">{g.title}</CardTitle>
                     <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => exportGraphAsImage(g.id)}><Download className="h-4 w-4" /></Button>
                       <Button variant="outline" size="sm" onClick={() => removeGraph(g.id)}>Remove</Button>
                     </div>
                   </div>
