@@ -63,14 +63,14 @@ const Navbar = () => {
           <div ref={tabsRef} className="relative hidden md:flex items-center gap-1 bg-gray-100 rounded-full p-1">
             <span className="absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out" style={{ left: indicator.left, width: indicator.width }} />
             {items.map((item) => (
-              <button
+              <NavLink
                 key={item.label}
                 ref={(el) => (btnRefs.current[item.label] = el)}
-                onClick={() => (window.location.href = item.to)}
-                className={`relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 ${location.pathname === item.to ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
+                to={item.to}
+                className={({ isActive }) => `relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
               >
                 {item.label}
-              </button>
+              </NavLink>
             ))}
           </div>
 
