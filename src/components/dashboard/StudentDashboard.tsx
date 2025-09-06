@@ -292,7 +292,7 @@ const StudentDashboard = () => {
         {/* Right timeline (col-span-8) */}
         <div className="col-span-12 md:col-span-8 space-y-6">
           {/* Recommendations for you - horizontal like schedule */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
+          <div className="rounded-2xl bg-white p-6 shadow-sm min-h-[320px]">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-gray-900">Recommendations for you</h3>
               <div className="flex items-center gap-2 text-sm text-gray-500">
