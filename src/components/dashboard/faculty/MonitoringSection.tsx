@@ -50,6 +50,7 @@ const MonitoringSection: React.FC = () => {
   const [topFilter, setTopFilter] = useState<'top10' | 'top25' | 'top50' | 'custom'>('top10');
   const [topCustom, setTopCustom] = useState<number>(10);
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
+  const [metricFilter, setMetricFilter] = useState<'solved' | 'contests' | 'rating'>('solved');
 
   const handleTogglePlatform = (key: string, checked: boolean) => {
     setSelected((prev) => (checked ? [...new Set([...prev, key])] : prev.filter((p) => p !== key)));
