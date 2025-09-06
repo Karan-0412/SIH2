@@ -140,10 +140,10 @@ const StudentDashboard = () => {
       </div>
 
       {/* Row 1: 3 equal cards (12-col grid) */}
-      <div className="grid grid-cols-12 gap-6 items-stretch">
+      <div className="grid grid-cols-12 gap-4 items-stretch">
         {/* Activity (col-span-4) */}
         <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
+          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
             <div className="flex items-center justify-between">
               <h3 className="font-semibold text-gray-900">Activity</h3>
               <span className="text-xs px-3 py-1 rounded-full border bg-gray-50 text-gray-700">Last 7 days</span>
@@ -182,7 +182,7 @@ const StudentDashboard = () => {
 
         {/* Progress Statistics (col-span-4) */}
         <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
+          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
             <h3 className="font-semibold text-gray-900 mb-3">Progress statistics</h3>
 
             <div className="text-4xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
@@ -239,7 +239,7 @@ const StudentDashboard = () => {
 
         {/* Course Highlight (col-span-4) */}
         <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-6 shadow-sm">
+          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
             <div className="flex items-center gap-2 mb-2 text-xs">
               <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700">Group course</span>
               <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Advanced</span>
@@ -265,7 +265,7 @@ const StudentDashboard = () => {
       </div>
 
       {/* Row 2: Left (stacked) 4 cols, Right (timeline) 8 cols */}
-      <div className="grid grid-cols-12 gap-6">
+      <div className="grid grid-cols-12 gap-4">
         {/* Left stacked (col-span-4) */}
         <div className="col-span-12 md:col-span-4 space-y-6">
           {/* By platform */}
