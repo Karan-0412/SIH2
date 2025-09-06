@@ -706,9 +706,14 @@ const MonitoringSection: React.FC = () => {
 
       {/* Dashboard placeholders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
+        <Card id="graph-problems">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Problems Solved</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Problems Solved</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-problems')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
