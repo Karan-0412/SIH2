@@ -246,8 +246,9 @@ const MonitoringSection: React.FC = () => {
   const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
 
   // Export graph (tries SVG export first, falls back to foreignObject)
-  const exportGraphAsImage = (id: string) => {
-    const container = document.getElementById(`custom-graph-${id}`);
+  const exportGraphAsImage = (idOrId: string) => {
+    // try provided id first, then try custom-graph-{id}
+    const container = document.getElementById(idOrId) || document.getElementById(`custom-graph-${idOrId}`);
     if (!container) return alert('Graph element not found');
 
     const svg = container.querySelector('svg');
@@ -272,7 +273,7 @@ const MonitoringSection: React.FC = () => {
           ctx.drawImage(img, 0, 0);
           const a = document.createElement('a');
           a.href = canvas.toDataURL('image/png');
-          a.download = `graph-${id}.png`;
+          a.download = `graph-${idOrId}.png`;
           a.click();
           URL.revokeObjectURL(url);
         };
@@ -302,7 +303,7 @@ const MonitoringSection: React.FC = () => {
         ctx.drawImage(img, 0, 0);
         const a = document.createElement('a');
         a.href = canvas.toDataURL('image/png');
-        a.download = `graph-${id}.png`;
+        a.download = `graph-${idOrId}.png`;
         a.click();
         URL.revokeObjectURL(url);
       };
