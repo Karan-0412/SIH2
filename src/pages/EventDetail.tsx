@@ -1,6 +1,5 @@
 import React, { useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
-import Navbar from '@/components/layout/Navbar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,7 +47,6 @@ export default function EventDetail() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      <Navbar />
       <div className="relative">
         <div className="h-64 w-full overflow-hidden">
           <img src={event.bannerUrl || '/placeholder.svg'} alt={event.title} className="h-full w-full object-cover" />
