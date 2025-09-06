@@ -215,19 +215,23 @@ const MonitoringSection: React.FC = () => {
 
   // Custom graphs state
   const [showAddGraph, setShowAddGraph] = useState(false);
-  const [newGraphType, setNewGraphType] = useState<'pie'|'bar'|'line'|'histogram'>('bar');
+  const [newGraphType, setNewGraphType] = useState<'pie'|'bar'|'line'|'histogram'|'scatter'|'heatmap'|'versus'>('bar');
   const [newGraphMetric, setNewGraphMetric] = useState<'solved'|'contests'|'rating'>('solved');
-  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric: string; title: string }>>([]);
+  const [newGraphXMetric, setNewGraphXMetric] = useState<'solved'|'contests'|'rating'>('solved');
+  const [newGraphYMetric, setNewGraphYMetric] = useState<'solved'|'contests'|'rating'>('contests');
+  const [heatmapBins, setHeatmapBins] = useState<number>(5);
+  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; title: string }>>([]);
 
   const addGraph = () => {
     const id = String(Date.now());
-    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, title: `${newGraphType.toUpperCase()} - ${newGraphMetric}` }]);
+    const title = newGraphType === 'versus' ? `Versus ${newGraphXMetric} vs ${newGraphYMetric}` : newGraphType === 'scatter' ? `Scatter ${newGraphXMetric} vs ${newGraphYMetric}` : `${newGraphType.toUpperCase()} - ${newGraphMetric}`;
+    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, xMetric: newGraphXMetric, yMetric: newGraphYMetric, title }]);
     setShowAddGraph(false);
   };
 
   const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
 
-  const renderCustomGraph = (g: { id: string; type: string; metric: string; title: string }) => {
+  const renderCustomGraph = (g: { id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; title: string }) => {
     if (g.type === 'pie') {
       // reuse pieData but map to metric value
       const data = pieData.map((p) => ({ name: p.name, value: p.value }));
