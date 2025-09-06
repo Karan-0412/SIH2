@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from '@/components/ui/carousel';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
@@ -62,13 +63,18 @@ export default function EventsPage() {
         <div className="md:flex-1">
           <Input placeholder="Search events" value={q} onChange={(e)=>setQ(e.target.value)} />
         </div>
-        <div>
-          <select className="w-full md:w-56 rounded-md border border-input bg-background px-3 py-2 text-sm" value={cat} onChange={(e)=>setCat(e.target.value as any)}>
-            <option value="all">All Categories</option>
-            <option value="academic">Academic</option>
-            <option value="co_curricular">Co-Curricular</option>
-            <option value="outside_university">Outside University</option>
-          </select>
+        <div className="w-full md:w-56">
+          <Select value={cat} onValueChange={(v)=>setCat(v as any)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="All Categories" />
+            </SelectTrigger>
+            <SelectContent side="bottom" align="start">
+              <SelectItem value="all">All Categories</SelectItem>
+              <SelectItem value="academic">Academic</SelectItem>
+              <SelectItem value="co_curricular">Co-Curricular</SelectItem>
+              <SelectItem value="outside_university">Outside University</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
     </div>
