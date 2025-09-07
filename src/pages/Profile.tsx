@@ -228,12 +228,12 @@ const ProfilePage: React.FC = () => {
           </main>
 
           <aside className="space-y-6">
-            <div className="bg-white rounded-3xl p-3 shadow-lg">
+            <Card className="rounded-3xl p-3">
               <div className="flex flex-col items-center">
                 <div className="text-3xl font-bold">{currentMonthName}</div>
 
                 {/* Current month streak grid (Mon-Sun). View more reveals previous months */}
-                <div className="w-full mt-4">
+                <div className="w-full mt-3">
                   {(() => {
                     const today = new Date();
                     const month = today.getMonth();
@@ -246,7 +246,6 @@ const ProfilePage: React.FC = () => {
                     const daysPassed = today.getDate();
                     const markedDaysCount = Math.min(streak, daysPassed);
 
-                    // build array with placeholders for offset
                     for (let i = 0; i < offset; i++) daysArray.push(0);
                     for (let d = 1; d <= daysInMonth; d++) daysArray.push(d);
 
@@ -282,7 +281,6 @@ const ProfilePage: React.FC = () => {
                               const mName = d.toLocaleString('default', { month: 'short' });
                               const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
                               const arr: boolean[] = new Array(dim).fill(false);
-                              // spread streak across past months roughly
                               const pastFilled = Math.max(0, streak - daysPassed - idx * dim);
                               const fillCount = Math.min(dim, Math.max(0, pastFilled));
                               for (let f = 0; f < fillCount; f++) arr[dim - 1 - f] = true;
@@ -316,7 +314,7 @@ const ProfilePage: React.FC = () => {
                   </Button>
                 </div>
               </div>
-            </div>
+            </Card>
 
             <Card className="rounded-2xl shadow-md overflow-hidden">
               <CardHeader>
