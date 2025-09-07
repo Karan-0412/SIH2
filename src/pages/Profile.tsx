@@ -228,10 +228,9 @@ const ProfilePage: React.FC = () => {
           </main>
 
           <aside className="space-y-6">
-            <div className="bg-white rounded-3xl p-4 shadow-lg">
+            <div className="bg-white rounded-3xl p-3 shadow-lg">
               <div className="flex flex-col items-center">
                 <div className="text-3xl font-bold">{currentMonthName}</div>
-                <div className="text-2xl font-semibold mt-1">{streak}</div>
 
                 {/* Current month streak grid (Mon-Sun). View more reveals previous months */}
                 <div className="w-full mt-4">
@@ -264,7 +263,7 @@ const ProfilePage: React.FC = () => {
                             const isPastOrToday = d <= daysPassed;
                             const isMarked = isPastOrToday && (daysPassed - d) < markedDaysCount;
                             return (
-                              <div key={i} className={`flex items-center justify-center h-6 text-[11px] rounded ${isMarked ? 'bg-emerald-400 border border-emerald-600 text-white' : 'bg-white border border-gray-100 text-gray-600'}`}>
+                              <div key={i} className={`flex items-center justify-center h-5 text-[11px] rounded ${isMarked ? 'bg-emerald-400 border border-emerald-600 text-white' : 'bg-white border border-gray-100 text-gray-600'}`}>
                                 {d}
                               </div>
                             );
