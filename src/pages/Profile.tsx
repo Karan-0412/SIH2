@@ -231,38 +231,78 @@ const ProfilePage: React.FC = () => {
                 <div className="text-sm text-muted-foreground">Streaks</div>
                 <div className="text-4xl font-bold my-2">🔥 {streak}</div>
 
-                {/* Monthly streaks (last 4 months) */}
-                <div className="w-full mt-4 space-y-3">
+                {/* Current month streak grid (Mon-Sun). View more reveals previous months */}
+                <div className="w-full mt-4">
                   {(() => {
-                    const months = Array.from({ length: 4 }).map((_, i) => {
-                      const d = new Date();
-                      d.setMonth(d.getMonth() - i);
-                      return d.toLocaleString('default', { month: 'short' });
-                    });
-                    // distribute streak days across months (most recent first)
-                    const totalInMonth = 30;
-                    const filledPerMonth = months.map((_, i) => Math.max(0, Math.min(totalInMonth, streak - i * totalInMonth)));
+                    const today = new Date();
+                    const month = today.getMonth();
+                    const year = today.getFullYear();
+                    const monthName = today.toLocaleString('default', { month: 'short' });
+                    const daysInMonth = new Date(year, month + 1, 0).getDate();
+                    const firstDay = new Date(year, month, 1).getDay(); // 0 Sun..6 Sat
+                    const offset = (firstDay + 6) % 7; // convert to Mon=0
+                    const daysArray: number[] = [];
+                    const daysPassed = today.getDate();
+                    const markedDaysCount = Math.min(streak, daysPassed);
 
-                    return months.map((m, idx) => {
-                      const filled = filledPerMonth[idx];
-                      const days = new Array(totalInMonth).fill(false);
-                      for (let d = 0; d < filled; d++) {
-                        days[totalInMonth - 1 - d] = true;
-                      }
-                      return (
-                        <div key={m} className="bg-emerald-50 rounded-lg p-3">
-                          <div className="flex items-center justify-between">
-                            <div className="text-sm font-medium">{m}</div>
-                            <div className="text-xs text-muted-foreground">{filled} days</div>
-                          </div>
-                          <div className="mt-2 grid grid-cols-7 gap-1">
-                            {days.map((d, i) => (
-                              <div key={i} className={`h-3 rounded ${d ? 'bg-emerald-400' : 'bg-emerald-100'} border ${d ? 'border-emerald-600' : 'border-transparent'}`} />
-                            ))}
-                          </div>
+                    // build array with placeholders for offset
+                    for (let i = 0; i < offset; i++) daysArray.push(0);
+                    for (let d = 1; d <= daysInMonth; d++) daysArray.push(d);
+
+                    return (
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-sm font-medium">{monthName}</div>
+                          <div className="text-xs text-muted-foreground">{markedDaysCount} days</div>
                         </div>
-                      );
-                    });
+
+                        <div className="grid grid-cols-7 gap-1">
+                          {daysArray.map((d, i) => {
+                            if (d === 0) return <div key={i} className="h-4 rounded bg-transparent" />;
+                            const isPastOrToday = d <= daysPassed;
+                            const isMarked = isPastOrToday && (daysPassed - d) < markedDaysCount;
+                            return (
+                              <div key={i} className={`flex items-center justify-center h-6 text-[11px] rounded ${isMarked ? 'bg-emerald-400 border border-emerald-600 text-white' : 'bg-white border border-gray-100 text-gray-600'}`}>
+                                {d}
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        <div className="mt-2 text-right">
+                          <button onClick={() => setShowAllMonths((s) => !s)} className="text-sm text-primary underline">{showAllMonths ? 'Hide' : 'View more'}</button>
+                        </div>
+
+                        {showAllMonths && (
+                          <div className="mt-3 space-y-2">
+                            {Array.from({ length: 3 }).map((_, idx) => {
+                              const d = new Date();
+                              d.setMonth(month - (idx + 1));
+                              const mName = d.toLocaleString('default', { month: 'short' });
+                              const dim = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+                              const arr: boolean[] = new Array(dim).fill(false);
+                              // spread streak across past months roughly
+                              const pastFilled = Math.max(0, streak - daysPassed - idx * dim);
+                              const fillCount = Math.min(dim, Math.max(0, pastFilled));
+                              for (let f = 0; f < fillCount; f++) arr[dim - 1 - f] = true;
+                              return (
+                                <div key={mName} className="bg-emerald-50 rounded-lg p-3">
+                                  <div className="flex items-center justify-between">
+                                    <div className="text-sm font-medium">{mName}</div>
+                                    <div className="text-xs text-muted-foreground">{arr.filter(Boolean).length} days</div>
+                                  </div>
+                                  <div className="mt-2 grid grid-cols-7 gap-1">
+                                    {arr.map((a, i2) => (
+                                      <div key={i2} className={`h-3 rounded ${a ? 'bg-emerald-400' : 'bg-emerald-100'} border ${a ? 'border-emerald-600' : 'border-transparent'}`} />
+                                    ))}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
                   })()}
                 </div>
 
