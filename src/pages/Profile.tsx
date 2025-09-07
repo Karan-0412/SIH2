@@ -17,20 +17,49 @@ const LevelRing: React.FC<{ percent: number; level: number }> = ({ percent, leve
   const offset = circumference - (percent / 100) * circumference;
 
   return (
-    <div className="flex flex-col items-center">
-      <svg width={size} height={size} className="transform -rotate-90">
+    <div className="relative w-[120px] h-[120px] flex items-center justify-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">
         <defs>
           <linearGradient id="grad" x1="1" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#7c3aed" />
             <stop offset="100%" stopColor="#06b6d4" />
           </linearGradient>
+          <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+            <feMerge>
+              <feMergeNode in="coloredBlur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
-        <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} stroke="#eef2ff" fill="none" />
-        <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} stroke="url(#grad)" strokeLinecap="round" fill="none" strokeDasharray={circumference} strokeDashoffset={offset} />
+
+        {/* Background ring */}
+        <circle cx={size / 2} cy={size / 2} r={radius} strokeWidth={stroke} stroke="#f3f4f6" fill="none" />
+
+        {/* Progress ring with gradient and subtle glow */}
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          strokeWidth={stroke}
+          stroke="url(#grad)"
+          strokeLinecap="round"
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          style={{ transition: 'stroke-dashoffset 700ms ease' }}
+          filter="url(#glow)"
+        />
+
+        {/* Inner subtle circle */}
+        <circle cx={size / 2} cy={size / 2} r={radius - stroke * 0.6} fill="white" stroke="none" />
       </svg>
-      <div className="-mt-28 text-center">
-        <div className="text-sm text-muted-foreground">Level</div>
-        <div className="text-2xl font-semibold">{level}</div>
+
+      {/* Centered level text overlay */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+        <div className="text-xs text-muted-foreground">Level</div>
+        <div className="text-xl font-bold tracking-tight" style={{ textShadow: '0 1px 0 rgba(0,0,0,0.04)' }}>{level}</div>
+        <div className="text-[11px] text-muted-foreground mt-1">{percent}%</div>
       </div>
     </div>
   );
@@ -127,7 +156,7 @@ const ProfilePage: React.FC = () => {
               </Card>
               <Card className="rounded-2xl p-4 shadow-md">
                 <div className="text-sm text-muted-foreground">Today</div>
-                <div className="text-2xl font-semibold mt-1">{streak} 🔥</div>
+                <div className="text-2xl font-semibold mt-1">{streak} ���</div>
                 <div className="text-xs text-muted-foreground mt-2">Current streak</div>
               </Card>
             </div>
