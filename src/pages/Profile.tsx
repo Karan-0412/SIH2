@@ -75,6 +75,7 @@ const ProfilePage: React.FC = () => {
 
   const nextLevelXp = (level + 1) * 300;
   const percent = Math.min(100, Math.round((xp / nextLevelXp) * 100));
+  const currentMonthName = new Date().toLocaleString('default', { month: 'short' });
 
   const handleAcceptChallenge = () => {
     if (accepted) return;
