@@ -177,7 +177,7 @@ const ProfilePage: React.FC = () => {
                       ))}
                     </div>
                   </Card>
-                  <div className="bg-white rounded-xl p-3 shadow-sm">
+                  <Card className="rounded-xl p-3 shadow-sm">
                     <h4 className="text-sm font-medium mb-2">Recent Activity</h4>
                     <div className="space-y-3">
                       {recentEvents.map(ev => (
@@ -192,7 +192,7 @@ const ProfilePage: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                 </div>
               </CardContent>
             </Card>
