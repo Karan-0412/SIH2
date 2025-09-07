@@ -219,91 +219,49 @@ const ProfilePage: React.FC = () => {
           </main>
 
           <aside className="space-y-6">
-            <div className="bg-gradient-to-b from-emerald-100 to-emerald-50 rounded-3xl p-6 shadow-lg">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 flex items-center gap-4">
-                  <Avatar className="h-20 w-20">
-                    <AvatarImage src={''} />
-                    <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <div className="text-sm text-muted-foreground">{profile.role}</div>
-                    <div className="text-xl font-bold">{profile.full_name}</div>
-                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                      <Star className="h-4 w-4 text-yellow-400" />
-                      <div>4.8 • {xp} XP</div>
-                    </div>
-                  </div>
-                </div>
+            <div className="bg-white rounded-3xl p-4 shadow-lg">
+              <div className="flex flex-col items-center">
+                <div className="text-sm text-muted-foreground">Streaks</div>
+                <div className="text-4xl font-bold my-2">🔥 {streak}</div>
 
-                {/* Streak card similar to LeetCode */}
-                <div className="col-span-2">
-                  <div className="bg-white rounded-xl p-4 text-center shadow-sm">
-                    <div className="text-sm font-medium">Streak</div>
-                    <div className="text-4xl font-bold my-2">🔥 {streak}</div>
-                    <div className="mt-2 flex items-center justify-center gap-2">
-                      {(() => {
-                        const days = ['M','T','W','T','F','S','S'];
-                        const today = new Date().getDay(); // 0 (Sun) - 6 (Sat)
-                        // map to index where 0 -> Sunday at position 6 to align Mon..Sun order
-                        const monIndex = (today + 6) % 7; // convert Sunday-based to Monday-based index for today
-                        const week: boolean[] = new Array(7).fill(false);
-                        for (let i = 0; i < streak && i < 7; i++) {
-                          const idx = (monIndex - i + 7) % 7;
-                          week[idx] = true;
-                        }
-                        return days.map((d, i) => (
-                          <div key={d} className="flex flex-col items-center text-xs">
-                            <div className={`h-6 w-6 rounded-sm ${week[i] ? 'bg-emerald-300' : 'bg-emerald-50'} border ${week[i] ? 'border-emerald-400' : 'border-transparent'}`} />
-                            <div className="mt-1 text-[10px] text-muted-foreground">{d}</div>
-                          </div>
-                        ));
-                      })()}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-emerald-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-muted-foreground">Solved</div>
-                  <div className="text-xl font-semibold">123</div>
-                </div>
-                <div className="bg-emerald-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-muted-foreground">Acceptance</div>
-                  <div className="text-xl font-semibold">78%</div>
-                </div>
-
-                <div className="bg-emerald-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-muted-foreground">Rating</div>
-                  <div className="text-xl font-semibold">2200</div>
-                </div>
-                <div className="bg-emerald-50 p-3 rounded-lg text-center">
-                  <div className="text-xs text-muted-foreground">Rank</div>
-                  <div className="text-xl font-semibold">#42</div>
-                </div>
-
-                <div className="col-span-2 mt-2">
-                  <h4 className="text-sm font-medium mb-2">Badges</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {badges.map(b => (
-                      <div key={b.id} className={`flex items-center gap-2 px-3 py-1 border rounded-md bg-white` }>
-                        <div className={`h-6 w-6 rounded-full bg-gradient-to-br from-white/30 to-black/5 flex items-center justify-center text-xs ${b.color.split(' ')[1] || ''}`}>
-                          {b.name.slice(0,1)}
+                {/* Vertical list of recent weeks (4 weeks) */}
+                <div className="w-full mt-4 space-y-3">
+                  {(() => {
+                    const totalDays = 28;
+                    const filled = Math.min(streak, totalDays);
+                    const daysArray = new Array(totalDays).fill(false);
+                    for (let i = 0; i < filled; i++) {
+                      daysArray[totalDays - 1 - i] = true; // mark from most recent backwards
+                    }
+                    const weeks = [] as boolean[][];
+                    for (let w = 0; w < 4; w++) {
+                      const start = w * 7;
+                      weeks.push(daysArray.slice(start, start + 7));
+                    }
+                    // show most recent week at top
+                    return weeks.reverse().map((week, wi) => (
+                      <div key={wi} className="bg-emerald-50 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium">Week {4 - wi}</div>
+                          <div className="text-xs text-muted-foreground">{week.filter(Boolean).length} days</div>
                         </div>
-                        <div className="text-sm font-medium">{b.name}</div>
+                        <div className="mt-2 grid grid-cols-7 gap-1">
+                          {week.map((d, idx) => (
+                            <div key={idx} className={`h-4 rounded ${d ? 'bg-emerald-400' : 'bg-emerald-100'} border ${d ? 'border-emerald-600' : 'border-transparent'}`} />
+                          ))}
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    ));
+                  })()}
                 </div>
 
-                <div className="col-span-2 mt-4 flex flex-col gap-2">
-                  <div className="flex gap-2">
-                    <Button asChild>
-                      <Link to="/challenges">Challenges</Link>
-                    </Button>
-                    <Button variant="ghost" asChild>
-                      <Link to="/settings">Settings</Link>
-                    </Button>
-                  </div>
+                <div className="w-full mt-4 flex flex-col gap-2">
+                  <Button asChild>
+                    <Link to="/challenges">Challenges</Link>
+                  </Button>
+                  <Button variant="ghost" asChild>
+                    <Link to="/settings">Settings</Link>
+                  </Button>
                 </div>
               </div>
             </div>
