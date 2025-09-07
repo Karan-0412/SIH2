@@ -115,21 +115,21 @@ const ProfilePage: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           <main className="lg:col-span-3 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white rounded-2xl p-4 shadow-md">
+              <Card className="rounded-2xl p-4 shadow-md">
                 <div className="text-sm text-muted-foreground">Total XP</div>
                 <div className="text-2xl font-semibold mt-1">{xp}</div>
                 <div className="text-xs text-muted-foreground mt-2">Overall progress</div>
-              </div>
-              <div className="bg-white rounded-2xl p-4 shadow-md">
+              </Card>
+              <Card className="rounded-2xl p-4 shadow-md">
                 <div className="text-sm text-muted-foreground">This week</div>
                 <div className="text-2xl font-semibold mt-1">+120 XP</div>
                 <div className="text-xs text-muted-foreground mt-2">Keep it up!</div>
-              </div>
-              <div className="bg-white rounded-2xl p-4 shadow-md">
+              </Card>
+              <Card className="rounded-2xl p-4 shadow-md">
                 <div className="text-sm text-muted-foreground">Today</div>
                 <div className="text-2xl font-semibold mt-1">{streak} 🔥</div>
                 <div className="text-xs text-muted-foreground mt-2">Current streak</div>
-              </div>
+              </Card>
             </div>
 
             <Card className="rounded-2xl overflow-hidden shadow-md">
