@@ -10,6 +10,7 @@ import FacultyStudent from "./pages/FacultyStudent";
 import EventsPage from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
 import Profile from "./pages/Profile";
+import Leaderboard from "./pages/Leaderboard";
 import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
