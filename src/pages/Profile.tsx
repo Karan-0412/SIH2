@@ -44,6 +44,7 @@ const ProfilePage: React.FC = () => {
   const [accepted, setAccepted] = useState(false);
   const [classFilter, setClassFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
+  const [showAllMonths, setShowAllMonths] = useState(false);
 
   const badges = useMemo(() => [
     { id: 'b1', name: 'Getting Started', color: 'bg-yellow-100 text-yellow-800' },
