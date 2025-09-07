@@ -236,6 +236,33 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Streak card similar to LeetCode */}
+                <div className="col-span-2">
+                  <div className="bg-white rounded-xl p-4 text-center shadow-sm">
+                    <div className="text-sm font-medium">Streak</div>
+                    <div className="text-4xl font-bold my-2">🔥 {streak}</div>
+                    <div className="mt-2 flex items-center justify-center gap-2">
+                      {(() => {
+                        const days = ['M','T','W','T','F','S','S'];
+                        const today = new Date().getDay(); // 0 (Sun) - 6 (Sat)
+                        // map to index where 0 -> Sunday at position 6 to align Mon..Sun order
+                        const monIndex = (today + 6) % 7; // convert Sunday-based to Monday-based index for today
+                        const week: boolean[] = new Array(7).fill(false);
+                        for (let i = 0; i < streak && i < 7; i++) {
+                          const idx = (monIndex - i + 7) % 7;
+                          week[idx] = true;
+                        }
+                        return days.map((d, i) => (
+                          <div key={d} className="flex flex-col items-center text-xs">
+                            <div className={`h-6 w-6 rounded-sm ${week[i] ? 'bg-emerald-300' : 'bg-emerald-50'} border ${week[i] ? 'border-emerald-400' : 'border-transparent'}`} />
+                            <div className="mt-1 text-[10px] text-muted-foreground">{d}</div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+                </div>
+
                 <div className="bg-emerald-50 p-3 rounded-lg text-center">
                   <div className="text-xs text-muted-foreground">Solved</div>
                   <div className="text-xl font-semibold">123</div>
