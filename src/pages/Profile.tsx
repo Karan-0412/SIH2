@@ -169,14 +169,14 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-white rounded-xl p-3 shadow-sm">
+                  <Card className="rounded-xl p-3 shadow-sm">
                     <h4 className="text-sm font-medium mb-2">Badges</h4>
                     <div className="flex flex-wrap gap-2">
                       {badges.map(b => (
                         <div key={b.id} className={`px-3 py-1 rounded-full text-sm font-medium ${b.color}`}>{b.name}</div>
                       ))}
                     </div>
-                  </div>
+                  </Card>
                   <div className="bg-white rounded-xl p-3 shadow-sm">
                     <h4 className="text-sm font-medium mb-2">Recent Activity</h4>
                     <div className="space-y-3">
