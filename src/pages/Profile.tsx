@@ -230,8 +230,8 @@ const ProfilePage: React.FC = () => {
           <aside className="space-y-6">
             <div className="bg-white rounded-3xl p-4 shadow-lg">
               <div className="flex flex-col items-center">
-                <div className="text-sm text-muted-foreground">{currentMonthName}</div>
-                <div className="text-4xl font-bold my-2">🔥 {streak}</div>
+                <div className="text-3xl font-bold">{currentMonthName}</div>
+                <div className="text-2xl font-semibold mt-1">{streak}</div>
 
                 {/* Current month streak grid (Mon-Sun). View more reveals previous months */}
                 <div className="w-full mt-4">
