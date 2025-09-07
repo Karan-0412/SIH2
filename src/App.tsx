@@ -9,6 +9,7 @@ import AuthPage from "./components/auth/AuthPage";
 import FacultyStudent from "./pages/FacultyStudent";
 import EventsPage from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import Profile from "./pages/Profile";
 import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();

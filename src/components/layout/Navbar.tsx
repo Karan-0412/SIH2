@@ -79,7 +79,7 @@ const Navbar = () => {
             {profile && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700 transition-colors">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{profile.full_name}</span>
+                <Link to="/profile" className="font-medium hover:underline">{profile.full_name}</Link>
                 <span className="text-xs capitalize">({profile.role})</span>
               </div>
             )}
