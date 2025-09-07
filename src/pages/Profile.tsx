@@ -195,21 +195,28 @@ const ProfilePage: React.FC = () => {
               </CardContent>
             </Card>
 
-            <Card className="rounded-2xl overflow-hidden shadow-md">
+            <Card className="rounded-2xl overflow-hidden shadow-md bg-white">
               <CardHeader>
-                <CardTitle className="text-lg">Badge Feed</CardTitle>
+                <div className="w-full flex items-center justify-between">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Badges</div>
+                    <div className="text-3xl font-bold">{badges.length}</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-xs text-muted-foreground">Most Recent Badge</div>
+                    <div className="text-sm font-semibold">{badges[0]?.name || '—'}</div>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {recentEvents.map((ev) => (
-                    <div key={ev.id} className="flex items-start gap-3 border rounded p-3 bg-white">
-                      <Avatar className="h-10 w-10">
-                        <AvatarFallback>{ev.text.slice(0,2).toUpperCase()}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{ev.text}</div>
-                        <div className="text-xs text-muted-foreground">{ev.time}</div>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {badges.map((b) => (
+                    <div key={b.id} className="flex flex-col items-center w-24 p-2 bg-gray-50 rounded-lg">
+                      <div className="h-12 w-12 rounded-md bg-gradient-to-br from-white to-gray-100 flex items-center justify-center border">
+                        {/* placeholder badge icon */}
+                        <div className="text-sm font-bold">{b.name.slice(0,2)}</div>
                       </div>
+                      <div className="text-xs mt-2 text-center">{b.name}</div>
                     </div>
                   ))}
                 </div>
