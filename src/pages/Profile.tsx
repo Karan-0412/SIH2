@@ -231,34 +231,38 @@ const ProfilePage: React.FC = () => {
                 <div className="text-sm text-muted-foreground">Streaks</div>
                 <div className="text-4xl font-bold my-2">🔥 {streak}</div>
 
-                {/* Vertical list of recent weeks (4 weeks) */}
+                {/* Monthly streaks (last 4 months) */}
                 <div className="w-full mt-4 space-y-3">
                   {(() => {
-                    const totalDays = 28;
-                    const filled = Math.min(streak, totalDays);
-                    const daysArray = new Array(totalDays).fill(false);
-                    for (let i = 0; i < filled; i++) {
-                      daysArray[totalDays - 1 - i] = true; // mark from most recent backwards
-                    }
-                    const weeks = [] as boolean[][];
-                    for (let w = 0; w < 4; w++) {
-                      const start = w * 7;
-                      weeks.push(daysArray.slice(start, start + 7));
-                    }
-                    // show most recent week at top
-                    return weeks.reverse().map((week, wi) => (
-                      <div key={wi} className="bg-emerald-50 rounded-lg p-3">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm font-medium">Week {4 - wi}</div>
-                          <div className="text-xs text-muted-foreground">{week.filter(Boolean).length} days</div>
+                    const months = Array.from({ length: 4 }).map((_, i) => {
+                      const d = new Date();
+                      d.setMonth(d.getMonth() - i);
+                      return d.toLocaleString('default', { month: 'short' });
+                    });
+                    // distribute streak days across months (most recent first)
+                    const totalInMonth = 30;
+                    const filledPerMonth = months.map((_, i) => Math.max(0, Math.min(totalInMonth, streak - i * totalInMonth)));
+
+                    return months.map((m, idx) => {
+                      const filled = filledPerMonth[idx];
+                      const days = new Array(totalInMonth).fill(false);
+                      for (let d = 0; d < filled; d++) {
+                        days[totalInMonth - 1 - d] = true;
+                      }
+                      return (
+                        <div key={m} className="bg-emerald-50 rounded-lg p-3">
+                          <div className="flex items-center justify-between">
+                            <div className="text-sm font-medium">{m}</div>
+                            <div className="text-xs text-muted-foreground">{filled} days</div>
+                          </div>
+                          <div className="mt-2 grid grid-cols-7 gap-1">
+                            {days.map((d, i) => (
+                              <div key={i} className={`h-3 rounded ${d ? 'bg-emerald-400' : 'bg-emerald-100'} border ${d ? 'border-emerald-600' : 'border-transparent'}`} />
+                            ))}
+                          </div>
                         </div>
-                        <div className="mt-2 grid grid-cols-7 gap-1">
-                          {week.map((d, idx) => (
-                            <div key={idx} className={`h-4 rounded ${d ? 'bg-emerald-400' : 'bg-emerald-100'} border ${d ? 'border-emerald-600' : 'border-transparent'}`} />
-                          ))}
-                        </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
 
