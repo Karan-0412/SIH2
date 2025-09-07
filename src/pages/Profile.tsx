@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
-import { Trophy, Sparkles, Zap, Check } from 'lucide-react';
+import { Trophy, Sparkles, Zap, Check, Star } from 'lucide-react';
 
 const LevelRing: React.FC<{ percent: number; level: number }> = ({ percent, level }) => {
   const size = 120;
@@ -45,7 +45,6 @@ const ProfilePage: React.FC = () => {
   const [classFilter, setClassFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
 
-  // Mock badges and events
   const badges = useMemo(() => [
     { id: 'b1', name: 'Getting Started', color: 'bg-yellow-100 text-yellow-800' },
     { id: 'b2', name: 'Streak 7', color: 'bg-green-100 text-green-800' },
@@ -62,8 +61,8 @@ const ProfilePage: React.FC = () => {
     { id: 'u1', name: 'Alice', class: 'A', batch: '2024', xp: 980 },
     { id: 'u2', name: 'Bob', class: 'B', batch: '2024', xp: 920 },
     { id: 'u3', name: 'Charlie', class: 'A', batch: '2023', xp: 880 },
-    { id: 'u4', name: 'You', class: 'A', batch: '2024', xp: 380 },
-  ], []);
+    { id: 'u4', name: 'You', class: 'A', batch: '2024', xp: xp },
+  ], [xp]);
 
   const filteredLeaderboard = useMemo(() => {
     return leaderboardData.filter((row) => {
@@ -73,12 +72,7 @@ const ProfilePage: React.FC = () => {
     }).sort((a, b) => b.xp - a.xp);
   }, [leaderboardData, classFilter, batchFilter]);
 
-  const nextLevelXp = useMemo(() => {
-    // simple progression formula for demo
-    const target = (level + 1) * 300;
-    return target;
-  }, [level]);
-
+  const nextLevelXp = (level + 1) * 300;
   const percent = Math.min(100, Math.round((xp / nextLevelXp) * 100));
 
   const handleAcceptChallenge = () => {
@@ -86,164 +80,167 @@ const ProfilePage: React.FC = () => {
     setAccepted(true);
     setXp((s) => s + 40);
     setStreak((s) => s + 1);
-    // level up if reached
-    if (xp + 40 >= nextLevelXp) {
-      setLevel((l) => l + 1);
-    }
+    if (xp + 40 >= nextLevelXp) setLevel((l) => l + 1);
   };
 
-  if (!profile) {
-    return <div className="p-6">You need to be signed in to view your profile.</div>;
-  }
+  if (!profile) return <div className="p-6">You need to be signed in to view your profile.</div>;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-lg">{profile.full_name}</CardTitle>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">{profile.role}</Badge>
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/events">View activity</Link>
-                </Button>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Top hero */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg -mt-6 mb-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-4">
+              <Avatar className="h-16 w-16">
+                <AvatarImage src={''} />
+                <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
+              </Avatar>
+              <div>
+                <div className="text-sm text-muted-foreground">Hi {profile.full_name.split(' ')[0]},</div>
+                <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col md:flex-row md:items-center md:gap-8">
-                <div className="flex-shrink-0">
-                  <LevelRing percent={percent} level={level} />
-                </div>
-                <div className="flex-1 mt-4 md:mt-0">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-sm text-muted-foreground">XP</div>
-                      <div className="text-2xl font-semibold">{xp} XP</div>
-                      <div className="text-xs text-muted-foreground">{xp}/{nextLevelXp} to next level</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-sm text-muted-foreground">Streak</div>
-                      <div className="text-2xl font-semibold">{streak} 🔥</div>
-                    </div>
-                  </div>
+            </div>
+          </div>
 
-                  <div className="mt-4">
-                    <div className="flex items-center gap-3">
-                      <Progress value={percent} className="h-3 rounded-full flex-1" />
-                      <Button size="sm" onClick={() => { setXp((s)=>Math.max(0,s-20)); }}>Spend XP</Button>
-                    </div>
-                    <div className="mt-3 flex items-center gap-2">
-                      <Button size="sm" variant="ghost" onClick={() => { setXp((s)=>s+10); }}>+10 XP</Button>
-                      <Button size="sm" variant="outline" onClick={() => { setStreak((s)=>s+1); }}>Add Streak</Button>
-                    </div>
-                  </div>
-                </div>
+          <div className="flex items-center justify-end">
+            <div className="w-full md:w-72">
+              <Input placeholder="Search for content, challenges..." />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          <main className="lg:col-span-3 space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-2xl p-4 shadow-md">
+                <div className="text-sm text-muted-foreground">Total XP</div>
+                <div className="text-2xl font-semibold mt-1">{xp}</div>
+                <div className="text-xs text-muted-foreground mt-2">Overall progress</div>
               </div>
+              <div className="bg-white rounded-2xl p-4 shadow-md">
+                <div className="text-sm text-muted-foreground">This week</div>
+                <div className="text-2xl font-semibold mt-1">+120 XP</div>
+                <div className="text-xs text-muted-foreground mt-2">Keep it up!</div>
+              </div>
+              <div className="bg-white rounded-2xl p-4 shadow-md">
+                <div className="text-sm text-muted-foreground">Today</div>
+                <div className="text-2xl font-semibold mt-1">{streak} 🔥</div>
+                <div className="text-xs text-muted-foreground mt-2">Current streak</div>
+              </div>
+            </div>
 
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="col-span-1">
-                  <h4 className="text-sm font-medium mb-2">Badges</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {badges.map((b) => (
-                      <div key={b.id} className={`px-3 py-1 rounded-full text-sm font-medium ${b.color}`}>{b.name}</div>
-                    ))}
+            <Card className="rounded-2xl overflow-hidden shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Progress & Activity</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col md:flex-row md:items-center gap-6">
+                  <div className="flex-shrink-0">
+                    <LevelRing percent={percent} level={level} />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-sm text-muted-foreground">XP</div>
+                        <div className="text-2xl font-semibold">{xp} XP</div>
+                        <div className="text-xs text-muted-foreground">{xp}/{nextLevelXp} to next level</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm text-muted-foreground">Streak</div>
+                        <div className="text-2xl font-semibold">{streak} 🔥</div>
+                      </div>
+                    </div>
+
+                    <div className="mt-4">
+                      <Progress value={percent} className="h-3 rounded-full" />
+                      <div className="mt-3 flex items-center gap-3">
+                        <Button size="sm" onClick={handleAcceptChallenge} disabled={accepted} className="flex items-center gap-2">
+                          {accepted ? <Check className="h-4 w-4"/> : <Zap className="h-4 w-4"/>} {accepted ? 'Accepted' : 'Accept Challenge'}
+                        </Button>
+                        <Button variant="outline" asChild>
+                          <Link to="/leaderboard">View Leaderboard</Link>
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="col-span-2">
-                  <h4 className="text-sm font-medium mb-2">Recent Activity</h4>
-                  <div className="space-y-3">
-                    {recentEvents.map((ev) => (
-                      <div key={ev.id} className="flex items-center justify-between border rounded p-3">
-                        <div className="flex items-center gap-3">
-                          <Sparkles className="h-5 w-5 text-yellow-500" />
+                <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-white rounded-xl p-3 shadow-sm">
+                    <h4 className="text-sm font-medium mb-2">Badges</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {badges.map(b => (
+                        <div key={b.id} className={`px-3 py-1 rounded-full text-sm font-medium ${b.color}`}>{b.name}</div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="bg-white rounded-xl p-3 shadow-sm">
+                    <h4 className="text-sm font-medium mb-2">Recent Activity</h4>
+                    <div className="space-y-3">
+                      {recentEvents.map(ev => (
+                        <div key={ev.id} className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10">
+                            <AvatarFallback>{ev.text.slice(0,2).toUpperCase()}</AvatarFallback>
+                          </Avatar>
                           <div>
                             <div className="font-medium">{ev.text}</div>
                             <div className="text-xs text-muted-foreground">{ev.time}</div>
                           </div>
                         </div>
-                        <div>
-                          <Badge variant="outline">View</Badge>
-                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl overflow-hidden shadow-md">
+              <CardHeader>
+                <CardTitle className="text-lg">Badge Feed</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {recentEvents.map((ev) => (
+                    <div key={ev.id} className="flex items-start gap-3 border rounded p-3 bg-white">
+                      <Avatar className="h-10 w-10">
+                        <AvatarFallback>{ev.text.slice(0,2).toUpperCase()}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium">{ev.text}</div>
+                        <div className="text-xs text-muted-foreground">{ev.time}</div>
                       </div>
-                    ))}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+          </main>
+
+          <aside className="space-y-6">
+            <div className="bg-gradient-to-b from-white to-indigo-50 rounded-3xl p-6 shadow-lg">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={''} />
+                  <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm text-muted-foreground">{profile.role}</div>
+                  <div className="text-xl font-bold">{profile.full_name}</div>
+                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                    <Star className="h-4 w-4 text-yellow-400" />
+                    <div>4.8 • 23k XP</div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 flex items-center gap-3">
-                <Button onClick={handleAcceptChallenge} disabled={accepted} className="flex items-center gap-2">
-                  {accepted ? <Check className="h-4 w-4"/> : <Zap className="h-4 w-4"/>} {accepted ? 'Accepted' : 'Accept Daily Challenge'}
-                </Button>
-                <Button variant="outline" asChild>
-                  <Link to="/leaderboard">View Full Leaderboard</Link>
-                </Button>
+              <div className="mt-4">
+                <div className="text-xs text-muted-foreground">Profile Strength</div>
+                <Progress value={percent} className="h-3 rounded-full mt-2" />
               </div>
-            </CardContent>
-          </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Badge Feed</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {recentEvents.map((ev) => (
-                  <div key={ev.id} className="flex items-start gap-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarFallback>{ev.text.slice(0,2).toUpperCase()}</AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <div className="font-medium">{ev.text}</div>
-                      <div className="text-xs text-muted-foreground">{ev.time}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <aside className="space-y-6">
-          <Card>
-            <CardHeader className="flex items-center justify-between">
-              <CardTitle className="text-sm">Leaderboard</CardTitle>
-              <div className="flex items-center gap-2">
-                <select className="text-sm rounded border px-2 py-1" value={classFilter} onChange={(e)=>setClassFilter(e.target.value)}>
-                  <option value="all">All classes</option>
-                  <option value="A">Class A</option>
-                  <option value="B">Class B</option>
-                </select>
-                <select className="text-sm rounded border px-2 py-1" value={batchFilter} onChange={(e)=>setBatchFilter(e.target.value)}>
-                  <option value="all">All batches</option>
-                  <option value="2024">2024</option>
-                  <option value="2023">2023</option>
-                </select>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {filteredLeaderboard.map((row, idx) => (
-                  <div key={row.id} className={`flex items-center justify-between p-2 rounded ${row.name === 'You' ? 'bg-muted/40' : 'bg-transparent'}`}>
-                    <div className="flex items-center gap-3">
-                      <Trophy className="h-4 w-4 text-yellow-500" />
-                      <div className="text-sm font-medium">{row.name}</div>
-                      <div className="text-xs text-muted-foreground">{row.class} • {row.batch}</div>
-                    </div>
-                    <div className="text-sm font-semibold">{row.xp} XP</div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col gap-2">
+              <div className="mt-4 flex flex-col gap-2">
                 <Button asChild>
                   <Link to="/challenges">Challenges</Link>
                 </Button>
@@ -251,9 +248,45 @@ const ProfilePage: React.FC = () => {
                   <Link to="/settings">Settings</Link>
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </aside>
+            </div>
+
+            <Card className="rounded-2xl shadow-md overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-sm">Leaderboard Snippet</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {filteredLeaderboard.slice(0,3).map((row) => (
+                    <div key={row.id} className={`flex items-center justify-between p-2 rounded ${row.name === 'You' ? 'bg-muted/40' : ''}`}>
+                      <div className="flex items-center gap-3">
+                        <Trophy className="h-4 w-4 text-yellow-500" />
+                        <div className="text-sm font-medium">{row.name}</div>
+                      </div>
+                      <div className="text-sm font-semibold">{row.xp} XP</div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-2xl shadow-md overflow-hidden">
+              <CardHeader>
+                <CardTitle className="text-sm">Quick Actions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col gap-2">
+                  <Button asChild>
+                    <Link to="/profile">View Profile</Link>
+                  </Button>
+                  <Button variant="ghost" asChild>
+                    <Link to="/leaderboard">Open Leaderboard</Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+          </aside>
+        </div>
       </div>
     </div>
   );
