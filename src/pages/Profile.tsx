@@ -219,34 +219,65 @@ const ProfilePage: React.FC = () => {
           </main>
 
           <aside className="space-y-6">
-            <div className="bg-gradient-to-b from-white to-indigo-50 rounded-3xl p-6 shadow-lg">
-              <div className="flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  <AvatarImage src={''} />
-                  <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <div className="text-sm text-muted-foreground">{profile.role}</div>
-                  <div className="text-xl font-bold">{profile.full_name}</div>
-                  <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
-                    <Star className="h-4 w-4 text-yellow-400" />
-                    <div>4.8 • 23k XP</div>
+            <div className="bg-gradient-to-b from-emerald-100 to-emerald-50 rounded-3xl p-6 shadow-lg">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 flex items-center gap-4">
+                  <Avatar className="h-20 w-20">
+                    <AvatarImage src={''} />
+                    <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
+                  </Avatar>
+                  <div>
+                    <div className="text-sm text-muted-foreground">{profile.role}</div>
+                    <div className="text-xl font-bold">{profile.full_name}</div>
+                    <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                      <Star className="h-4 w-4 text-yellow-400" />
+                      <div>4.8 • {xp} XP</div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="mt-4">
-                <div className="text-xs text-muted-foreground">Profile Strength</div>
-                <Progress value={percent} className="h-3 rounded-full mt-2" />
-              </div>
+                <div className="bg-emerald-50 p-3 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground">Solved</div>
+                  <div className="text-xl font-semibold">123</div>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground">Acceptance</div>
+                  <div className="text-xl font-semibold">78%</div>
+                </div>
 
-              <div className="mt-4 flex flex-col gap-2">
-                <Button asChild>
-                  <Link to="/challenges">Challenges</Link>
-                </Button>
-                <Button variant="ghost" asChild>
-                  <Link to="/settings">Settings</Link>
-                </Button>
+                <div className="bg-emerald-50 p-3 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground">Rating</div>
+                  <div className="text-xl font-semibold">2200</div>
+                </div>
+                <div className="bg-emerald-50 p-3 rounded-lg text-center">
+                  <div className="text-xs text-muted-foreground">Rank</div>
+                  <div className="text-xl font-semibold">#42</div>
+                </div>
+
+                <div className="col-span-2 mt-2">
+                  <h4 className="text-sm font-medium mb-2">Badges</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {badges.map(b => (
+                      <div key={b.id} className={`flex items-center gap-2 px-3 py-1 border rounded-md bg-white` }>
+                        <div className={`h-6 w-6 rounded-full bg-gradient-to-br from-white/30 to-black/5 flex items-center justify-center text-xs ${b.color.split(' ')[1] || ''}`}>
+                          {b.name.slice(0,1)}
+                        </div>
+                        <div className="text-sm font-medium">{b.name}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="col-span-2 mt-4 flex flex-col gap-2">
+                  <div className="flex gap-2">
+                    <Button asChild>
+                      <Link to="/challenges">Challenges</Link>
+                    </Button>
+                    <Button variant="ghost" asChild>
+                      <Link to="/settings">Settings</Link>
+                    </Button>
+                  </div>
+                </div>
               </div>
             </div>
 
