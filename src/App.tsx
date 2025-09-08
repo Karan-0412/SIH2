@@ -9,6 +9,8 @@ import AuthPage from "./components/auth/AuthPage";
 import FacultyStudent from "./pages/FacultyStudent";
 import EventsPage from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import Profile from "./pages/Profile";
+import Leaderboard from "./pages/Leaderboard";
 import AppLayout from "./components/layout/AppLayout";
 
 const queryClient = new QueryClient();
@@ -27,6 +29,8 @@ const App = () => (
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/faculty/students/:id" element={<FacultyStudent />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

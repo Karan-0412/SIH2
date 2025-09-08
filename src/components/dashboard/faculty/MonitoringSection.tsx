@@ -20,10 +20,13 @@ import {
   PieChart as RPieChart,
   Pie,
   Cell,
-  ResponsiveContainer
+  ResponsiveContainer,
+  ScatterChart,
+  Scatter,
+  ZAxis
 } from 'recharts';
 
-// ⬇️ NEW: import services
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const PLATFORM_OPTIONS = [
   { key: 'leetcode', label: 'LeetCode' },
@@ -55,6 +58,7 @@ const MonitoringSection: React.FC = () => {
   const [topFilter, setTopFilter] = useState<'top10' | 'top25' | 'top50' | 'custom'>('top10');
   const [topCustom, setTopCustom] = useState<number>(10);
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
+  const [metricFilter, setMetricFilter] = useState<'solved' | 'contests' | 'rating'>('solved');
 
   // ⬇️ NEW: metrics + loading state
   const [metrics, setMetrics] = useState<any[]>([]);
@@ -131,10 +135,36 @@ if (r.platform === "leetcode") {
       .filter((r) => (classFilter ? (r.klass || '').toLowerCase().includes(classFilter.toLowerCase()) : true))
       .filter((r) => (filterStudent === 'all' ? true : r.student === filterStudent));
 
-    const sorted = base.sort((a, b) => b.solved - a.solved);
+    const items = base.map((r, idx) => {
+      const solved = ((idx + 1) * 7) % 53 + 5; // deterministic mock
+      const contests = ((idx + 2) * 3) % 20; // number of contests given/participated
+      const rating = Number((( (idx * 13) % 500 ) / 100).toFixed(2)); // mock rating 0.00 - 5.00
+      return ({
+        platform: r.platform,
+        student: r.studentId,
+        uid: r.studentId,
+        gender: r.gender,
+        section: r.section || '',
+        klass: r.klass || '',
+        solved,
+        contests,
+        rating,
+        hours: (idx % 5) + 2,
+        courses: (idx % 3),
+      });
+    });
+
+    const sorted = items.sort((a, b) => {
+      if (metricFilter === 'solved') return b.solved - a.solved;
+      if (metricFilter === 'contests') return b.contests - a.contests;
+      return b.rating - a.rating;
+    });
+
     const topN = topFilter === 'top10' ? 10 : topFilter === 'top25' ? 25 : topFilter === 'top50' ? 50 : Math.max(1, topCustom);
-    return sorted.slice(0, topN);
-  }, [metrics, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
+    const sliced = sorted.slice(0, topN);
+
+    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', uid: 'demo', gender: 'male', section: '', klass: '', solved: 12, contests:0, rating:0.0, hours: 6, courses: 1 }];
+  }, [rows, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
 
   const totals = useMemo(() => ({
     students: new Set(filteredMetrics.map((m) => m.student)).size,
@@ -153,14 +183,15 @@ if (r.platform === "leetcode") {
 const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444', '#14B8A6'];
 
   const exportCSV = () => {
-    const headers = ['platform', 'student', 'solved', 'hours', 'courses'];
-    const rowsCsv = metrics.map((m) => [m.platform, m.student, m.solved, m.hours, m.courses].join(','));
+    // include uid and key metric fields
+    const headers = ['uid','platform','student','solved','contests','rating'];
+    const rowsCsv = metrics.map((m) => [m.uid || m.student, m.platform, m.student, m.solved ?? 0, m.contests ?? 0, (typeof m.rating === 'number' ? (m.rating as number).toFixed(2) : (m.rating ?? ''))].join(','));
     const csv = [headers.join(','), ...rowsCsv].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'report.csv';
+    a.download = `report_${metricFilter}_${topFilter}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -234,7 +265,290 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
     w.print();
   };
 
-  const inactive = metrics.every((m) => m.hours + m.solved + m.courses === 0);
+  const inactive = metrics.every((m) => (m.hours || 0) + (m.solved || 0) + (m.courses || 0) === 0);
+
+  // Custom graphs state
+  const [showAddGraph, setShowAddGraph] = useState(false);
+  const [newGraphType, setNewGraphType] = useState<'pie'|'bar'|'line'|'histogram'|'scatter'|'heatmap'|'versus'>('bar');
+  const [newGraphMetric, setNewGraphMetric] = useState<'solved'|'contests'|'rating'>('solved');
+  const [newGraphXMetric, setNewGraphXMetric] = useState<'solved'|'contests'|'rating'>('solved');
+  const [newGraphYMetric, setNewGraphYMetric] = useState<'solved'|'contests'|'rating'>('contests');
+  const [heatmapBins, setHeatmapBins] = useState<number>(5);
+  const [newGraphVersusMode, setNewGraphVersusMode] = useState<'xy'|'group'>('xy');
+  const [newGraphGroupBy, setNewGraphGroupBy] = useState<'gender'|'section'|'klass'>('gender');
+  const [customGraphs, setCustomGraphs] = useState<Array<{ id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; mode?: string; groupBy?: string; title: string }>>([]);
+
+  const addGraph = () => {
+    const id = String(Date.now());
+    let title = '';
+    if (newGraphType === 'versus') {
+      if (newGraphVersusMode === 'group') title = `Compare by ${newGraphGroupBy} (${newGraphMetric})`;
+      else title = `Versus ${newGraphXMetric} vs ${newGraphYMetric}`;
+    } else if (newGraphType === 'scatter') {
+      title = `Scatter ${newGraphXMetric} vs ${newGraphYMetric}`;
+    } else {
+      title = `${newGraphType.toUpperCase()} - ${newGraphMetric}`;
+    }
+
+    setCustomGraphs((g) => [...g, { id, type: newGraphType, metric: newGraphMetric, xMetric: newGraphXMetric, yMetric: newGraphYMetric, mode: newGraphVersusMode, groupBy: newGraphGroupBy, title }]);
+    setShowAddGraph(false);
+  };
+
+  const removeGraph = (id: string) => setCustomGraphs((g) => g.filter((x) => x.id !== id));
+
+  // Export full card as image using html2canvas; fallback to SVG/foreignObject if html2canvas unavailable
+  const loadHtml2Canvas = (): Promise<any> => new Promise((resolve, reject) => {
+    if ((window as any).html2canvas) return resolve((window as any).html2canvas);
+    const s = document.createElement('script');
+    s.src = 'https://unpkg.com/html2canvas@1.4.1/dist/html2canvas.min.js';
+    s.onload = () => resolve((window as any).html2canvas);
+    s.onerror = () => reject(new Error('Failed to load html2canvas'));
+    document.head.appendChild(s);
+  });
+
+  const exportGraphAsImage = async (idOrId: string) => {
+    const container = document.getElementById(idOrId) || document.getElementById(`custom-graph-${idOrId}`);
+    if (!container) return alert('Graph element not found');
+
+    // Try html2canvas first to capture full rendered card
+    try {
+      const html2canvas = await loadHtml2Canvas();
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: getComputedStyle(container).backgroundColor || null });
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `card-${idOrId}.png`;
+      a.click();
+      return;
+    } catch (err) {
+      console.warn('html2canvas failed, falling back to SVG/foreignObject export', err);
+    }
+
+    // Fallback: try to pick the largest SVG inside the container (avoid icon svgs)
+    const svgs = Array.from(container.querySelectorAll('svg')) as SVGElement[];
+    let svg: SVGElement | null = null;
+    if (svgs.length === 1) svg = svgs[0];
+    else if (svgs.length > 1) {
+      let maxArea = 0;
+      for (const s of svgs) {
+        const rect = (s as any).getBoundingClientRect ? (s as any).getBoundingClientRect() : { width: (s as any).clientWidth || 0, height: (s as any).clientHeight || 0 };
+        const area = (rect.width || 0) * (rect.height || 0);
+        if (area > maxArea) {
+          maxArea = area;
+          svg = s;
+        }
+      }
+      if (svg && maxArea < 4000) {
+        svg = svgs.find((s) => (s as any).classList && !(s as any).classList.contains('lucide')) || svg;
+      }
+    }
+
+    if (svg) {
+      try {
+        const serializer = new XMLSerializer();
+        let svgStr = serializer.serializeToString(svg as SVGElement);
+        if (!svgStr.match(/^<svg[^>]+xmlns=/)) {
+          svgStr = svgStr.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+        }
+        const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width || (svg as SVGElement).clientWidth || 800;
+          canvas.height = img.height || (svg as SVGElement).clientHeight || 600;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return alert('Could not get canvas context');
+          ctx.fillStyle = getComputedStyle(container).backgroundColor || '#ffffff';
+          ctx.fillRect(0,0,canvas.width,canvas.height);
+          ctx.drawImage(img, 0, 0);
+          const a = document.createElement('a');
+          a.href = canvas.toDataURL('image/png');
+          a.download = `graph-${idOrId}.png`;
+          a.click();
+          URL.revokeObjectURL(url);
+        };
+        img.onerror = () => alert('Failed to export SVG as image');
+        img.src = url;
+        return;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Final fallback: serialize container as foreignObject
+    try {
+      const width = container.offsetWidth || 800;
+      const height = container.offsetHeight || 600;
+      const serialized = new XMLSerializer().serializeToString(container);
+      const svgWrap = `<?xml version="1.0" standalone="no"?>\n<svg xmlns='http://www.w3.org/2000/svg' width='${width}' height='${height}'><foreignObject width='100%' height='100%'>${serialized}</foreignObject></svg>`;
+      const blob = new Blob([svgWrap], { type: 'image/svg+xml;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return alert('Could not get canvas context');
+        ctx.drawImage(img, 0, 0);
+        const a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = `card-${idOrId}.png`;
+        a.click();
+        URL.revokeObjectURL(url);
+      };
+      img.onerror = () => alert('Failed to export graph');
+      img.src = url;
+      return;
+    } catch (e) {
+      console.error(e);
+      alert('Export not supported for this graph');
+    }
+  };
+
+  const renderCustomGraph = (g: { id: string; type: string; metric?: string; xMetric?: string; yMetric?: string; mode?: string; groupBy?: string; title: string }) => {
+    if (g.type === 'pie') {
+      // reuse pieData but map to metric value
+      const data = pieData.map((p) => ({ name: p.name, value: p.value }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RPieChart>
+            <Pie data={data} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40}>
+              {data.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+              ))}
+            </Pie>
+          </RPieChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'line') {
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RLineChart data={lineData} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="day" />
+            <YAxis />
+            <ChartTooltip />
+            <Line type="monotone" dataKey={g.metric === 'rating' ? 'hours' : 'hours'} stroke="#10B981" strokeWidth={2} dot={false} />
+          </RLineChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'histogram') {
+      // bin solved into ranges
+      const bins: Record<string, number> = {};
+      metrics.forEach((m) => {
+        const v = m.solved || 0;
+        const bin = Math.floor(v / 10) * 10;
+        const key = `${bin}-${bin + 9}`;
+        bins[key] = (bins[key] || 0) + 1;
+      });
+      const data = Object.entries(bins).map(([k, v]) => ({ range: k, count: v }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RBarChart data={data} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="range" />
+            <YAxis />
+            <ChartTooltip />
+            <Bar dataKey="count" fill="#7C3AED" radius={[6,6,0,0]} />
+          </RBarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'scatter' || (g.type === 'versus' && g.mode === 'xy')) {
+      const xKey = (g.xMetric as 'solved'|'contests'|'rating') || 'solved';
+      const yKey = (g.yMetric as 'solved'|'contests'|'rating') || 'contests';
+      const data = metrics.map((m) => ({ x: m[xKey] ?? 0, y: m[yKey] ?? 0, name: m.student }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <ScatterChart>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis type="number" dataKey="x" name={xKey} />
+            <YAxis type="number" dataKey="y" name={yKey} />
+            <ChartTooltip />
+            <Scatter data={data} fill="#7C3AED" />
+          </ScatterChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'versus' && g.mode === 'group') {
+      // aggregate metric by group (gender/section/klass)
+      const groupKey = g.groupBy || 'gender';
+      const metric = g.metric || 'solved';
+      const map: Record<string, number> = {};
+      metrics.forEach((m) => {
+        const k = (m as any)[groupKey] || 'unknown';
+        map[k] = (map[k] || 0) + ((m as any)[metric] || 0);
+      });
+      const data = Object.entries(map).map(([k, v]) => ({ group: k, value: v }));
+      return (
+        <ResponsiveContainer width="100%" height={220}>
+          <RBarChart data={data} margin={{ left: 8, right: 8 }}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="group" />
+            <YAxis />
+            <ChartTooltip />
+            <Bar dataKey="value" fill="#7C3AED" radius={[6,6,0,0]} />
+          </RBarChart>
+        </ResponsiveContainer>
+      );
+    }
+
+    if (g.type === 'heatmap') {
+      // build a simple grid heatmap from two metrics (x and y)
+      const xKey = (g.xMetric as 'solved'|'contests'|'rating') || 'solved';
+      const yKey = (g.yMetric as 'solved'|'contests'|'rating') || 'contests';
+      const bins = heatmapBins || 5;
+      const xVals = metrics.map((m) => m[xKey] ?? 0);
+      const yVals = metrics.map((m) => m[yKey] ?? 0);
+      const xMin = Math.min(...xVals, 0);
+      const xMax = Math.max(...xVals, 1);
+      const yMin = Math.min(...yVals, 0);
+      const yMax = Math.max(...yVals, 1);
+      const matrix: number[][] = Array.from({ length: bins }, () => Array.from({ length: bins }, () => 0));
+      metrics.forEach((m) => {
+        const xv = m[xKey] ?? 0;
+        const yv = m[yKey] ?? 0;
+        const xi = Math.min(bins - 1, Math.floor(((xv - xMin) / (xMax - xMin || 1)) * bins));
+        const yi = Math.min(bins - 1, Math.floor(((yv - yMin) / (yMax - yMin || 1)) * bins));
+        matrix[yi][xi] = (matrix[yi][xi] || 0) + 1;
+      });
+      const maxCount = Math.max(...matrix.flat(), 1);
+      const cells = [] as JSX.Element[];
+      for (let r = bins - 1; r >= 0; r--) {
+        for (let c = 0; c < bins; c++) {
+          const v = matrix[r][c] || 0;
+          const intensity = Math.round((v / maxCount) * 220);
+          const color = `rgb(${255 - intensity}, ${230 - Math.round(intensity * 0.5)}, ${255})`;
+          cells.push(<div key={`${r}-${c}`} style={{ background: color }} className="h-12 w-12 border" />);
+        }
+      }
+      return (
+        <div className="grid grid-cols-5 gap-1 p-2" style={{ gridTemplateColumns: `repeat(${bins}, minmax(0, 1fr))` }}>
+          {cells}
+        </div>
+      );
+    }
+
+    // default bar chart (students solved)
+    return (
+      <ResponsiveContainer width="100%" height={220}>
+        <RBarChart data={barData} margin={{ left: 8, right: 8 }}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <ChartTooltip />
+          <Bar dataKey={g.metric === 'rating' ? 'rating' : 'solved'} fill="#7C3AED" radius={[6,6,0,0]} />
+        </RBarChart>
+      </ResponsiveContainer>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -320,6 +634,15 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
               <Input className="w-24" type="number" min={1} value={topCustom} onChange={(e)=>setTopCustom(Number(e.target.value) || 1)} />
             )}
 
+            <Select value={metricFilter} onValueChange={(v: 'solved'|'contests'|'rating') => setMetricFilter(v)}>
+              <SelectTrigger className="w-44"><SelectValue placeholder="Metric" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="solved">Problems Solved</SelectItem>
+                <SelectItem value="contests">Contests Given</SelectItem>
+                <SelectItem value="rating">Contest Rating</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={range} onValueChange={(v: '7d' | '30d' | '90d') => setRange(v)}>
               <SelectTrigger className="w-36"><SelectValue placeholder="Range" /></SelectTrigger>
               <SelectContent>
@@ -330,9 +653,94 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
             </Select>
 
             <div className="ml-auto flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />CSV</Button>
-              <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />PDF</Button>
+              <Button variant="outline" size="sm" onClick={exportCSV}><Download className="h-4 w-4 mr-2" />Export CSV</Button>
+              <Button variant="outline" size="sm" onClick={exportPDF}><Download className="h-4 w-4 mr-2" />Export PDF</Button>
             </div>
+
+            {/* Add Graph Dialog */}
+            <Dialog open={showAddGraph} onOpenChange={setShowAddGraph}>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Custom Graph</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Graph Type</label>
+                    <select className="w-full rounded-md border px-3 py-2" value={newGraphType} onChange={(e)=>setNewGraphType(e.target.value as any)}>
+                      <option value="bar">Bar (by metric)</option>
+                      <option value="pie">Pie</option>
+                      <option value="line">Line</option>
+                      <option value="histogram">Histogram (binned)</option>
+                      <option value="scatter">Scatter Plot</option>
+                      <option value="heatmap">Heat Map</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm text-gray-700 mb-1">Metric</label>
+                    <select className="w-full rounded-md border px-3 py-2" value={newGraphMetric} onChange={(e)=>setNewGraphMetric(e.target.value as any)}>
+                      <option value="solved">Problems Solved</option>
+                      <option value="contests">Contests Given</option>
+                      <option value="rating">Contest Rating</option>
+                    </select>
+                  </div>
+
+                  {/* If the graph needs X/Y metrics */}
+                  {(newGraphType === 'scatter' || newGraphType === 'versus' || newGraphType === 'heatmap') && (
+                    <div>
+                      {/* For versus, allow group mode */}
+                      {newGraphType === 'versus' && (
+                        <div className="mb-2">
+                          <label className="block text-sm text-gray-700 mb-1">Versus Mode</label>
+                          <select className="w-full rounded-md border px-3 py-2" value={newGraphVersusMode} onChange={(e)=>setNewGraphVersusMode(e.target.value as any)}>
+                            <option value="xy">X vs Y (numeric)</option>
+                            <option value="group">Group comparison (categorical)</option>
+                          </select>
+                        </div>
+                      )}
+
+                      <label className="block text-sm text-gray-700 mb-1">X Metric</label>
+                      <select className="w-full rounded-md border px-3 py-2 mb-2" value={newGraphXMetric} onChange={(e)=>setNewGraphXMetric(e.target.value as any)}>
+                        <option value="solved">Problems Solved</option>
+                        <option value="contests">Contests Given</option>
+                        <option value="rating">Contest Rating</option>
+                      </select>
+
+                      <label className="block text-sm text-gray-700 mb-1">Y Metric</label>
+                      <select className="w-full rounded-md border px-3 py-2" value={newGraphYMetric} onChange={(e)=>setNewGraphYMetric(e.target.value as any)}>
+                        <option value="solved">Problems Solved</option>
+                        <option value="contests">Contests Given</option>
+                        <option value="rating">Contest Rating</option>
+                      </select>
+
+                      {newGraphType === 'heatmap' && (
+                        <div className="mt-2">
+                          <label className="block text-sm text-gray-700 mb-1">Bins</label>
+                          <input type="number" min={2} max={10} value={heatmapBins} onChange={(e)=>setHeatmapBins(Number(e.target.value)||5)} className="w-24 rounded-md border px-3 py-2" />
+                        </div>
+                      )}
+
+                      {newGraphType === 'versus' && newGraphVersusMode === 'group' && (
+                        <div className="mt-3">
+                          <label className="block text-sm text-gray-700 mb-1">Group by</label>
+                          <select className="w-full rounded-md border px-3 py-2" value={newGraphGroupBy} onChange={(e)=>setNewGraphGroupBy(e.target.value as any)}>
+                            <option value="gender">Gender</option>
+                            <option value="section">Section</option>
+                            <option value="klass">Class</option>
+                          </select>
+                          <div className="text-xs text-gray-500 mt-1">This will aggregate the selected metric across groups (sum).</div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={()=>setShowAddGraph(false)}>Cancel</Button>
+                    <Button onClick={addGraph}>Add</Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="grid grid-cols-1 gap-3">
@@ -376,11 +784,26 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
         </CardContent>
       </Card>
 
+      {/* Add Graph and Versus buttons (separate) */}
+      <div className="flex justify-end mb-4">
+        <Button className="mr-2" onClick={() => { setNewGraphType('versus'); setNewGraphVersusMode('group'); setShowAddGraph(true); }}>
+          Versus Graph
+        </Button>
+        <Button onClick={() => { setNewGraphType('bar'); setShowAddGraph(true); }}>
+          Add Graph
+        </Button>
+      </div>
+
       {/* Dashboard placeholders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card>
+        <Card id="graph-problems">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Problems Solved</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><BarChart3 className="h-4 w-4" /> Problems Solved</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-problems')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
@@ -397,9 +820,14 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="graph-time">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><LineChart className="h-4 w-4" /> Time Spent</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><LineChart className="h-4 w-4" /> Time Spent</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-time')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
@@ -416,9 +844,14 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           </CardContent>
         </Card>
 
-        <Card>
+        <Card id="graph-platform">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><PieChart className="h-4 w-4" /> Platform Share</CardTitle>
+            <div className="flex items-center justify-between w-full">
+              <CardTitle className="flex items-center gap-2"><PieChart className="h-4 w-4" /> Platform Share</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => exportGraphAsImage('graph-platform')} title="Download chart"><Download className="h-4 w-4" /></Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="h-56">
@@ -436,6 +869,31 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           </CardContent>
         </Card>
       </div>
+
+      {/* Custom graphs added by user */}
+      {customGraphs.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Custom Graphs</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {customGraphs.map((g) => (
+              <Card key={g.id} id={`custom-graph-${g.id}`}>
+                <CardHeader>
+                  <div className="flex items-center justify-between w-full">
+                    <CardTitle className="text-sm font-medium">{g.title}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" onClick={() => exportGraphAsImage(g.id)} title="Download graph" aria-label={`Download graph ${g.id}`}><Download className="h-4 w-4" /></Button>
+                      <Button variant="outline" size="sm" onClick={() => removeGraph(g.id)}>Remove</Button>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {renderCustomGraph(g)}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

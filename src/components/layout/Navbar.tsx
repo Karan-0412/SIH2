@@ -53,7 +53,7 @@ const Navbar = () => {
   }, [location.pathname]);
 
   return (
-    <nav className="sticky top-0 z-40 border-b bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/70 transition-colors duration-300">
+    <nav className="sticky top-0 z-40 border-b bg-white shadow-sm transition-colors duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-3">
@@ -79,7 +79,7 @@ const Navbar = () => {
             {profile && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700 transition-colors">
                 <User className="h-4 w-4" />
-                <span className="font-medium">{profile.full_name}</span>
+                <Link to="/profile" className="font-medium hover:underline">{profile.full_name}</Link>
                 <span className="text-xs capitalize">({profile.role})</span>
               </div>
             )}
