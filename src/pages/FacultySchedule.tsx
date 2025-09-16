@@ -368,8 +368,8 @@ const FacultySchedule: React.FC = () => {
                               <div className="flex flex-col gap-1">
                                 {dayEvents.slice(0,3).map(ev=> (
                                   <div key={ev.id} role="button" tabIndex={0} onClick={() => setSelectedEvent(ev)} onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); setSelectedEvent(ev); } }} aria-label={`${ev.course_name} at ${new Date(ev.start).toLocaleTimeString()}`} className="rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2 cursor-pointer" style={{ background: ev.color || '#06b6d4' }}>
-                                    <div className="font-semibold">{ev.course_name}</div>
-                                    <div className="text-[11px]">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    <div className="font-semibold flex items-center gap-2">{(ev.tags || []).some(t=> String(t).toLowerCase().includes('lab')) ? <span aria-hidden="true">🧪</span> : null}<span>{ev.course_name}</span></div>
+                                  <div className="text-[11px]">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                   </div>
                                 ))}
                                 {dayEvents.length>3 && <div className="text-xs text-muted-foreground">+{dayEvents.length-3} more</div>}
