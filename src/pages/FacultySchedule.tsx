@@ -46,10 +46,25 @@ const FacultySchedule: React.FC = () => {
     const diff = (day === 0 ? -6 : 1 - day);
     base.setDate(base.getDate() + diff);
     base.setHours(9,0,0,0);
+    const addDays = (d: Date, days: number) => {
+      const nd = new Date(d.getTime());
+      nd.setDate(nd.getDate() + days);
+      return nd;
+    };
+
+    const makeISO = (d: Date, hour: number, minute = 0) => {
+      const nd = new Date(d.getTime());
+      nd.setHours(hour, minute, 0, 0);
+      return nd.toISOString();
+    };
+
     const sampleEvents: EventItem[] = [
-      { id: 's1', course_name: 'Intro to Algorithms', start: new Date(base).toISOString(), end: new Date(new Date(base).setHours(base.getHours()+1,30,0,0)).toISOString(), room: 'R101', tags: ['Mandatory'], students_count: 30, notes: '', color: '#3b82f6' },
-      { id: 's2', course_name: 'Data Structures Lab', start: new Date(new Date(base).setDate(base.getDate()+2)).toISOString(), end: new Date(new Date(base).setDate(base.getDate()+2)).toISOString(), room: 'Lab 2', tags: ['Lab'], students_count: 20, notes: '', color: '#10b981' },
-      { id: 's3', course_name: 'Databases', start: new Date(new Date(base).setDate(base.getDate()+4)).toISOString(), end: new Date(new Date(base).setDate(base.getDate()+4)).toISOString(), room: 'R203', tags: ['Elective'], students_count: 25, notes: '', color: '#f59e0b' }
+      // Monday 9:00 - 10:30
+      { id: 's1', course_name: 'Intro to Algorithms', start: makeISO(base, 9, 0), end: makeISO(base, 10, 30), room: 'R101', tags: ['Mandatory'], students_count: 30, notes: '', color: '#3b82f6' },
+      // Wednesday 14:00 - 15:30
+      { id: 's2', course_name: 'Data Structures Lab', start: makeISO(addDays(base, 2), 14, 0), end: makeISO(addDays(base, 2), 15, 30), room: 'Lab 2', tags: ['Lab'], students_count: 20, notes: '', color: '#10b981' },
+      // Friday 11:00 - 12:00
+      { id: 's3', course_name: 'Databases', start: makeISO(addDays(base, 4), 11, 0), end: makeISO(addDays(base, 4), 12, 0), room: 'R203', tags: ['Elective'], students_count: 25, notes: '', color: '#f59e0b' }
     ];
 
     (async()=>{
