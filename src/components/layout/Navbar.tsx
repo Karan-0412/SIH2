@@ -7,7 +7,6 @@ import { useToast } from '@/hooks/use-toast';
 import { LogOut, User } from 'lucide-react';
 import NotificationsDropdown from '../dashboard/student/NotificationsDropdown';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
-import { Link } from 'react-router-dom';
 
 const Navbar = () => {
   const { signOut } = useAuth();
