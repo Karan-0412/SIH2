@@ -158,8 +158,9 @@ const FacultySchedule: React.FC = () => {
     const endHour = end.getHours() + end.getMinutes()/60;
     const topPercent = ((clamp(startHour, HOURS_START, HOURS_END) - HOURS_START) / (HOURS_END - HOURS_START)) * 100;
     const heightPercent = ((clamp(endHour, HOURS_START, HOURS_END) - clamp(startHour, HOURS_START, HOURS_END)) / (HOURS_END - HOURS_START)) * 100;
-    const leftPercent = (dayIndex / 7) * 100;
-    const widthPercent = (1/7) * 100;
+    // grid has 8 columns (time + 7 days). Day columns start at column 2.
+    const leftPercent = ((dayIndex + 1) / 8) * 100;
+    const widthPercent = (1 / 8) * 100;
     return { topPercent, heightPercent, leftPercent, widthPercent };
   };
 
