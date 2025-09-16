@@ -8,7 +8,7 @@ import { useProfile } from '@/hooks/useProfile';
 
 type Category = 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General';
 
-type Comment = { id: string; authorId: string; authorName: string; content: string; createdAt: string };
+type Comment = { id: string; authorId: string; authorName: string; content: string; createdAt: string; upvotes?: string[]; downvotes?: string[] };
 type Post = {
   id: string;
   authorId: string;
@@ -64,6 +64,7 @@ export default function CommunityPage() {
 
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [trendingFilter, setTrendingFilter] = useState<'All' | Category>('All');
 
   const [creatingGroup, setCreatingGroup] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
@@ -142,10 +143,30 @@ export default function CommunityPage() {
     }));
   };
 
+  const toggleCommentVote = (postId: string, commentId: string, type: 'up'|'down') => {
+    setPosts(ps => ps.map(p => {
+      if (p.id !== postId) return p;
+      const comments = p.comments.map(c => {
+        if (c.id !== commentId) return c;
+        const up = new Set(c.upvotes || []);
+        const down = new Set(c.downvotes || []);
+        const hasUp = up.has(myId);
+        const hasDown = down.has(myId);
+        if (type === 'up') {
+          if (hasUp) up.delete(myId); else { up.add(myId); down.delete(myId); }
+        } else {
+          if (hasDown) down.delete(myId); else { down.add(myId); up.delete(myId); }
+        }
+        return { ...c, upvotes: Array.from(up), downvotes: Array.from(down) };
+      });
+      return { ...p, comments };
+    }));
+  };
+
   const addComment = (postId: string, text: string) => {
     if (!text.trim()) return;
     if (!profile) { toast({ title: 'Sign in required' }); return; }
-    const comment: Comment = { id: uid('c_'), authorId: myId, authorName: myName, content: text, createdAt: nowIso() };
+    const comment: Comment = { id: uid('c_'), authorId: myId, authorName: myName, content: text, createdAt: nowIso(), upvotes: [], downvotes: [] };
     setPosts(ps => ps.map(p => p.id === postId ? { ...p, comments: [...p.comments, comment] } : p));
     toast({ title: 'Replied' });
   };
@@ -251,8 +272,8 @@ export default function CommunityPage() {
                     </div>
                     <div id={`post-${post.id}`} className="mt-2 text-sm leading-relaxed">{post.content}</div>
                     <div className="mt-3 flex items-center gap-3 text-sm">
-                      <button onClick={()=>toggleVote(post.id,'up')} aria-pressed={post.upvotes.includes(myId)}>▲ {post.upvotes.length}</button>
-                      <button onClick={()=>toggleVote(post.id,'down')} aria-pressed={post.downvotes.includes(myId)}>▼ {post.downvotes.length}</button>
+                      <button onClick={()=>toggleVote(post.id,'up')} aria-pressed={post.upvotes.includes(myId)} className={`${post.upvotes.includes(myId) ? 'text-green-600' : 'text-green-700 hover:text-green-800'} flex items-center gap-1`}>▲ <span>{post.upvotes.length}</span></button>
+                      <button onClick={()=>toggleVote(post.id,'down')} aria-pressed={post.downvotes.includes(myId)} className={`${post.downvotes.includes(myId) ? 'text-red-600' : 'text-red-700 hover:text-red-800'} flex items-center gap-1`}>▼ <span>{post.downvotes.length}</span></button>
                       <button onClick={()=>setOpenPostId(post.id)}>Comment ({post.comments.length})</button>
                       <button onClick={()=>{ navigator.clipboard?.writeText(window.location.href + '#post-' + post.id); toast({ title: 'Link copied' }); }}>Share</button>
                       <button onClick={()=>bookmarkPost(post.id)}>{(post.bookmarked||[]).includes(myId) ? 'Bookmarked' : 'Bookmark'}</button>
@@ -271,7 +292,11 @@ export default function CommunityPage() {
                       {post.comments.map(c => (
                         <div key={c.id} className="text-sm">
                           <div className="text-xs text-muted-foreground">{c.authorName} • {new Date(c.createdAt).toLocaleString()}</div>
-                          <div>{c.content}</div>
+                          <div className="mt-1">{c.content}</div>
+                          <div className="mt-1 flex items-center gap-3 text-xs">
+                            <button onClick={()=>toggleCommentVote(post.id, c.id, 'up')} aria-pressed={(c.upvotes||[]).includes(myId)} className={`${(c.upvotes||[]).includes(myId) ? 'text-green-600' : 'text-green-700 hover:text-green-800'} flex items-center gap-1`}>▲ <span>{(c.upvotes||[]).length}</span></button>
+                            <button onClick={()=>toggleCommentVote(post.id, c.id, 'down')} aria-pressed={(c.downvotes||[]).includes(myId)} className={`${(c.downvotes||[]).includes(myId) ? 'text-red-600' : 'text-red-700 hover:text-red-800'} flex items-center gap-1`}>▼ <span>{(c.downvotes||[]).length}</span></button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -287,11 +312,25 @@ export default function CommunityPage() {
         <aside className="col-span-12 lg:col-span-3">
           <div className="sticky top-24 space-y-4">
             <div className="bg-white p-4 rounded shadow">
-              <h3 className="font-semibold">Trending</h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">Trending</h3>
+                <select value={trendingFilter} onChange={(e)=>setTrendingFilter(e.target.value as any)} className="border rounded px-2 py-1 text-sm">
+                  <option value="All">All</option>
+                  {CATEGORIES.map(c=> <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
               <div className="mt-3 space-y-2">
-                {posts.slice(0,5).map(p=> (
-                  <div key={p.id} className="text-sm"><a href={`#post-${p.id}`} className="underline">{p.content.slice(0,60)}{p.content.length>60? '...':''}</a></div>
-                ))}
+                {(() => {
+                  const filtered = posts.filter(p=> !p.blocked && (trendingFilter==='All' || p.category===trendingFilter));
+                  const sorted = filtered.sort((a,b)=> (b.upvotes.length - b.downvotes.length) - (a.upvotes.length - a.downvotes.length) || b.createdAt.localeCompare(a.createdAt));
+                  return sorted.slice(0,5).map(p=> (
+                    <div key={p.id} className="text-sm flex items-start gap-2">
+                      <span className="text-green-600">▲ {p.upvotes.length}</span>
+                      <span className="text-red-600">▼ {p.downvotes.length}</span>
+                      <a href={`#post-${p.id}`} className="underline flex-1">{p.content.slice(0,60)}{p.content.length>60? '...':''}</a>
+                    </div>
+                  ));
+                })()}
               </div>
             </div>
 
