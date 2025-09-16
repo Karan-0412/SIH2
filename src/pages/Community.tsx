@@ -323,10 +323,9 @@ export default function CommunityPage() {
                 {(() => {
                   const filtered = posts.filter(p=> !p.blocked && (trendingFilter==='All' || p.category===trendingFilter));
                   const sorted = filtered.sort((a,b)=> (b.upvotes.length - b.downvotes.length) - (a.upvotes.length - a.downvotes.length) || b.createdAt.localeCompare(a.createdAt));
-                  return sorted.slice(0,5).map(p=> (
-                    <div key={p.id} className="text-sm flex items-start gap-2">
-                      <span className="text-green-600">▲ {p.upvotes.length}</span>
-                      <span className="text-red-600">▼ {p.downvotes.length}</span>
+                  return sorted.slice(0,5).map((p, i)=> (
+                    <div key={p.id} className="text-sm flex items-start gap-3">
+                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-700 text-xs font-semibold">{i+1}</span>
                       <a href={`#post-${p.id}`} className="underline flex-1">{p.content.slice(0,60)}{p.content.length>60? '...':''}</a>
                     </div>
                   ));
