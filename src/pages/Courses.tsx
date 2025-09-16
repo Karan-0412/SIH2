@@ -191,7 +191,7 @@ const CoursesPage: React.FC = () => {
       } else {
         toast({ title: 'Course created', description: 'Course was created successfully.' });
         // reset form
-        setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setSyllabusFile(null); setErrors({});
+        setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setThumbnailFile(null); setThumbnailPreview(null); setExternalLink(''); setErrors({});
       }
     } finally {
       setSubmitting(false);
@@ -279,7 +279,7 @@ const CoursesPage: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-end space-x-3">
-            <Button variant="ghost" onClick={() => { setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setSyllabusFile(null); setErrors({}); }}>
+            <Button variant="ghost" onClick={() => { setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setThumbnailFile(null); setThumbnailPreview(null); setExternalLink(''); setErrors({}); }}>
               Reset
             </Button>
             <Button type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Create Course'}</Button>
