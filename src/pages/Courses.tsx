@@ -160,7 +160,6 @@ const CoursesPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <Navbar />
       <main className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4">Create Course</h1>
         <form onSubmit={onSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm">
