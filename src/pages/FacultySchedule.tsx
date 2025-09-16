@@ -74,11 +74,21 @@ const FacultySchedule: React.FC = () => {
           }));
           setEvents(mapped);
         }
-      }catch(err){
+      } catch (err) {
         const msg = (err as any)?.message ?? JSON.stringify(err);
         console.error('Error loading schedule:', msg);
-        toast({ title: 'Error loading schedule', description: msg, variant: 'destructive' });
-      }finally{ setLoading(false); }
+
+        const missingTable = /Could not find the table|does not exist|relation \".*schedule.*\" does not exist/i.test(msg);
+        if (missingTable) {
+          const sql = `-- Create schedule table (run in Supabase SQL editor)\nCREATE TABLE public.schedule (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  course_name text NOT NULL,\n  start timestamptz NOT NULL,\n  \"end\" timestamptz NOT NULL,\n  room text,\n  tags text[],\n  syllabus_url text,\n  students_count integer DEFAULT 0,\n  notes text,\n  color text,\n  created_at timestamptz DEFAULT now(),\n  updated_at timestamptz DEFAULT now()\n);`;
+
+          console.info('Schedule table missing. Migration SQL:\n', sql);
+          toast({ title: 'Missing schedule table', description: 'The schedule table is not found. Run the migration SQL in your Supabase SQL editor (see console for SQL).', variant: 'destructive' });
+          setEvents([]);
+        } else {
+          toast({ title: 'Error loading schedule', description: msg, variant: 'destructive' });
+        }
+      } finally { setLoading(false); }
     })();
     return ()=>{ mounted=false };
   },[]);
