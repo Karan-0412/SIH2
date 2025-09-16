@@ -12,6 +12,8 @@ import EventDetail from "./pages/EventDetail";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import AppLayout from "./components/layout/AppLayout";
+import CoursesPage from "./pages/Courses";
+import FacultySchedule from "./pages/FacultySchedule";
 
 const queryClient = new QueryClient();
 
