@@ -193,7 +193,7 @@ export default function FacultyCommunity(){
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0b1020]">
       <header className="sticky top-16 z-10 bg-white/80 dark:bg-[#0b1020]/80 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto p-3 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Input placeholder="Search by name, department, section, subject" value={search} onChange={(e)=>setSearch(e.target.value)} className="w-[340px]" />
             <Select value={filterDept} onValueChange={setFilterDept}>
@@ -228,7 +228,7 @@ export default function FacultyCommunity(){
 
       <main className="max-w-7xl mx-auto p-4 grid grid-cols-12 gap-4">
         {/* Directory */}
-        <section className="col-span-12 lg:col-span-7">
+        <section className="col-span-12">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Faculty Directory</CardTitle>
@@ -296,80 +296,7 @@ export default function FacultyCommunity(){
           </Card>
         </section>
 
-        {/* Conversations */}
-        <aside className="col-span-12 lg:col-span-2 xl:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Conversations</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col divide-y rounded border overflow-hidden bg-white dark:bg-[#0f1530]">
-                {conversations.map(pid=>{
-                  const f = faculties.find(x=>x.id===pid);
-                  if(!f) return null;
-                  const unread = messages.filter(m=> m.sender_id===pid && !m.read_at).length; // crude per-active
-                  return (
-                    <button key={pid} className={`text-left p-3 hover:bg-gray-50 dark:hover:bg-[#131a3b] ${activePeerId===pid? 'bg-gray-50 dark:bg-[#131a3b]':''}`} onClick={()=> setActivePeerId(pid)}>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium truncate">{f.full_name}</div>
-                          <div className="text-xs text-muted-foreground truncate">{f.department || '—'}</div>
-                        </div>
-                        {unread>0 && <span className="text-[10px] bg-emerald-600 text-white rounded-full px-1">{unread}</span>}
-                      </div>
-                    </button>
-                  );
-                })}
-                {!conversations.length && <div className="text-sm text-muted-foreground p-3">No conversations yet.</div>}
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
 
-        {/* Chat */}
-        <section className="col-span-12 lg:col-span-3 xl:col-span-3">
-          <Card className="h-full">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>
-                {peer ? peer.full_name : 'Select a conversation'}
-              </CardTitle>
-              {peer && (
-                <div className="flex items-center gap-1">
-                  {blocked.includes(peer.id) ? (
-                    <Button size="sm" variant="secondary" onClick={()=>unblockPeer(peer.id)}>Unblock</Button>
-                  ): (
-                    <Button size="sm" variant="outline" onClick={()=>blockPeer(peer.id)}>Block</Button>
-                  )}
-                  <Button size="icon" variant="ghost" onClick={reportPeer} aria-label="More"><MoreVertical className="h-4 w-4"/></Button>
-                </div>
-              )}
-            </CardHeader>
-            <CardContent className="flex flex-col h-[70vh]">
-              <div ref={chatRef} className="flex-1 overflow-auto space-y-2 p-2 rounded bg-gray-50 dark:bg-[#0f1530]">
-                {messages.map(m=>{
-                  const mine = m.sender_id === myId;
-                  return (
-                    <div key={m.id} className={`flex ${mine?'justify-end':''}`}>
-                      <div className={`max-w-[70%] rounded px-3 py-2 text-sm shadow ${mine?'bg-blue-600 text-white':'bg-white dark:bg-[#0b1020] border'}`}>
-                        <div>{m.content}</div>
-                        <div className="mt-1 text-[10px] opacity-80 text-right flex items-center gap-1 justify-end">
-                          <span>{new Date(m.created_at).toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' })}</span>
-                          <span aria-label={m.read_at? 'Read' : 'Sent'}>{m.read_at? '✓✓':'✓'}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-                {!messages.length && <div className="text-sm text-muted-foreground text-center mt-8">No messages yet.</div>}
-              </div>
-              <div className="mt-2 flex items-center gap-2">
-                <Input placeholder={blocked.includes(activePeerId||'')? 'Blocked — unable to send' : 'Type a message...'} value={newMsg} onChange={(e)=>setNewMsg(e.target.value)} disabled={!peer || blocked.includes(activePeerId||'')} onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } }} />
-                <Button onClick={sendMessage} disabled={!peer || !newMsg.trim() || blocked.includes(activePeerId||'')} aria-label="Send"><Send className="h-4 w-4"/></Button>
-              </div>
-            </CardContent>
-          </Card>
-        </section>
       </main>
 
       <Link to="/faculty/chat" className="fixed bottom-6 right-6">
