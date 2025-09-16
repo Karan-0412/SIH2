@@ -334,7 +334,7 @@ const FacultySchedule: React.FC = () => {
                         {/* events layer */}
                         <div className="absolute left-0 top-0 right-0 bottom-0">
                           {weekDays.map((d, dayIdx)=> (
-                            <div key={dayIdx} className="absolute" style={{ left: `${(dayIdx/7)*100}%`, width: `${100/7}%`, top: '0', bottom: 0 }}>
+                            <div key={dayIdx} className="absolute" style={{ left: `${((dayIdx+1)/8)*100}%`, width: `${100/8}%`, top: '0', bottom: 0 }}>
                               {eventsThisWeek.filter(ev => new Date(ev.start).toDateString() === d.toDateString()).map(ev=>{
                                 const pos = positionForEvent(ev, dayIdx);
                                 return (
