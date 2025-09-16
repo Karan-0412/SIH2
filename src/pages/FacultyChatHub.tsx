@@ -57,8 +57,10 @@ const FacultyChatHub: React.FC = () => {
         (data||[]).forEach((m:any)=>{ peers.add(m.sender_id===myId? m.receiver_id : m.sender_id); });
         const convs = Array.from(peers);
         const fallback = MOCK_FACULTIES.map(f=>f.id);
+        let stored: string[] = [];
+        try { stored = JSON.parse(localStorage.getItem(CNV_KEY(myId)) || '[]'); } catch {}
         const urlPeer = searchParams.get('peer') || '';
-        const merged = Array.from(new Set([...(convs.length? convs : fallback), urlPeer].filter(Boolean)));
+        const merged = Array.from(new Set([...(convs.length? convs : fallback), ...stored, urlPeer].filter(Boolean)));
         setConversations(merged);
         if(urlPeer){ setActivePeerId(urlPeer); setShowListMobile(false); }
         else if(!activePeerId && merged[0]) setActivePeerId(merged[0]);
