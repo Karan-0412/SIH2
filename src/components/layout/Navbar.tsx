@@ -35,17 +35,25 @@ const Navbar = () => {
   const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
-  const items = [
+  const baseItems = [
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },
     { label: 'Schedule', to: '/schedule' },
-    { label: 'Message', to: '/messages' },
     { label: 'Events', to: '/events' },
   ];
+  const items = React.useMemo(() => {
+    if (profile?.role === 'student') {
+      return baseItems; // student sees Community, not Faculty Community
+    }
+    // faculty: hide student Community, add Faculty Community
+    const list = baseItems.filter(i=> i.label !== 'Community');
+    list.splice(2, 0, { label: 'Faculty Community', to: '/faculty/community' });
+    return list;
+  }, [profile]);
 
   React.useLayoutEffect(() => {
-    const active = items.find((i) => i.to === location.pathname) || items[1];
+    const active = items.find((i) => i.to === location.pathname) || items[1] || baseItems[1] || baseItems[0];
     const container = tabsRef.current;
     const btn = btnRefs.current[active.label];
     if (container && btn) {
@@ -80,7 +88,7 @@ const Navbar = () => {
           </div>
 
           <div ref={tabsRef} onKeyDown={onTabsKeyDown} tabIndex={0} aria-label="Main navigation" role="tablist" className="relative hidden md:flex items-center gap-1 bg-gray-100 rounded-full p-1">
-            <span className="absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out" style={{ left: indicator.left, width: indicator.width }} />
+            <span aria-hidden="true" className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out z-0" style={{ left: indicator.left, width: indicator.width }} />
             {items.map((item, idx) => (
               <NavLink
                 key={item.label}

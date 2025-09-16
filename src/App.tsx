@@ -15,6 +15,9 @@ import AppLayout from "./components/layout/AppLayout";
 import CoursesPage from "./pages/Courses";
 import FacultySchedule from "./pages/FacultySchedule";
 import CommunityPage from "./pages/Community";
+import StudentRoute from "./components/routing/StudentRoute";
+import FacultyCommunity from "./pages/FacultyCommunity";
+import FacultyRoute from "./components/routing/FacultyRoute";
 
 const queryClient = new QueryClient();
 
@@ -33,7 +36,8 @@ const App = () => (
             <Route path="/faculty/students/:id" element={<FacultyStudent />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/schedule" element={<FacultySchedule />} />
-            <Route path="/community" element={<CommunityPage />} />
+            <Route path="/community" element={<StudentRoute><CommunityPage /></StudentRoute>} />
+            <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
