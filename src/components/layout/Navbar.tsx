@@ -38,6 +38,7 @@ const Navbar = () => {
   const items = [
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
+    { label: 'Community', to: '/community' },
     { label: 'Schedule', to: '/schedule' },
     { label: 'Message', to: '/messages' },
     { label: 'Events', to: '/events' },
