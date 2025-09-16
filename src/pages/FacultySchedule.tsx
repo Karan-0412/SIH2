@@ -342,9 +342,9 @@ const FacultySchedule: React.FC = () => {
                                 const pos = positionForEvent(ev, dayIdx);
                                 return (
                                   <div key={ev.id} role="button" tabIndex={0} onClick={() => setSelectedEvent(ev)} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); setSelectedEvent(ev); } }} aria-label={`${ev.course_name} from ${new Date(ev.start).toLocaleTimeString()} to ${new Date(ev.end).toLocaleTimeString()} in ${ev.room || 'unknown'}`} className="absolute rounded-md p-2 text-sm text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1 cursor-pointer" style={{ top: `${pos.topPercent}%`, height: `${pos.heightPercent}%`, left: '4%', width: '92%', background: ev.color || '#3b82f6', transition: 'transform 180ms ease, opacity 180ms ease' }} title={`${ev.course_name} - ${new Date(ev.start).toLocaleTimeString()} - ${ev.room||''}`}>
-                                    <div className="font-semibold">{ev.course_name}</div>
-                                    <div className="text-xs">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(ev.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                                    <div className="text-xs">{ev.room}</div>
+                                    <div className="font-semibold flex items-center gap-2"><span>{(ev.tags || []).some(t=> String(t).toLowerCase().includes('lab')) ? <Flask className="h-4 w-4" /> : null}</span> <span>{ev.course_name}</span></div>
+                                  <div className="text-xs">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(ev.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                  <div className="text-xs">{ev.room}</div>
                                   </div>
                                 )
                               })}
