@@ -173,6 +173,15 @@ export default function FacultyCommunity(){
       toast({ title:'Blocked', description:'You have blocked this faculty. Unblock to message.', variant:'destructive' });
       return;
     }
+    try{
+      if(myId){
+        const key = CNV_KEY(myId);
+        const list: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+        if(!list.includes(fid)){
+          localStorage.setItem(key, JSON.stringify([fid, ...list]));
+        }
+      }
+    }catch{}
     navigate(`/faculty/chat?peer=${encodeURIComponent(fid)}`);
   };
 
