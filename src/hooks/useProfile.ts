@@ -48,7 +48,32 @@ export const useProfile = () => {
         setProfileError(error);
         console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
-        setProfile(data ?? null);
+        if (!data) {
+          // No profile row exists for this user — create a default one from auth metadata
+          try {
+            const meta = (user as any)?.user_metadata ?? {};
+            const full_name = meta.full_name ?? user.email ?? '';
+            const role = meta.role === 'faculty' ? 'faculty' : 'student';
+
+            const { data: created, error: createError } = await supabase
+              .from('profiles')
+              .insert({ user_id: user.id, full_name, email: user.email, role })
+              .select()
+              .single();
+
+            if (createError) {
+              setProfileError(createError);
+              console.error('Error creating profile:', (createError as any)?.message ?? JSON.stringify(createError));
+            } else {
+              setProfile(created ?? null);
+            }
+          } catch (err) {
+            setProfileError(err);
+            console.error('Error creating profile:', (err as any)?.message ?? JSON.stringify(err));
+          }
+        } else {
+          setProfile(data ?? null);
+        }
       }
     } catch (error) {
       setProfileError(error);
