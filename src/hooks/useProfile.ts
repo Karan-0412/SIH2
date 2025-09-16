@@ -43,12 +43,12 @@ export const useProfile = () => {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
         setProfile(data);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
     } finally {
       setLoading(false);
     }
@@ -64,14 +64,14 @@ export const useProfile = () => {
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error updating profile:', error);
+        console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
         return { error };
       } else {
         setProfile({ ...profile, ...updates });
         return { error: null };
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
       return { error };
     }
   };
