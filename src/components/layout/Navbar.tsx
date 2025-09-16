@@ -82,29 +82,37 @@ const Navbar = () => {
             <span className="absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out" style={{ left: indicator.left, width: indicator.width }} />
             {items.map((item, idx) => (
               item.label === 'Courses' ? (
-                <DropdownMenu key={item.label}>
-                  <DropdownMenuTrigger asChild>
-                    <NavLink
-                      ref={(el) => (btnRefs.current[item.label] = el)}
-                      to={item.to}
-                      role="tab"
-                      aria-selected={location.pathname === item.to}
-                      tabIndex={-1}
-                      className={({ isActive }) => `relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
-                    >
-                      {item.label}
-                    </NavLink>
-                  </DropdownMenuTrigger>
+                <div key={item.label} className="relative flex items-center z-10">
+                  <NavLink
+                    ref={(el) => (btnRefs.current[item.label] = el)}
+                    to={item.to}
+                    role="tab"
+                    aria-selected={location.pathname === item.to}
+                    tabIndex={-1}
+                    className={({ isActive }) => `relative px-4 py-1.5 rounded-full text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
+                  >
+                    {item.label}
+                  </NavLink>
 
-                  <DropdownMenuContent align="start">
-                    <DropdownMenuItem asChild>
-                      <Link to="/courses">All Courses</Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem asChild>
-                      <Link to="/courses/new">Add Course</Link>
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <button aria-label="Open courses menu" className="ml-1 p-1 rounded-full text-gray-500 hover:text-gray-700 focus:outline-none focus:ring-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 011.08 1.04l-4.25 4.25a.75.75 0 01-1.08 0L5.21 8.27a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                        </svg>
+                      </button>
+                    </DropdownMenuTrigger>
+
+                    <DropdownMenuContent align="start">
+                      <DropdownMenuItem asChild>
+                        <Link to="/courses">All Courses</Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/courses/new">Add Course</Link>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               ) : (
                 <NavLink
                   key={item.label}
