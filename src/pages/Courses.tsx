@@ -18,6 +18,7 @@ const CoursesPage: React.FC = () => {
 
   const [courses, setCourses] = useState<any[]>([]);
   const [loadingCourses, setLoadingCourses] = useState(false);
+  const [dbMissing, setDbMissing] = useState(false);
 
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
@@ -56,13 +57,42 @@ const CoursesPage: React.FC = () => {
       try {
         const { data, error } = await supabase.from('courses').select('*');
         if (error) {
-          console.error('Error loading courses', error);
-          toast({ title: 'Error loading courses', description: (error as any)?.message ?? JSON.stringify(error), variant: 'destructive' });
+          const msg = (error as any)?.message ?? JSON.stringify(error);
+          console.error('Error loading courses', msg);
+          const missingTable = /Could not find the table|does not exist|relation ".*courses.*" does not exist/i.test(msg);
+          if (missingTable) {
+            setDbMissing(true);
+            const sql = `-- Create courses table (run in Supabase SQL editor)\nCREATE TABLE public.courses (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  name text NOT NULL,\n  course_code text UNIQUE NOT NULL,\n  faculty_id uuid REFERENCES public.profiles(id),\n  tags text[],\n  description text,\n  deadline date,\n  credit_hours integer,\n  thumbnail_url text,\n  external_link text,\n  assigned_student_ids text[],\n  created_at timestamptz DEFAULT now(),\n  updated_at timestamptz DEFAULT now()\n);`;
+            console.info('Courses table missing. Migration SQL:\n', sql);
+            toast({ title: 'Missing courses table', description: 'Using sample data. Open console for SQL to create the table in Supabase.', variant: 'destructive' });
+            const sample = [
+              { id: 'c1', name: 'Intro to Algorithms', course_code: 'CS101', faculty_id: null, tags: ['Mandatory'], description: 'Basics of algorithms', deadline: null, credit_hours: 3, thumbnail_url: null, external_link: null },
+              { id: 'c2', name: 'Data Structures', course_code: 'CS102', faculty_id: null, tags: ['Mandatory'], description: 'Core data structures', deadline: null, credit_hours: 4, thumbnail_url: null, external_link: null },
+            ];
+            setCourses(sample);
+          } else {
+            toast({ title: 'Error loading courses', description: msg, variant: 'destructive' });
+          }
         } else if (data) {
           setCourses(data as any[]);
         }
       } catch (err) {
-        console.error('Error loading courses', err);
+        const msg = (err as any)?.message ?? JSON.stringify(err);
+        console.error('Error loading courses', msg);
+        const missingTable = /Could not find the table|does not exist|relation ".*courses.*" does not exist/i.test(msg);
+        if (missingTable) {
+          setDbMissing(true);
+          const sql = `-- Create courses table (run in Supabase SQL editor)\nCREATE TABLE public.courses (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  name text NOT NULL,\n  course_code text UNIQUE NOT NULL,\n  faculty_id uuid REFERENCES public.profiles(id),\n  tags text[],\n  description text,\n  deadline date,\n  credit_hours integer,\n  thumbnail_url text,\n  external_link text,\n  assigned_student_ids text[],\n  created_at timestamptz DEFAULT now(),\n  updated_at timestamptz DEFAULT now()\n);`;
+          console.info('Courses table missing. Migration SQL:\n', sql);
+          toast({ title: 'Missing courses table', description: 'Using sample data. Open console for SQL to create the table in Supabase.', variant: 'destructive' });
+          const sample = [
+            { id: 'c1', name: 'Intro to Algorithms', course_code: 'CS101', faculty_id: null, tags: ['Mandatory'], description: 'Basics of algorithms', deadline: null, credit_hours: 3, thumbnail_url: null, external_link: null },
+            { id: 'c2', name: 'Data Structures', course_code: 'CS102', faculty_id: null, tags: ['Mandatory'], description: 'Core data structures', deadline: null, credit_hours: 4, thumbnail_url: null, external_link: null },
+          ];
+          setCourses(sample);
+        } else {
+          toast({ title: 'Error loading courses', description: msg, variant: 'destructive' });
+        }
       } finally {
         setLoadingCourses(false);
       }
@@ -99,12 +129,27 @@ const CoursesPage: React.FC = () => {
           .limit(1)
           .maybeSingle();
         if (error) {
-          console.error('Error checking course code uniqueness', error);
+          const msg = (error as any)?.message ?? JSON.stringify(error);
+          const missingTable = /Could not find the table|does not exist|relation ".*courses.*" does not exist/i.test(msg);
+          if (missingTable) {
+            setDbMissing(true);
+            e.courseCode = 'Database not initialized. Create the courses table (see console for SQL).';
+            console.info('Courses table missing during validation.');
+          } else {
+            console.error('Error checking course code uniqueness', msg);
+          }
         } else if (existing) {
           e.courseCode = 'Course code must be unique. A course with this code already exists.';
         }
       } catch (err) {
-        console.error('Error checking course code uniqueness', err);
+        const msg = (err as any)?.message ?? JSON.stringify(err);
+        const missingTable = /Could not find the table|does not exist|relation ".*courses.*" does not exist/i.test(msg);
+        if (missingTable) {
+          setDbMissing(true);
+          e.courseCode = 'Database not initialized. Create the courses table (see console for SQL).';
+        } else {
+          console.error('Error checking course code uniqueness', msg);
+        }
       }
     }
 
@@ -172,9 +217,16 @@ const CoursesPage: React.FC = () => {
 
       const { data, error } = await supabase.from('courses').insert(payload).select().maybeSingle();
       if (error) {
-        // handle unique constraint race
         const msg = (error as any)?.message ?? JSON.stringify(error);
         console.error('Error creating course:', msg, error);
+        const missingTable = /Could not find the table|does not exist|relation ".*courses.*" does not exist/i.test(msg);
+        if (missingTable) {
+          setDbMissing(true);
+          const sql = `-- Create courses table (run in Supabase SQL editor)\nCREATE TABLE public.courses (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  name text NOT NULL,\n  course_code text UNIQUE NOT NULL,\n  faculty_id uuid REFERENCES public.profiles(id),\n  tags text[],\n  description text,\n  deadline date,\n  credit_hours integer,\n  thumbnail_url text,\n  external_link text,\n  assigned_student_ids text[],\n  created_at timestamptz DEFAULT now(),\n  updated_at timestamptz DEFAULT now()\n);`;
+          console.info('Courses table missing. Migration SQL:\n', sql);
+          toast({ title: 'Missing courses table', description: 'Create the table in Supabase, then retry. See console for SQL.', variant: 'destructive' });
+          return;
+        }
         if (msg.includes('duplicate key') || msg.includes('already exists')) {
           setErrors({ courseCode: 'Course code must be unique. A course with this code already exists.' });
           toast({ title: 'Validation error', description: 'Course code already exists.' });
@@ -202,6 +254,9 @@ const CoursesPage: React.FC = () => {
     <div className="min-h-screen bg-gray-100">
       <main className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-bold mb-4">Courses</h1>
+        {dbMissing && (
+          <p className="text-sm text-amber-700 bg-amber-100 border border-amber-200 rounded p-2 mb-4">Database not initialized for courses. Using sample data. Create the table in Supabase to enable full functionality.</p>
+        )}
 
         {profile?.role === 'faculty' && (
         <form onSubmit={onSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm">
