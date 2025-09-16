@@ -21,6 +21,14 @@ const BL_KEY = (id: string) => `fac_blocked_${id}`;
 interface FacultyMeta { id: string; full_name: string; email: string; department?: string; sections?: string[]; subjects?: string[]; updated_at?: string; avatar_url?: string | null; }
 interface MessageRow { id: string; sender_id: string; receiver_id: string; content: string; created_at: string; read_at: string | null; }
 
+const MOCK_FACULTIES: FacultyMeta[] = [
+  { id: 'f1', full_name: 'Dr. Aarti Mehra', email: 'aarti.mehra@univ.edu', department: 'CSE', subjects: ['Algorithms','DSA'], sections: ['CSE-3A','CSE-3B'], updated_at: new Date(Date.now()-5*60*1000).toISOString(), avatar_url: null },
+  { id: 'f2', full_name: 'Prof. Rahul Verma', email: 'rahul.verma@univ.edu', department: 'ECE', subjects: ['Signals','VLSI'], sections: ['ECE-2'], updated_at: new Date(Date.now()-2*3600*1000).toISOString(), avatar_url: null },
+  { id: 'f3', full_name: 'Dr. Neha Kapoor', email: 'neha.kapoor@univ.edu', department: 'AIML', subjects: ['ML','AI'], sections: ['AIML-4'], updated_at: new Date(Date.now()-24*3600*1000+300000).toISOString(), avatar_url: null },
+  { id: 'f4', full_name: 'Prof. Sandeep Rao', email: 'sandeep.rao@univ.edu', department: 'Mechanical', subjects: ['Thermo','Dynamics'], sections: ['ME-5'], updated_at: new Date(Date.now()-50*60*1000).toISOString(), avatar_url: null },
+  { id: 'f5', full_name: 'Dr. Priya Iyer', email: 'priya.iyer@univ.edu', department: 'IT', subjects: ['DBMS','Web'], sections: ['IT-1'], updated_at: new Date(Date.now()-10*60*1000).toISOString(), avatar_url: null },
+];
+
 export default function FacultyCommunity(){
   const { user } = useAuth();
   const { profile } = useProfile();
@@ -57,15 +65,25 @@ export default function FacultyCommunity(){
   useEffect(()=>{ if(myId) localStorage.setItem(BK_KEY(myId), JSON.stringify(bookmarks)); },[bookmarks,myId]);
   useEffect(()=>{ if(myId) localStorage.setItem(BL_KEY(myId), JSON.stringify(blocked)); },[blocked,myId]);
 
-  // Fetch faculties
+  // Fetch faculties, fallback to mock data when empty/unavailable
   useEffect(()=>{
     (async()=>{
       try{
         const { data, error } = await supabase.from('profiles').select('id, full_name, email, updated_at, role').eq('role','faculty');
-        if(error){ console.error('Load faculties error', error); toast({ title:'Error', description: (error as any)?.message ?? 'Unable to load faculty directory', variant:'destructive' }); return; }
-        const metas: FacultyMeta[] = (data||[]).map((p:any)=>({ id:p.id, full_name:p.full_name, email:p.email, updated_at:p.updated_at }));
+        if(error){
+          console.error('Load faculties error', error);
+          setFaculties(MOCK_FACULTIES);
+          toast({ title:'Using mock data', description: 'Faculty directory loaded with sample data.', });
+          return;
+        }
+        const rows = (data||[]) as any[];
+        if(!rows.length){
+          setFaculties(MOCK_FACULTIES);
+          return;
+        }
+        const metas: FacultyMeta[] = rows.map((p:any)=>({ id:p.id, full_name:p.full_name, email:p.email, updated_at:p.updated_at }));
         setFaculties(metas);
-      }catch(err){ console.error('Load faculties err', err); }
+      }catch(err){ console.error('Load faculties err', err); setFaculties(MOCK_FACULTIES); }
     })();
   },[toast]);
 
@@ -75,7 +93,7 @@ export default function FacultyCommunity(){
     (async()=>{
       try{
         const { data, error } = await supabase.from('messages').select('sender_id, receiver_id, read_at, created_at').or(`sender_id.eq.${myId},receiver_id.eq.${myId}`).order('created_at', { ascending: false });
-        if(error){ console.error('Load conv error', error); return; }
+        if(error){ console.error('Load conv error', error); }
         const peers = new Set<string>();
         let unread = 0;
         (data||[]).forEach((m:any)=>{
@@ -83,9 +101,16 @@ export default function FacultyCommunity(){
           peers.add(other);
           if(!m.read_at && m.receiver_id === myId) unread++;
         });
-        setConversations(Array.from(peers));
+        const convs = Array.from(peers);
+        // demo fallback if no conversations from DB
+        if(!convs.length){
+          const demo = MOCK_FACULTIES.slice(0,3).map(f=> f.id);
+          setConversations(demo);
+        } else {
+          setConversations(convs);
+        }
         setUnreadCount(unread);
-      }catch(err){ console.error('Load conv err', err); }
+      }catch(err){ console.error('Load conv err', err); setConversations(MOCK_FACULTIES.slice(0,3).map(f=>f.id)); }
     })();
   },[myId]);
 
@@ -112,6 +137,11 @@ export default function FacultyCommunity(){
   },[myId, activePeerId]);
 
   const peer = useMemo(()=> faculties.find(f=> f.id === activePeerId) || null, [faculties, activePeerId]);
+
+  // If conversations filled by demo and no active peer yet, preselect first
+  useEffect(()=>{
+    if(!activePeerId && conversations.length){ setActivePeerId(conversations[0]); }
+  },[conversations, activePeerId]);
 
   const filteredFaculties = useMemo(()=>{
     let list = faculties.slice();
