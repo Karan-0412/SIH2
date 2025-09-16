@@ -193,7 +193,9 @@ const CoursesPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="max-w-4xl mx-auto p-6">
-        <h1 className="text-2xl font-bold mb-4">Create Course</h1>
+        <h1 className="text-2xl font-bold mb-4">Courses</h1>
+
+        {profile?.role === 'faculty' && (
         <form onSubmit={onSubmit} className="space-y-6 bg-white p-6 rounded-md shadow-sm">
           <div>
             <Label>Course Name *</Label>
@@ -271,6 +273,42 @@ const CoursesPage: React.FC = () => {
             <Button type="submit" disabled={submitting}>{submitting ? 'Saving...' : 'Create Course'}</Button>
           </div>
         </form>
+        )}
+
+        <section className="mt-8">
+          <h2 className="text-lg font-semibold mb-4">Assigned Courses</h2>
+          {loadingCourses ? (
+            <p>Loading...</p>
+          ) : (
+            (() => {
+              const visibleCourses = courses.filter(c => {
+                if (!profile) return false;
+                if (profile.role === 'faculty') return c.faculty_id === profile.id;
+                const sid = (profile as any).student_id ?? (profile as any).studentId ?? null;
+                if (!sid) return false;
+                const assigned = (c.assigned_student_ids || c.assigned_students || c.student_ids || c.student_id || '').toString();
+                return assigned.includes(String(sid));
+              });
+
+              if (!visibleCourses.length) return <p className="text-sm text-muted-foreground">No courses assigned.</p>;
+
+              return (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {visibleCourses.map(c => (
+                    <div key={c.id} className="border rounded-md bg-white p-4 flex gap-4 items-center">
+                      {c.thumbnail_url ? <img src={c.thumbnail_url} alt={c.name} className="h-16 w-24 object-cover rounded" /> : <div className="h-16 w-24 bg-gray-200 rounded" />}
+                      <div className="flex-1">
+                        <div className="font-semibold">{c.name} <span className="text-xs text-muted-foreground ml-2">{c.course_code}</span></div>
+                        <div className="text-sm text-muted-foreground">{c.description}</div>
+                        {c.external_link && <a href={c.external_link} target="_blank" rel="noreferrer" className="text-sm text-primary underline">Open</a>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()
+          )}
+        </section>
       </main>
     </div>
   );
