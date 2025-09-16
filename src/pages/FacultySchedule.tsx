@@ -96,8 +96,8 @@ const FacultySchedule: React.FC = () => {
           const sql = `-- Create schedule table (run in Supabase SQL editor)\nCREATE TABLE public.schedule (\n  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n  course_name text NOT NULL,\n  start timestamptz NOT NULL,\n  \"end\" timestamptz NOT NULL,\n  room text,\n  tags text[],\n  syllabus_url text,\n  students_count integer DEFAULT 0,\n  notes text,\n  color text,\n  created_at timestamptz DEFAULT now(),\n  updated_at timestamptz DEFAULT now()\n);`;
 
           console.info('Schedule table missing. Migration SQL:\n', sql);
-          toast({ title: 'Missing schedule table', description: 'The schedule table is not found. Run the migration SQL in your Supabase SQL editor (see console for SQL).', variant: 'destructive' });
-          setEvents([]);
+          toast({ title: 'Missing schedule table', description: 'The schedule table is not found. Run the migration SQL in your Supabase SQL editor (see console for SQL). Using sample schedule data as fallback.', variant: 'destructive' });
+          setEvents(sampleEvents);
         } else {
           toast({ title: 'Error loading schedule', description: msg, variant: 'destructive' });
         }
