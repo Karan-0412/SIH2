@@ -22,6 +22,7 @@ export const useProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -43,11 +44,13 @@ export const useProfile = () => {
         .single();
 
       if (error) {
+        setProfileError(error);
         console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
         setProfile(data);
       }
     } catch (error) {
+      setProfileError(error);
       console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
     } finally {
       setLoading(false);
@@ -64,13 +67,16 @@ export const useProfile = () => {
         .eq('user_id', user.id);
 
       if (error) {
+        setProfileError(error);
         console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
         return { error };
       } else {
+        setProfileError(null);
         setProfile({ ...profile, ...updates });
         return { error: null };
       }
     } catch (error) {
+      setProfileError(error);
       console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
       return { error };
     }
@@ -79,6 +85,7 @@ export const useProfile = () => {
   return {
     profile,
     loading,
+    error: profileError,
     updateProfile,
     refetch: fetchProfile
   };
