@@ -44,7 +44,9 @@ const FacultySchedule: React.FC = () => {
       try{
         const { data, error } = await supabase.from('schedule').select('*');
         if(error){
-          console.error('Error loading schedule', error);
+          const msg = (error as any)?.message ?? JSON.stringify(error);
+          console.error('Error loading schedule:', msg);
+          toast({ title: 'Error loading schedule', description: msg, variant: 'destructive' });
         } else if(data && mounted){
           // map to EventItem
           const mapped = (data as any[]).map(d=>({
