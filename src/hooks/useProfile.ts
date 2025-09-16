@@ -34,20 +34,21 @@ export const useProfile = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
-    
+    if (!user) { setLoading(false); return; }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
         setProfileError(error);
         console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
-        setProfile(data);
+        setProfile(data ?? null);
       }
     } catch (error) {
       setProfileError(error);
@@ -61,18 +62,20 @@ export const useProfile = () => {
     if (!user || !profile) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id);
+        .eq('id', profile.id)
+        .select()
+        .single();
 
       if (error) {
         setProfileError(error);
         console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
         return { error };
       } else {
+        setProfile({ ...(data as Profile) });
         setProfileError(null);
-        setProfile({ ...profile, ...updates });
         return { error: null };
       }
     } catch (error) {
