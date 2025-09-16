@@ -31,7 +31,7 @@ export default function FacultyCommunity(){
 
   const [faculties, setFaculties] = useState<FacultyMeta[]>([]);
   const [search, setSearch] = useState('');
-  const [filterDept, setFilterDept] = useState<string>('');
+  const [filterDept, setFilterDept] = useState<string>('all');
   const [filterSection, setFilterSection] = useState<string>('');
   const [filterSubject, setFilterSubject] = useState<string>('');
   const [sortBy, setSortBy] = useState<typeof SORT_KEYS[number]>('recent');
@@ -117,7 +117,7 @@ export default function FacultyCommunity(){
     let list = faculties.slice();
     const q = search.toLowerCase().trim();
     if(q){ list = list.filter(f=> f.full_name.toLowerCase().includes(q) || f.email.toLowerCase().includes(q) || (f.department||'').toLowerCase().includes(q) || (f.subjects||[]).join(' ').toLowerCase().includes(q) || (f.sections||[]).join(' ').toLowerCase().includes(q)); }
-    if(filterDept){ list = list.filter(f=> (f.department||'')===filterDept); }
+    if(filterDept !== 'all'){ list = list.filter(f=> (f.department||'')===filterDept); }
     if(filterSection){ list = list.filter(f=> (f.sections||[]).some(s=> s.toLowerCase().includes(filterSection.toLowerCase()))); }
     if(filterSubject){ list = list.filter(f=> (f.subjects||[]).some(s=> s.toLowerCase().includes(filterSubject.toLowerCase()))); }
     if(sortBy==='name'){ list.sort((a,b)=> a.full_name.localeCompare(b.full_name)); }
@@ -167,7 +167,7 @@ export default function FacultyCommunity(){
             <Select value={filterDept} onValueChange={setFilterDept}>
               <SelectTrigger className="w-[160px]"><SelectValue placeholder="Department" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All Departments</SelectItem>
+                <SelectItem value="all">All Departments</SelectItem>
                 {DEPARTMENTS.map(d=> <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
