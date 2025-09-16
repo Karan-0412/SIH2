@@ -22,6 +22,7 @@ export const useProfile = () => {
   const { user } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [profileError, setProfileError] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -33,22 +34,63 @@ export const useProfile = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) return;
-    
+    if (!user) { setLoading(false); return; }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .limit(1)
+        .maybeSingle();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        setProfileError(error);
+        console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
-        setProfile(data);
+        if (!data) {
+          // No profile row exists for this user — create or upsert a default one from auth metadata
+          try {
+            const meta = (user as any)?.user_metadata ?? {};
+            const full_name = meta.full_name ?? user.email ?? '';
+            const role = meta.role === 'faculty' ? 'faculty' : 'student';
+
+            // Use upsert with onConflict to avoid race-condition duplicate key errors
+            const { data: created, error: createError } = await supabase
+              .from('profiles')
+              .upsert({ user_id: user.id, full_name, email: user.email, role }, { onConflict: 'user_id' })
+              .select()
+              .maybeSingle();
+
+            if (createError) {
+              // If another request inserted the row concurrently, try fetching the existing row
+              const msg = (createError as any)?.message ?? '';
+              if (msg.includes('duplicate key') || msg.includes('already exists')) {
+                const { data: existing } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('user_id', user.id)
+                  .limit(1)
+                  .maybeSingle();
+                setProfile(existing ?? null);
+              } else {
+                setProfileError(createError);
+                console.error('Error creating profile:', (createError as any)?.message ?? JSON.stringify(createError));
+              }
+            } else {
+              setProfile(created ?? null);
+            }
+          } catch (err) {
+            setProfileError(err);
+            console.error('Error creating profile:', (err as any)?.message ?? JSON.stringify(err));
+          }
+        } else {
+          setProfile(data ?? null);
+        }
       }
     } catch (error) {
-      console.error('Error fetching profile:', error);
+      setProfileError(error);
+      console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
     } finally {
       setLoading(false);
     }
@@ -58,20 +100,25 @@ export const useProfile = () => {
     if (!user || !profile) return;
 
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .update(updates)
-        .eq('user_id', user.id);
+        .eq('id', profile.id)
+        .select()
+        .single();
 
       if (error) {
-        console.error('Error updating profile:', error);
+        setProfileError(error);
+        console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
         return { error };
       } else {
-        setProfile({ ...profile, ...updates });
+        setProfile({ ...(data as Profile) });
+        setProfileError(null);
         return { error: null };
       }
     } catch (error) {
-      console.error('Error updating profile:', error);
+      setProfileError(error);
+      console.error('Error updating profile:', (error as any)?.message ?? JSON.stringify(error));
       return { error };
     }
   };
@@ -79,6 +126,7 @@ export const useProfile = () => {
   return {
     profile,
     loading,
+    error: profileError,
     updateProfile,
     refetch: fetchProfile
   };
