@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Bookmark, BookmarkCheck, Moon, Sun, Send, MoreVertical } from 'lucide-react';
+import { Bell, Bookmark, BookmarkCheck, Moon, Sun, Send, MoreVertical, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 const DEPARTMENTS = ['CSE','ECE','EEE','Mechanical','Civil','AIML','IT','MBA','Maths','Physics','Chemistry'];
@@ -28,6 +28,8 @@ const MOCK_FACULTIES: FacultyMeta[] = [
   { id: 'f4', full_name: 'Prof. Sandeep Rao', email: 'sandeep.rao@univ.edu', department: 'Mechanical', subjects: ['Thermo','Dynamics'], sections: ['ME-5'], updated_at: new Date(Date.now()-50*60*1000).toISOString(), avatar_url: null },
   { id: 'f5', full_name: 'Dr. Priya Iyer', email: 'priya.iyer@univ.edu', department: 'IT', subjects: ['DBMS','Web'], sections: ['IT-1'], updated_at: new Date(Date.now()-10*60*1000).toISOString(), avatar_url: null },
 ];
+
+import { Link } from 'react-router-dom';
 
 export default function FacultyCommunity(){
   const { user } = useAuth();
@@ -226,33 +228,66 @@ export default function FacultyCommunity(){
 
       <main className="max-w-7xl mx-auto p-4 grid grid-cols-12 gap-4">
         {/* Directory */}
-        <section className="col-span-12 lg:col-span-4">
+        <section className="col-span-12 lg:col-span-7">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Faculty Directory</CardTitle>
+              <div className="hidden md:flex items-center gap-2">
+                <Button size="icon" variant="outline" onClick={()=>{ const el=document.getElementById('faculty-track'); if(el) el.scrollBy({ left:-400, behavior:'smooth' }); }} aria-label="Scroll left"><ChevronLeft className="h-4 w-4"/></Button>
+                <Button size="icon" variant="outline" onClick={()=>{ const el=document.getElementById('faculty-track'); if(el) el.scrollBy({ left:400, behavior:'smooth' }); }} aria-label="Scroll right"><ChevronRight className="h-4 w-4"/></Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-2 gap-3">
+              {/* Desktop: horizontal carousel */}
+              <div id="faculty-track" className="hidden md:flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
                 {filteredFaculties.map(f=> (
-                  <div key={f.id} className="border rounded-md p-3 bg-white dark:bg-[#0f1530] hover:shadow transition relative">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-10 w-10"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                  <div key={f.id} className="min-w-[320px] max-w-[320px] snap-start border rounded-xl p-4 bg-white dark:bg-[#0f1530] hover:shadow-lg transition relative group">
+                    <div className="flex items-start gap-3">
+                      <div className="relative">
+                        <Avatar className="h-12 w-12"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${isOnline(f)?'bg-green-500':'bg-gray-300'}`} />
+                      </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold truncate">{f.full_name}</div>
                         <div className="text-xs text-muted-foreground truncate">{f.department || '—'}{(f.subjects||[]).length? ' • ' + (f.subjects||[]).slice(0,2).join(', '): ''}</div>
-                        <div className="mt-1 text-[11px] flex items-center gap-2">
-                          <span className={`inline-flex items-center gap-1 ${isOnline(f)?'text-green-600':'text-gray-400'}`}>● <span>{isOnline(f)?'Online':'Offline'}</span></span>
-                          {f.sections?.length ? <span className="text-muted-foreground">{f.sections.join(', ')}</span> : null}
-                        </div>
+                        <div className="mt-1 text-[11px] text-muted-foreground truncate">{f.sections?.join(', ')}</div>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Button size="sm" onClick={()=>onMessage(f.id)}>Message</Button>
+                        <Button size="icon" variant="ghost" onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
+                        <Button size="icon" variant="ghost" aria-label={isBookmarked(f.id)?'Remove bookmark':'Bookmark'} onClick={(e)=>{ e.stopPropagation(); toggleBookmark(f.id); }}>
+                          {isBookmarked(f.id)? <BookmarkCheck className="h-4 w-4 text-emerald-600"/> : <Bookmark className="h-4 w-4"/>}
+                        </Button>
+                      </div>
+                    </div>
+                    {/* Hover overlay */}
+                    <div className="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/40 transition rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
+                      <button onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} className="pointer-events-auto bg-white text-sm font-medium px-3 py-1.5 rounded-full shadow">View Profile</button>
+                    </div>
+                  </div>
+                ))}
+                {!filteredFaculties.length && <div className="text-sm text-muted-foreground">No faculty found.</div>}
+              </div>
+              {/* Mobile: stacked list */}
+              <div className="md:hidden grid grid-cols-1 gap-3">
+                {filteredFaculties.map(f=> (
+                  <div key={f.id} className="border rounded-md p-3 bg-white dark:bg-[#0f1530] hover:shadow transition relative">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <Avatar className="h-10 w-10"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white ${isOnline(f)?'bg-green-500':'bg-gray-300'}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold truncate">{f.full_name}</div>
+                        <div className="text-xs text-muted-foreground truncate">{f.department || '—'}{(f.subjects||[]).length? ' • ' + (f.subjects||[]).slice(0,2).join(', '): ''}</div>
+                        <div className="mt-1 text-[11px] text-muted-foreground truncate">{f.sections?.join(', ')}</div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" onClick={()=>onMessage(f.id)} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
                         <Button size="icon" variant="ghost" aria-label={isBookmarked(f.id)?'Remove bookmark':'Bookmark'} onClick={()=>toggleBookmark(f.id)}>
                           {isBookmarked(f.id)? <BookmarkCheck className="h-4 w-4 text-emerald-600"/> : <Bookmark className="h-4 w-4"/>}
                         </Button>
                       </div>
                     </div>
-                    <button className="absolute inset-0" onClick={()=>onMessage(f.id)} aria-label={`Open chat with ${f.full_name}`}></button>
                   </div>
                 ))}
                 {!filteredFaculties.length && <div className="text-sm text-muted-foreground">No faculty found.</div>}
@@ -262,7 +297,7 @@ export default function FacultyCommunity(){
         </section>
 
         {/* Conversations */}
-        <aside className="col-span-12 lg:col-span-3">
+        <aside className="col-span-12 lg:col-span-2 xl:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>Conversations</CardTitle>
@@ -293,7 +328,7 @@ export default function FacultyCommunity(){
         </aside>
 
         {/* Chat */}
-        <section className="col-span-12 lg:col-span-5">
+        <section className="col-span-12 lg:col-span-3 xl:col-span-3">
           <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>
@@ -336,6 +371,13 @@ export default function FacultyCommunity(){
           </Card>
         </section>
       </main>
+
+      <Link to="/faculty/chat" className="fixed bottom-6 right-6">
+        <Button size="lg" className="shadow-lg rounded-full">
+          Conversations
+          {unreadCount>0 && <span className="ml-2 text-[10px] bg-red-600 text-white rounded-full px-1">{unreadCount}</span>}
+        </Button>
+      </Link>
     </div>
   );
 }
