@@ -10,8 +10,14 @@ import { useToast } from '@/hooks/use-toast';
 
 const TAG_OPTIONS = ['Mandatory', 'Optional', 'Skill-based', 'Elective'] as const;
 
+import { useProfile } from '@/hooks/useProfile';
+
 const CoursesPage: React.FC = () => {
   const { toast } = useToast();
+  const { profile } = useProfile();
+
+  const [courses, setCourses] = useState<any[]>([]);
+  const [loadingCourses, setLoadingCourses] = useState(false);
 
   const [courseName, setCourseName] = useState('');
   const [courseCode, setCourseCode] = useState('');
