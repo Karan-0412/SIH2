@@ -35,7 +35,7 @@ const Navbar = () => {
   const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
-  const items = [
+  const allItems = [
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },
@@ -43,9 +43,13 @@ const Navbar = () => {
     { label: 'Message', to: '/messages' },
     { label: 'Events', to: '/events' },
   ];
+  const items = React.useMemo(() => {
+    if (profile?.role === 'student') return allItems;
+    return allItems.filter((i) => i.label !== 'Community');
+  }, [profile]);
 
   React.useLayoutEffect(() => {
-    const active = items.find((i) => i.to === location.pathname) || items[1];
+    const active = items.find((i) => i.to === location.pathname) || items[1] || allItems[1] || allItems[0];
     const container = tabsRef.current;
     const btn = btnRefs.current[active.label];
     if (container && btn) {
