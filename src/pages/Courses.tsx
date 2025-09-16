@@ -49,7 +49,25 @@ const CoursesPage: React.FC = () => {
         console.error('Error loading faculties', err);
       }
     })();
-  }, []);
+
+    // fetch courses
+    (async () => {
+      setLoadingCourses(true);
+      try {
+        const { data, error } = await supabase.from('courses').select('*');
+        if (error) {
+          console.error('Error loading courses', error);
+          toast({ title: 'Error loading courses', description: (error as any)?.message ?? JSON.stringify(error), variant: 'destructive' });
+        } else if (data) {
+          setCourses(data as any[]);
+        }
+      } catch (err) {
+        console.error('Error loading courses', err);
+      } finally {
+        setLoadingCourses(false);
+      }
+    })();
+  }, [toast]);
 
   const todayISO = useMemo(() => {
     const d = new Date();
