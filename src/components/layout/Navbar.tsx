@@ -30,7 +30,7 @@ const Navbar = () => {
 
   const location = useLocation();
   const tabsRef = React.useRef<HTMLDivElement | null>(null);
-  const btnRefs = React.useRef<Record<string, HTMLButtonElement | null>>({});
+  const btnRefs = React.useRef<Record<string, HTMLElement | null>>({});
   const [indicator, setIndicator] = React.useState<{ left: number; width: number }>({ left: 0, width: 0 });
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
