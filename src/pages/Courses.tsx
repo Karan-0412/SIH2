@@ -79,11 +79,12 @@ const CoursesPage: React.FC = () => {
     setTags((prev) => (prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]));
   };
 
-  const validate = async () => {
+  const validate = async (effectiveFacultyId?: string | null) => {
     const e: Record<string, string> = {};
     if (!courseName.trim()) e.courseName = 'Course name is required.';
     if (!courseCode.trim()) e.courseCode = 'Course code is required.';
-    if (!facultyId) e.faculty = 'Faculty is required.';
+    const fid = effectiveFacultyId ?? facultyId;
+    if (!fid) e.faculty = 'Faculty is required.';
     if (!tags.length) e.tags = 'At least one tag is required.';
     if (!deadline) e.deadline = 'Deadline is required.';
     else if (deadline < todayISO) e.deadline = 'Deadline cannot be in the past.';
