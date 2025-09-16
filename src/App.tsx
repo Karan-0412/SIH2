@@ -31,7 +31,6 @@ const App = () => (
             <Route path="/events/:id" element={<EventDetail />} />
             <Route path="/faculty/students/:id" element={<FacultyStudent />} />
             <Route path="/courses" element={<CoursesPage />} />
-            <Route path="/courses/new" element={<CoursesPage />} />
             <Route path="/schedule" element={<FacultySchedule />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
