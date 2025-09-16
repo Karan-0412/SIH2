@@ -305,7 +305,7 @@ const FacultySchedule: React.FC = () => {
               <CardContent>
                 <div className="relative">
                   <div className={`transition-all duration-300 ${viewMode === 'weekly' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`} aria-hidden={viewMode !== 'weekly'}>
-                    <div className="w-full overflow-auto border rounded-md bg-white" style={{ height: '720px' }}>
+                    <div className="w-full overflow-auto border rounded-md bg-white" style={{ height: 'min(80vh, 900px)' }}>
                       <div className="grid grid-cols-8 sticky top-0 bg-white z-10">
                         <div className="border-r p-2 text-sm text-muted-foreground">Time</div>
                         {weekDays.map((d,idx)=> (
