@@ -272,81 +272,83 @@ const FacultySchedule: React.FC = () => {
                 <CardTitle>{viewMode === 'weekly' ? 'Weekly View' : 'Monthly View'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className={`transition-all duration-300 ${viewMode === 'weekly' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`} aria-live="polite">
-                {viewMode === 'weekly' ? (
-                  <div className="w-full overflow-auto border rounded-md bg-white" style={{ height: '720px' }}>
-                    <div className="grid grid-cols-8 sticky top-0 bg-white z-10">
-                      <div className="border-r p-2 text-sm text-muted-foreground">Time</div>
-                      {weekDays.map((d,idx)=> (
-                        <div key={idx} className="border-r p-2 text-center font-medium">{daysOfWeek[idx]} <div className="text-xs text-muted-foreground">{d.toLocaleDateString()}</div></div>
-                      ))}
-                    </div>
-
-                    <div className="relative" style={{ height: '100%', minHeight: '640px' }}>
-                      {/* time grid */}
-                      <div className="absolute left-0 top-0 right-0 bottom-0 grid grid-cols-8">
-                        <div className="border-r" />
-                        {Array.from({length:7}).map((_,i)=> <div key={i} className="border-r" />)}
+                <div className="relative">
+                  <div className={`transition-all duration-300 ${viewMode === 'weekly' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`} aria-hidden={viewMode !== 'weekly'}>
+                    <div className="w-full overflow-auto border rounded-md bg-white" style={{ height: '720px' }}>
+                      <div className="grid grid-cols-8 sticky top-0 bg-white z-10">
+                        <div className="border-r p-2 text-sm text-muted-foreground">Time</div>
+                        {weekDays.map((d,idx)=> (
+                          <div key={idx} className="border-r p-2 text-center font-medium">{daysOfWeek[idx]} <div className="text-xs text-muted-foreground">{d.toLocaleDateString()}</div></div>
+                        ))}
                       </div>
 
-                      <div className="absolute left-0 top-0 right-0 bottom-0 grid grid-cols-1" style={{ pointerEvents: 'none' }}>
-                        <div className="h-12 grid grid-cols-1"></div>
-                        {/* hours rows */}
-                        <div className="flex flex-col">
-                          {Array.from({length: (HOURS_END-HOURS_START)}).map((_,hi)=> (
-                            <div key={hi} className="flex">
-                              <div className="w-1/8 hidden md:block border-t text-xs text-muted-foreground" style={{ width: '12%' }}>{HOURS_START+hi}:00</div>
-                              <div className="flex-1 border-t" style={{ minHeight: '54px' }} />
+                      <div className="relative" style={{ height: '100%', minHeight: '640px' }}>
+                        {/* time grid */}
+                        <div className="absolute left-0 top-0 right-0 bottom-0 grid grid-cols-8">
+                          <div className="border-r" />
+                          {Array.from({length:7}).map((_,i)=> <div key={i} className="border-r" />)}
+                        </div>
+
+                        <div className="absolute left-0 top-0 right-0 bottom-0 grid grid-cols-1" style={{ pointerEvents: 'none' }}>
+                          <div className="h-12 grid grid-cols-1"></div>
+                          {/* hours rows */}
+                          <div className="flex flex-col">
+                            {Array.from({length: (HOURS_END-HOURS_START)}).map((_,hi)=> (
+                              <div key={hi} className="flex">
+                                <div className="w-1/8 hidden md:block border-t text-xs text-muted-foreground" style={{ width: '12%' }}>{HOURS_START+hi}:00</div>
+                                <div className="flex-1 border-t" style={{ minHeight: '54px' }} />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* events layer */}
+                        <div className="absolute left-0 top-0 right-0 bottom-0">
+                          {weekDays.map((d, dayIdx)=> (
+                            <div key={dayIdx} className="absolute" style={{ left: `${(dayIdx/7)*100}%`, width: `${100/7}%`, top: '0', bottom: 0 }}>
+                              {eventsThisWeek.filter(ev => new Date(ev.start).getDate() === d.getDate()).map(ev=>{
+                                const pos = positionForEvent(ev, dayIdx);
+                                return (
+                                  <div key={ev.id} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toast({ title: ev.course_name, description: `${new Date(ev.start).toLocaleTimeString()} - ${new Date(ev.end).toLocaleTimeString()} ${ev.room? ' • '+ev.room: ''}`, }); } }} aria-label={`${ev.course_name} from ${new Date(ev.start).toLocaleTimeString()} to ${new Date(ev.end).toLocaleTimeString()} in ${ev.room || 'unknown'}`} className="absolute rounded-md p-2 text-sm text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1" style={{ top: `${pos.topPercent}%`, height: `${pos.heightPercent}%`, left: '4%', width: '92%', background: ev.color || '#3b82f6', transition: 'transform 180ms ease, opacity 180ms ease' }} title={`${ev.course_name} - ${new Date(ev.start).toLocaleTimeString()} - ${ev.room||''}`}>
+                                    <div className="font-semibold">{ev.course_name}</div>
+                                    <div className="text-xs">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(ev.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                    <div className="text-xs">{ev.room}</div>
+                                  </div>
+                                )
+                              })}
                             </div>
                           ))}
                         </div>
                       </div>
+                    </div>
+                  </div>
 
-                      {/* events layer */}
-                      <div className="absolute left-0 top-0 right-0 bottom-0">
-                        {weekDays.map((d, dayIdx)=> (
-                          <div key={dayIdx} className="absolute" style={{ left: `${(dayIdx/7)*100}%`, width: `${100/7}%`, top: '0', bottom: 0 }}>
-                            {eventsThisWeek.filter(ev => new Date(ev.start).getDate() === d.getDate()).map(ev=>{
-                              const pos = positionForEvent(ev, dayIdx);
-                              return (
-                                <div key={ev.id} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toast({ title: ev.course_name, description: `${new Date(ev.start).toLocaleTimeString()} - ${new Date(ev.end).toLocaleTimeString()} ${ev.room? ' • '+ev.room: ''}`, }); } }} aria-label={`${ev.course_name} from ${new Date(ev.start).toLocaleTimeString()} to ${new Date(ev.end).toLocaleTimeString()} in ${ev.room || 'unknown'}`} className="absolute rounded-md p-2 text-sm text-white shadow-md focus:outline-none focus:ring-2 focus:ring-offset-1" style={{ top: `${pos.topPercent}%`, height: `${pos.heightPercent}%`, left: '4%', width: '92%', background: ev.color || '#3b82f6', transition: 'transform 180ms ease, opacity 180ms ease' }} title={`${ev.course_name} - ${new Date(ev.start).toLocaleTimeString()} - ${ev.room||''}`}>
-                                  <div className="font-semibold">{ev.course_name}</div>
-                                  <div className="text-xs">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})} - {new Date(ev.end).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                                  <div className="text-xs">{ev.room}</div>
-                                </div>
-                              )
-                            })}
-                          </div>
-                        ))}
+                  <div className={`transition-all duration-300 ${viewMode === 'monthly' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'}`} aria-hidden={viewMode !== 'monthly'}>
+                    <div className="w-full overflow-auto bg-white border rounded-md p-4">
+                      {/* Monthly grid */}
+                      <div className="grid grid-cols-7 gap-2">
+                        {Array.from({length:42}).map((_,i)=>{
+                          const day = new Date(weekStartDate);
+                          day.setDate(weekStartDate.getDate() + i - (weekStartDate.getDay() === 0 ? 6 : weekStartDate.getDay()-1));
+                          const dayEvents = events.filter(ev => new Date(ev.start).toDateString() === day.toDateString());
+                          return (
+                            <div key={i} className="border p-2 min-h-[80px]">
+                              <div className="text-xs font-medium mb-2">{day.getDate()}</div>
+                              <div className="flex flex-col gap-1">
+                                {dayEvents.slice(0,3).map(ev=> (
+                                  <div key={ev.id} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toast({ title: ev.course_name, description: `${new Date(ev.start).toLocaleTimeString()} - ${new Date(ev.end).toLocaleTimeString()}` }); } }} aria-label={`${ev.course_name} at ${new Date(ev.start).toLocaleTimeString()}`} className="rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2" style={{ background: ev.color || '#06b6d4' }}>
+                                    <div className="font-semibold">{ev.course_name}</div>
+                                    <div className="text-[11px]">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+                                  </div>
+                                ))}
+                                {dayEvents.length>3 && <div className="text-xs text-muted-foreground">+{dayEvents.length-3} more</div>}
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="w-full overflow-auto bg-white border rounded-md p-4">
-                    {/* Monthly grid */}
-                    <div className="grid grid-cols-7 gap-2">
-                      {Array.from({length:42}).map((_,i)=>{
-                        const day = new Date(weekStartDate);
-                        day.setDate(weekStartDate.getDate() + i - (weekStartDate.getDay() === 0 ? 6 : weekStartDate.getDay()-1));
-                        const dayEvents = events.filter(ev => new Date(ev.start).toDateString() === day.toDateString());
-                        return (
-                          <div key={i} className="border p-2 min-h-[80px]">
-                            <div className="text-xs font-medium mb-2">{day.getDate()}</div>
-                            <div className="flex flex-col gap-1">
-                              {dayEvents.slice(0,3).map(ev=> (
-                                <div key={ev.id} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toast({ title: ev.course_name, description: `${new Date(ev.start).toLocaleTimeString()} - ${new Date(ev.end).toLocaleTimeString()}` }); } }} aria-label={`${ev.course_name} at ${new Date(ev.start).toLocaleTimeString()}`} className="rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2" style={{ background: ev.color || '#06b6d4' }}>
-                                  <div className="font-semibold">{ev.course_name}</div>
-                                  <div className="text-[11px]">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                                </div>
-                              ))}
-                              {dayEvents.length>3 && <div className="text-xs text-muted-foreground">+{dayEvents.length-3} more</div>}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                )}
                 </div>
               </CardContent>
             </Card>
