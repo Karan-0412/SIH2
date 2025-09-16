@@ -145,6 +145,25 @@ const CoursesPage: React.FC = () => {
         }
       }
 
+      // upload thumbnail if provided
+      let thumbnail_url: string | null = null;
+      if (thumbnailFile) {
+        try {
+          const filePath = `thumbnails/${courseCode.trim()}_${Date.now()}`;
+          const { error: upErr } = await supabase.storage.from('course_thumbnails').upload(filePath, thumbnailFile, { upsert: false });
+          if (upErr) {
+            console.error('Error uploading thumbnail', upErr);
+            toast({ title: 'Thumbnail upload failed', description: (upErr as any)?.message ?? 'Could not upload file', });
+          } else {
+            const { data } = supabase.storage.from('course_thumbnails').getPublicUrl(filePath);
+            thumbnail_url = data?.publicUrl ?? null;
+          }
+        } catch (err) {
+          console.error('Thumbnail upload error', err);
+          toast({ title: 'Thumbnail upload failed', description: 'Network error while uploading thumbnail.' });
+        }
+      }
+
       // insert course
       const payload = {
         name: courseName.trim(),
@@ -155,6 +174,8 @@ const CoursesPage: React.FC = () => {
         deadline: deadline,
         credit_hours: creditHours ? Number(creditHours) : null,
         syllabus_url,
+        thumbnail_url,
+        external_link: externalLink || null,
       } as any;
 
       const { data, error } = await supabase.from('courses').insert(payload).select().maybeSingle();
