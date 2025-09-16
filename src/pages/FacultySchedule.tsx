@@ -386,6 +386,48 @@ const FacultySchedule: React.FC = () => {
           </div>
         </section>
       </main>
+
+      <Dialog open={!!selectedEvent} onOpenChange={(open)=>{ if(!open) setSelectedEvent(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedEvent?.course_name}</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <div className="space-y-3">
+              <div className="text-sm text-muted-foreground">Time</div>
+              <div className="font-medium">{new Date(selectedEvent.start).toLocaleString()} — {new Date(selectedEvent.end).toLocaleTimeString()}</div>
+
+              <div className="text-sm text-muted-foreground">Room</div>
+              <div className="font-medium">{selectedEvent.room || 'TBD'}</div>
+
+              <div className="text-sm text-muted-foreground">Tags</div>
+              <div className="flex gap-2 flex-wrap">{(selectedEvent.tags || []).map(t=> <span key={t} className="px-2 py-0.5 rounded-full text-xs bg-white/10">{t}</span>)}</div>
+
+              <div className="text-sm text-muted-foreground">Enrolled</div>
+              <div className="font-medium">{selectedEvent.students_count ?? 0} students</div>
+
+              {selectedEvent.syllabus_url && (
+                <div>
+                  <a href={selectedEvent.syllabus_url} target="_blank" rel="noreferrer" className="text-primary underline">Open Syllabus</a>
+                </div>
+              )}
+
+              {selectedEvent.notes && (
+                <div>
+                  <div className="text-sm text-muted-foreground">Notes</div>
+                  <div className="text-sm">{selectedEvent.notes}</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <div className="flex justify-end">
+              <button className="btn" onClick={()=>setSelectedEvent(null)}>Close</button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
