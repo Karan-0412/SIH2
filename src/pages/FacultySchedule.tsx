@@ -64,7 +64,9 @@ const FacultySchedule: React.FC = () => {
           setEvents(mapped);
         }
       }catch(err){
-        console.error('Error loading schedule', err);
+        const msg = (err as any)?.message ?? JSON.stringify(err);
+        console.error('Error loading schedule:', msg);
+        toast({ title: 'Error loading schedule', description: msg, variant: 'destructive' });
       }finally{ setLoading(false); }
     })();
     return ()=>{ mounted=false };
