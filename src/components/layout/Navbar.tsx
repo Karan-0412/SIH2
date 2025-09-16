@@ -82,17 +82,43 @@ const Navbar = () => {
           <div ref={tabsRef} onKeyDown={onTabsKeyDown} tabIndex={0} aria-label="Main navigation" role="tablist" className="relative hidden md:flex items-center gap-1 bg-gray-100 rounded-full p-1">
             <span className="absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out" style={{ left: indicator.left, width: indicator.width }} />
             {items.map((item, idx) => (
-              <NavLink
-                key={item.label}
-                ref={(el) => (btnRefs.current[item.label] = el)}
-                to={item.to}
-                role="tab"
-                aria-selected={location.pathname === item.to}
-                tabIndex={-1}
-                className={({ isActive }) => `relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
-              >
-                {item.label}
-              </NavLink>
+              item.label === 'Courses' ? (
+                <DropdownMenu key={item.label}>
+                  <DropdownMenuTrigger asChild>
+                    <NavLink
+                      ref={(el) => (btnRefs.current[item.label] = el)}
+                      to={item.to}
+                      role="tab"
+                      aria-selected={location.pathname === item.to}
+                      tabIndex={-1}
+                      className={({ isActive }) => `relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
+                    >
+                      {item.label}
+                    </NavLink>
+                  </DropdownMenuTrigger>
+
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem asChild>
+                      <Link to="/courses">All Courses</Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/courses/new">Add Course</Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <NavLink
+                  key={item.label}
+                  ref={(el) => (btnRefs.current[item.label] = el)}
+                  to={item.to}
+                  role="tab"
+                  aria-selected={location.pathname === item.to}
+                  tabIndex={-1}
+                  className={({ isActive }) => `relative z-10 px-4 py-1.5 rounded-full text-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-ring ${isActive ? 'text-white' : 'text-gray-700 hover:text-gray-900'}`}
+                >
+                  {item.label}
+                </NavLink>
+              )
             ))}
           </div>
 
