@@ -87,19 +87,6 @@ const CoursesPage: React.FC = () => {
     return Object.keys(e).length === 0;
   };
 
-  const handleFileChange = (file?: File) => {
-    if (!file) {
-      setSyllabusFile(null);
-      return;
-    }
-    if (file.type !== 'application/pdf') {
-      setErrors((prev) => ({ ...prev, syllabus: 'Only PDF files are allowed.' }));
-      setSyllabusFile(null);
-      return;
-    }
-    setErrors((prev) => { const c = { ...prev }; delete c.syllabus; return c; });
-    setSyllabusFile(file);
-  };
 
   const handleThumbnailChange = (file?: File) => {
     if (!file) {
@@ -125,24 +112,6 @@ const CoursesPage: React.FC = () => {
       const ok = await validate();
       if (!ok) { setSubmitting(false); return; }
 
-      // upload syllabus if provided
-      let syllabus_url: string | null = null;
-      if (syllabusFile) {
-        try {
-          const filePath = `syllabi/${courseCode.trim()}_${Date.now()}.pdf`;
-          const { error: upErr } = await supabase.storage.from('syllabi').upload(filePath, syllabusFile, { upsert: false });
-          if (upErr) {
-            console.error('Error uploading syllabus', upErr);
-            toast({ title: 'Syllabus upload failed', description: (upErr as any)?.message ?? 'Could not upload file', });
-          } else {
-            const { data } = supabase.storage.from('syllabi').getPublicUrl(filePath);
-            syllabus_url = data?.publicUrl ?? null;
-          }
-        } catch (err) {
-          console.error('Syllabus upload error', err);
-          toast({ title: 'Syllabus upload failed', description: 'Network error while uploading syllabus.' });
-        }
-      }
 
       // upload thumbnail if provided
       let thumbnail_url: string | null = null;
@@ -172,7 +141,6 @@ const CoursesPage: React.FC = () => {
         description: description || null,
         deadline: deadline,
         credit_hours: creditHours ? Number(creditHours) : null,
-        syllabus_url,
         thumbnail_url,
         external_link: externalLink || null,
       } as any;
@@ -259,12 +227,6 @@ const CoursesPage: React.FC = () => {
             <Input type="number" min={0} value={creditHours} onChange={(e)=>setCreditHours(e.target.value)} placeholder="e.g. 3" />
           </div>
 
-          <div>
-            <Label>Upload Syllabus (PDF)</Label>
-            <input accept="application/pdf" type="file" onChange={(e)=>handleFileChange(e.target.files?.[0])} />
-            {errors.syllabus && <p className="text-sm text-red-600 mt-1">{errors.syllabus}</p>}
-            {syllabusFile && <p className="text-sm text-muted-foreground mt-1">Selected: {syllabusFile.name}</p>}
-          </div>
 
           <div>
             <Label>Thumbnail (optional)</Label>
