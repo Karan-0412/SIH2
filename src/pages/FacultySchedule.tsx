@@ -249,6 +249,7 @@ const FacultySchedule: React.FC = () => {
                 <CardTitle>{viewMode === 'weekly' ? 'Weekly View' : 'Monthly View'}</CardTitle>
               </CardHeader>
               <CardContent>
+                <div className={`transition-all duration-300 ${viewMode === 'weekly' ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`} aria-live="polite">
                 {viewMode === 'weekly' ? (
                   <div className="w-full overflow-auto border rounded-md bg-white" style={{ height: '720px' }}>
                     <div className="grid grid-cols-8 sticky top-0 bg-white z-10">
@@ -310,7 +311,7 @@ const FacultySchedule: React.FC = () => {
                             <div className="text-xs font-medium mb-2">{day.getDate()}</div>
                             <div className="flex flex-col gap-1">
                               {dayEvents.slice(0,3).map(ev=> (
-                                <div key={ev.id} className="rounded px-2 py-1 text-xs text-white" style={{ background: ev.color || '#06b6d4' }}>
+                                <div key={ev.id} role="button" tabIndex={0} onKeyDown={(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toast({ title: ev.course_name, description: `${new Date(ev.start).toLocaleTimeString()} - ${new Date(ev.end).toLocaleTimeString()}` }); } }} aria-label={`${ev.course_name} at ${new Date(ev.start).toLocaleTimeString()}`} className="rounded px-2 py-1 text-xs text-white focus:outline-none focus:ring-2" style={{ background: ev.color || '#06b6d4' }}>
                                   <div className="font-semibold">{ev.course_name}</div>
                                   <div className="text-[11px]">{new Date(ev.start).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
                                 </div>
@@ -323,6 +324,7 @@ const FacultySchedule: React.FC = () => {
                     </div>
                   </div>
                 )}
+                </div>
               </CardContent>
             </Card>
           </div>
