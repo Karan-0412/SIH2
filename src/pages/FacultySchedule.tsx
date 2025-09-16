@@ -313,7 +313,7 @@ const FacultySchedule: React.FC = () => {
                         ))}
                       </div>
 
-                      <div className="relative" style={{ height: '100%', minHeight: '640px' }}>
+                      <div className="relative" style={{ height: '100%', minHeight: '60vh' }}>
                         {/* time grid */}
                         <div className="absolute left-0 top-0 right-0 bottom-0 grid grid-cols-8">
                           <div className="border-r" />
