@@ -29,7 +29,7 @@ const MOCK_FACULTIES: FacultyMeta[] = [
   { id: 'f5', full_name: 'Dr. Priya Iyer', email: 'priya.iyer@univ.edu', department: 'IT', subjects: ['DBMS','Web'], sections: ['IT-1'], updated_at: new Date(Date.now()-10*60*1000).toISOString(), avatar_url: null },
 ];
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export default function FacultyCommunity(){
@@ -39,6 +39,7 @@ export default function FacultyCommunity(){
   const { theme, setTheme } = useTheme();
 
   const myId = profile?.id ?? '';
+  const navigate = useNavigate();
 
   const [faculties, setFaculties] = useState<FacultyMeta[]>([]);
   const [search, setSearch] = useState('');
@@ -167,8 +168,11 @@ export default function FacultyCommunity(){
   const isBookmarked = (fid: string) => bookmarks.includes(fid);
 
   const onMessage = (fid: string) => {
-    if(blocked.includes(fid)){ toast({ title:'Blocked', description:'You have blocked this faculty. Unblock to message.', variant:'destructive' }); return; }
-    setActivePeerId(fid);
+    if(blocked.includes(fid)){
+      toast({ title:'Blocked', description:'You have blocked this faculty. Unblock to message.', variant:'destructive' });
+      return;
+    }
+    navigate(`/faculty/chat?peer=${encodeURIComponent(fid)}`);
   };
 
   const sendMessage = async () => {

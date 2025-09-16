@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ArrowLeft, MoreVertical, Send } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 interface FacultyMeta { id: string; full_name: string; email: string; department?: string; avatar_url?: string | null; updated_at?: string; }
 interface MessageRow { id: string; sender_id: string; receiver_id: string; content: string; created_at: string; read_at: string | null; }
@@ -23,6 +23,7 @@ const FacultyChatHub: React.FC = () => {
   const { profile } = useProfile();
   const myId = profile?.id ?? '';
   const nav = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const [faculties, setFaculties] = useState<FacultyMeta[]>([]);
   const [conversations, setConversations] = useState<string[]>([]);
@@ -53,11 +54,14 @@ const FacultyChatHub: React.FC = () => {
         const peers = new Set<string>();
         (data||[]).forEach((m:any)=>{ peers.add(m.sender_id===myId? m.receiver_id : m.sender_id); });
         const convs = Array.from(peers);
-        setConversations(convs.length? convs : MOCK_FACULTIES.map(f=>f.id));
-        if(!activePeerId && (convs[0] || MOCK_FACULTIES[0])) setActivePeerId(convs[0] || MOCK_FACULTIES[0].id);
+        const fallback = MOCK_FACULTIES.map(f=>f.id);
+        setConversations(convs.length? convs : fallback);
+        const urlPeer = searchParams.get('peer');
+        if(urlPeer){ setActivePeerId(urlPeer); setShowListMobile(false); }
+        else if(!activePeerId && (convs[0] || fallback[0])) setActivePeerId(convs[0] || fallback[0]);
       }catch{}
     })();
-  },[myId]);
+  },[myId, searchParams]);
 
   useEffect(()=>{
     if(!myId || !activePeerId) { setMessages([]); return; }
