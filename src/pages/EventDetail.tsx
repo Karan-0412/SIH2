@@ -23,15 +23,14 @@ export default function EventDetail() {
 
   if (!event) {
     return (
-      <div className="min-h-screen bg-gray-100">
-        <Navbar />
-        <main className="max-w-5xl mx-auto p-6">
-          <Card className="p-8 text-center">
-            <p className="text-lg">Event not found.</p>
-          </Card>
-        </main>
-      </div>
-    );
+    <div className="min-h-screen bg-gray-100">
+      <main className="max-w-5xl mx-auto p-6">
+        <Card className="p-8 text-center">
+          <p className="text-lg">Event not found.</p>
+        </Card>
+      </main>
+    </div>
+  );
   }
 
   const onSubmit = (e: React.FormEvent) => {
