@@ -7,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import Navbar from '@/components/layout/Navbar';
 
 const TAG_OPTIONS = ['Mandatory', 'Optional', 'Skill-based', 'Elective'] as const;
 
