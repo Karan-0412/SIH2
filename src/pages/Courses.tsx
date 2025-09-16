@@ -134,9 +134,9 @@ const CoursesPage: React.FC = () => {
     e?.preventDefault();
     setSubmitting(true);
     try {
-      const ok = await validate();
+      const effectiveFacultyId = facultyId ?? (profile?.role === 'faculty' ? profile.id : null);
+      const ok = await validate(effectiveFacultyId);
       if (!ok) { setSubmitting(false); return; }
-
 
       // upload thumbnail if provided
       let thumbnail_url: string | null = null;
@@ -161,7 +161,7 @@ const CoursesPage: React.FC = () => {
       const payload = {
         name: courseName.trim(),
         course_code: courseCode.trim(),
-        faculty_id: facultyId,
+        faculty_id: effectiveFacultyId,
         tags,
         description: description || null,
         deadline: deadline,
@@ -173,18 +173,25 @@ const CoursesPage: React.FC = () => {
       const { data, error } = await supabase.from('courses').insert(payload).select().maybeSingle();
       if (error) {
         // handle unique constraint race
-        const msg = (error as any)?.message ?? '';
+        const msg = (error as any)?.message ?? JSON.stringify(error);
+        console.error('Error creating course:', msg, error);
         if (msg.includes('duplicate key') || msg.includes('already exists')) {
           setErrors({ courseCode: 'Course code must be unique. A course with this code already exists.' });
           toast({ title: 'Validation error', description: 'Course code already exists.' });
         } else {
-          console.error('Error creating course', error);
-          toast({ title: 'Error', description: 'Could not create course.' });
+          toast({ title: 'Error creating course', description: msg, variant: 'destructive' });
         }
       } else {
         toast({ title: 'Course created', description: 'Course was created successfully.' });
         // reset form
         setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setThumbnailFile(null); setThumbnailPreview(null); setExternalLink(''); setErrors({});
+        // refresh courses
+        try {
+          const { data: refreshed } = await supabase.from('courses').select('*');
+          if (refreshed) setCourses(refreshed as any[]);
+        } catch (err) {
+          console.error('Error refreshing courses after create', err);
+        }
       }
     } finally {
       setSubmitting(false);
