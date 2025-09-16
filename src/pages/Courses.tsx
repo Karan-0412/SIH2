@@ -102,6 +102,23 @@ const CoursesPage: React.FC = () => {
     setSyllabusFile(file);
   };
 
+  const handleThumbnailChange = (file?: File) => {
+    if (!file) {
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      setErrors((prev) => ({ ...prev, thumbnail: 'Only image files are allowed.' }));
+      setThumbnailFile(null);
+      setThumbnailPreview(null);
+      return;
+    }
+    setErrors((prev) => { const c = { ...prev }; delete c.thumbnail; return c; });
+    setThumbnailFile(file);
+    setThumbnailPreview(URL.createObjectURL(file));
+  };
+
   const onSubmit = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setSubmitting(true);
