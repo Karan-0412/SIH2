@@ -17,6 +17,7 @@ const SORT_KEYS = ['name','department','recent'] as const;
 
 const BK_KEY = (id: string) => `fac_bookmarks_${id}`;
 const BL_KEY = (id: string) => `fac_blocked_${id}`;
+const CNV_KEY = (id: string) => `fac_contacts_${id}`;
 
 interface FacultyMeta { id: string; full_name: string; email: string; department?: string; sections?: string[]; subjects?: string[]; updated_at?: string; avatar_url?: string | null; }
 interface MessageRow { id: string; sender_id: string; receiver_id: string; content: string; created_at: string; read_at: string | null; }
