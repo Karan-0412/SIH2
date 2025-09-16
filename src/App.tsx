@@ -14,6 +14,7 @@ import Leaderboard from "./pages/Leaderboard";
 import AppLayout from "./components/layout/AppLayout";
 import CoursesPage from "./pages/Courses";
 import FacultySchedule from "./pages/FacultySchedule";
+import CommunityPage from "./pages/Community";
 
 const queryClient = new QueryClient();
 
