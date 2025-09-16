@@ -17,6 +17,7 @@ import FacultySchedule from "./pages/FacultySchedule";
 import CommunityPage from "./pages/Community";
 import StudentRoute from "./components/routing/StudentRoute";
 import FacultyCommunity from "./pages/FacultyCommunity";
+import FacultyChatHub from "./pages/FacultyChatHub";
 import FacultyRoute from "./components/routing/FacultyRoute";
 
 const queryClient = new QueryClient();
