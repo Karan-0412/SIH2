@@ -401,9 +401,6 @@ const FacultySchedule: React.FC = () => {
               <div className="text-sm text-muted-foreground">Room</div>
               <div className="font-medium">{selectedEvent.room || 'TBD'}</div>
 
-              <div className="text-sm text-muted-foreground">Tags</div>
-              <div className="flex gap-2 flex-wrap">{(selectedEvent.tags || []).map(t=> <span key={t} className="px-2 py-0.5 rounded-full text-xs bg-white/10">{t}</span>)}</div>
-
               <div className="text-sm text-muted-foreground">Enrolled</div>
               <div className="font-medium">{selectedEvent.students_count ?? 0} students</div>
 
