@@ -9,15 +9,24 @@ export interface PlatformData {
  * Example: https://leetcode-stats-api.herokuapp.com/leetcode
  */
 export async function fetchLeetCodeData(studentId: string): Promise<PlatformData> {
-  const res = await fetch(`https://leetcode-stats-api.herokuapp.com/${studentId}`);
-  const json = await res.json();
+  try {
+    const res = await fetch(`https://leetcode-stats-api.herokuapp.com/${studentId}`);
+    if (!res.ok) {
+      console.error('LeetCode API responded with', res.status);
+      return { solved: 0, hours: 0, courses: 0 };
+    }
+    const json = await res.json();
 
-  if (json.status === "error") {
+    if (json.status === "error") {
+      return { solved: 0, hours: 0, courses: 0 };
+    }
+
+    const solved = json.totalSolved || 0;
+    return { solved, hours: Math.floor(solved / 10), courses: 0 };
+  } catch (err) {
+    console.error('Network error fetching LeetCode data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0 };
   }
-
-  const solved = json.totalSolved || 0;
-  return { solved, hours: Math.floor(solved / 10), courses: 0 };
 }
 
 /**
@@ -86,5 +95,3 @@ export async function fetchCodeChefData(studentId: string): Promise<PlatformData
 export async function fetchPlaceholderData(): Promise<PlatformData> {
   return { solved: 0, hours: 0, courses: 0 };
 }
-
-
