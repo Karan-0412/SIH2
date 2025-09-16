@@ -84,7 +84,7 @@ const Navbar = () => {
           </div>
 
           <div ref={tabsRef} onKeyDown={onTabsKeyDown} tabIndex={0} aria-label="Main navigation" role="tablist" className="relative hidden md:flex items-center gap-1 bg-gray-100 rounded-full p-1">
-            <span className="absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out" style={{ left: indicator.left, width: indicator.width }} />
+            <span aria-hidden="true" className="pointer-events-none absolute top-1 bottom-1 rounded-full bg-[#111827] shadow-sm transition-all duration-300 ease-out z-0" style={{ left: indicator.left, width: indicator.width }} />
             {items.map((item, idx) => (
               <NavLink
                 key={item.label}
