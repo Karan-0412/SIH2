@@ -18,6 +18,8 @@ const MOCK_FACULTIES: FacultyMeta[] = [
   { id: 'f3', full_name: 'Dr. Neha Kapoor', email: 'neha.kapoor@univ.edu', department: 'AIML', updated_at: new Date(Date.now()-24*3600*1000+300000).toISOString(), avatar_url: null },
 ];
 
+const CNV_KEY = (id: string) => `fac_contacts_${id}`;
+
 const FacultyChatHub: React.FC = () => {
   const { user } = useAuth();
   const { profile } = useProfile();
