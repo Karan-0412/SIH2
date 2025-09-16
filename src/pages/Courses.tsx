@@ -20,7 +20,6 @@ const CoursesPage: React.FC = () => {
   const [description, setDescription] = useState('');
   const [deadline, setDeadline] = useState('');
   const [creditHours, setCreditHours] = useState<string>('');
-  const [syllabusFile, setSyllabusFile] = useState<File | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [externalLink, setExternalLink] = useState<string>('');
