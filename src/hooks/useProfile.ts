@@ -49,21 +49,34 @@ export const useProfile = () => {
         console.error('Error fetching profile:', (error as any)?.message ?? JSON.stringify(error));
       } else {
         if (!data) {
-          // No profile row exists for this user — create a default one from auth metadata
+          // No profile row exists for this user — create or upsert a default one from auth metadata
           try {
             const meta = (user as any)?.user_metadata ?? {};
             const full_name = meta.full_name ?? user.email ?? '';
             const role = meta.role === 'faculty' ? 'faculty' : 'student';
 
+            // Use upsert with onConflict to avoid race-condition duplicate key errors
             const { data: created, error: createError } = await supabase
               .from('profiles')
-              .insert({ user_id: user.id, full_name, email: user.email, role })
+              .upsert({ user_id: user.id, full_name, email: user.email, role }, { onConflict: 'user_id' })
               .select()
-              .single();
+              .maybeSingle();
 
             if (createError) {
-              setProfileError(createError);
-              console.error('Error creating profile:', (createError as any)?.message ?? JSON.stringify(createError));
+              // If another request inserted the row concurrently, try fetching the existing row
+              const msg = (createError as any)?.message ?? '';
+              if (msg.includes('duplicate key') || msg.includes('already exists')) {
+                const { data: existing } = await supabase
+                  .from('profiles')
+                  .select('*')
+                  .eq('user_id', user.id)
+                  .limit(1)
+                  .maybeSingle();
+                setProfile(existing ?? null);
+              } else {
+                setProfileError(createError);
+                console.error('Error creating profile:', (createError as any)?.message ?? JSON.stringify(createError));
+              }
             } else {
               setProfile(created ?? null);
             }
