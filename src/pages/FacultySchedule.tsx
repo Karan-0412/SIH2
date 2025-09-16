@@ -36,6 +36,7 @@ const FacultySchedule: React.FC = () => {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
+  const [selectedEvent, setSelectedEvent] = useState<EventItem | null>(null);
 
   // fetch schedule from DB (if exists)
   useEffect(()=>{
