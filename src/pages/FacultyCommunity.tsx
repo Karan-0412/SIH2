@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile, Profile } from '@/hooks/useProfile';
 import { supabase } from '@/integrations/supabase/client';
-import { Bell, Bookmark, BookmarkCheck, Moon, Sun, Send, MoreVertical, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Bell, Moon, Sun, Send, MoreVertical, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTheme } from 'next-themes';
 
 const DEPARTMENTS = ['CSE','ECE','EEE','Mechanical','Civil','AIML','IT','MBA','Maths','Physics','Chemistry'];
@@ -30,6 +30,7 @@ const MOCK_FACULTIES: FacultyMeta[] = [
 ];
 
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
 export default function FacultyCommunity(){
   const { user } = useAuth();
@@ -48,6 +49,8 @@ export default function FacultyCommunity(){
 
   const [bookmarks, setBookmarks] = useState<string[]>([]);
   const [blocked, setBlocked] = useState<string[]>([]);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [selectedFaculty, setSelectedFaculty] = useState<FacultyMeta | null>(null);
 
   const [conversations, setConversations] = useState<string[]>([]); // faculty ids
   const [activePeerId, setActivePeerId] = useState<string | null>(null);
@@ -254,14 +257,11 @@ export default function FacultyCommunity(){
                       </div>
                       <div className="flex items-center gap-1">
                         <Button size="icon" variant="ghost" onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
-                        <Button size="icon" variant="ghost" aria-label={isBookmarked(f.id)?'Remove bookmark':'Bookmark'} onClick={(e)=>{ e.stopPropagation(); toggleBookmark(f.id); }}>
-                          {isBookmarked(f.id)? <BookmarkCheck className="h-4 w-4 text-emerald-600"/> : <Bookmark className="h-4 w-4"/>}
-                        </Button>
                       </div>
                     </div>
                     {/* Hover overlay */}
                     <div className="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/40 transition rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <button onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} className="pointer-events-auto bg-white text-sm font-medium px-3 py-1.5 rounded-full shadow">View Profile</button>
+                      <button onClick={(e)=>{ e.stopPropagation(); setSelectedFaculty(f); setProfileOpen(true); }} className="pointer-events-auto bg-white text-sm font-medium px-3 py-1.5 rounded-full shadow">View Profile</button>
                     </div>
                   </div>
                 ))}
@@ -283,9 +283,6 @@ export default function FacultyCommunity(){
                       </div>
                       <div className="flex items-center gap-1">
                         <Button size="icon" variant="ghost" onClick={()=>onMessage(f.id)} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
-                        <Button size="icon" variant="ghost" aria-label={isBookmarked(f.id)?'Remove bookmark':'Bookmark'} onClick={()=>toggleBookmark(f.id)}>
-                          {isBookmarked(f.id)? <BookmarkCheck className="h-4 w-4 text-emerald-600"/> : <Bookmark className="h-4 w-4"/>}
-                        </Button>
                       </div>
                     </div>
                   </div>
@@ -305,6 +302,39 @@ export default function FacultyCommunity(){
           {unreadCount>0 && <span className="ml-2 text-[10px] bg-red-600 text-white rounded-full px-1">{unreadCount}</span>}
         </Button>
       </Link>
+      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
+        <DialogContent>
+          {selectedFaculty && (
+            <div className="space-y-3">
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <Avatar className="h-12 w-12"><AvatarImage src={selectedFaculty.avatar_url||'/placeholder.svg'} alt={selectedFaculty.full_name}/><AvatarFallback>{selectedFaculty.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                  <div>
+                    <DialogTitle>{selectedFaculty.full_name}</DialogTitle>
+                    <DialogDescription>{selectedFaculty.department || '—'}</DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+              <div className="text-sm">
+                <div><span className="text-muted-foreground">Email:</span> {selectedFaculty.email}</div>
+                {selectedFaculty.subjects && selectedFaculty.subjects.length>0 && (
+                  <div><span className="text-muted-foreground">Subjects:</span> {selectedFaculty.subjects.join(', ')}</div>
+                )}
+                {selectedFaculty.sections && selectedFaculty.sections.length>0 && (
+                  <div><span className="text-muted-foreground">Sections:</span> {selectedFaculty.sections.join(', ')}</div>
+                )}
+                <div className="flex items-center gap-2 mt-2">
+                  <span className={`inline-flex items-center gap-1 ${isOnline(selectedFaculty)?'text-green-600':'text-gray-400'}`}>● {isOnline(selectedFaculty)?'Online':'Offline'}</span>
+                </div>
+              </div>
+              <div className="pt-2 flex justify-end gap-2">
+                <Button variant="outline" onClick={()=> setProfileOpen(false)}>Close</Button>
+                <Button onClick={()=>{ setProfileOpen(false); onMessage(selectedFaculty.id); }}>Chat</Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
