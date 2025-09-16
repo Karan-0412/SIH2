@@ -62,7 +62,14 @@ const FacultyChatHub: React.FC = () => {
         const urlPeer = searchParams.get('peer') || '';
         const merged = Array.from(new Set([...(convs.length? convs : fallback), ...stored, urlPeer].filter(Boolean)));
         setConversations(merged);
-        if(urlPeer){ setActivePeerId(urlPeer); setShowListMobile(false); }
+        if(urlPeer){
+          try{
+            const key = CNV_KEY(myId);
+            const prev: string[] = JSON.parse(localStorage.getItem(key) || '[]');
+            if(!prev.includes(urlPeer)) localStorage.setItem(key, JSON.stringify([urlPeer, ...prev]));
+          }catch{}
+          setActivePeerId(urlPeer); setShowListMobile(false);
+        }
         else if(!activePeerId && merged[0]) setActivePeerId(merged[0]);
       }catch{}
     })();
@@ -81,7 +88,10 @@ const FacultyChatHub: React.FC = () => {
     })();
   },[myId, activePeerId]);
 
-  const peers = useMemo(()=> faculties.filter(f=> conversations.includes(f.id)), [faculties, conversations]);
+  const peers = useMemo(()=> {
+    const byId = new Map(faculties.map(f=> [f.id, f]));
+    return conversations.map(id => byId.get(id) ?? { id, full_name: 'Faculty', email: '', department: undefined, avatar_url: null, updated_at: undefined });
+  }, [faculties, conversations]);
   const filteredPeers = useMemo(()=> {
     const q = search.toLowerCase();
     return peers.filter(f=> f.full_name.toLowerCase().includes(q) || (f.department||'').toLowerCase().includes(q));
@@ -99,6 +109,23 @@ const FacultyChatHub: React.FC = () => {
 
   const mobileToChat = () => { setShowListMobile(false); };
   const mobileToList = () => { setShowListMobile(true); };
+
+  useEffect(()=>{
+    if(!activePeerId) return;
+    if(faculties.some(f=> f.id === activePeerId)) return;
+    (async()=>{
+      try{
+        const { data } = await supabase.from('profiles').select('id, full_name, email, department, avatar_url, updated_at').eq('id', activePeerId).maybeSingle();
+        if(data){
+          setFaculties(prev=> [...prev, { id:data.id, full_name:data.full_name||'Faculty', email:data.email||'', department:data.department, avatar_url:data.avatar_url, updated_at:data.updated_at }]);
+        } else {
+          setFaculties(prev=> [...prev, { id: activePeerId, full_name: 'Faculty', email:'', department: undefined, avatar_url: null, updated_at: new Date().toISOString() }]);
+        }
+      }catch{
+        setFaculties(prev=> [...prev, { id: activePeerId, full_name: 'Faculty', email:'', department: undefined, avatar_url: null, updated_at: new Date().toISOString() }]);
+      }
+    })();
+  },[activePeerId]);
 
   return (
     <div className="min-h-[calc(100vh-64px)] bg-gray-50 dark:bg-[#0b1020]">
@@ -135,12 +162,12 @@ const FacultyChatHub: React.FC = () => {
             <CardHeader className="flex flex-row items-center justify-between">
               <div className="flex items-center gap-3">
                 <Button variant="ghost" size="icon" className="md:hidden" onClick={mobileToList} aria-label="Back"><ArrowLeft className="h-4 w-4"/></Button>
-                {activePeer ? (
+                {activePeerId ? (
                   <>
-                    <Avatar className="h-8 w-8"><AvatarImage src={activePeer.avatar_url||'/placeholder.svg'} alt={activePeer.full_name}/><AvatarFallback>{activePeer.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                    <Avatar className="h-8 w-8"><AvatarImage src={(activePeer?.avatar_url)||'/placeholder.svg'} alt={(activePeer?.full_name)||'Faculty'}/><AvatarFallback>{(activePeer?.full_name||'F').slice(0,1)}</AvatarFallback></Avatar>
                     <div>
-                      <div className="font-medium leading-tight">{activePeer.full_name}</div>
-                      <div className="text-xs text-muted-foreground -mt-0.5">{activePeer.department || '—'}</div>
+                      <div className="font-medium leading-tight">{activePeer?.full_name || 'Faculty'}</div>
+                      <div className="text-xs text-muted-foreground -mt-0.5">{activePeer?.department || '—'}</div>
                     </div>
                   </>
                 ) : (
@@ -170,8 +197,8 @@ const FacultyChatHub: React.FC = () => {
                 {!messages.length && <div className="text-sm text-muted-foreground text-center mt-8">No messages yet.</div>}
               </div>
               <div className="p-3 flex items-center gap-2 border-t bg-white/70 dark:bg-transparent">
-                <Input placeholder={!activePeer? 'Select a contact' : 'Type a message...'} value={newMsg} onChange={(e)=>setNewMsg(e.target.value)} disabled={!activePeer} onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } }} />
-                <Button onClick={sendMessage} disabled={!activePeer || !newMsg.trim()} aria-label="Send"><Send className="h-4 w-4"/></Button>
+                <Input placeholder={!activePeerId? 'Select a contact' : 'Type a message...'} value={newMsg} onChange={(e)=>setNewMsg(e.target.value)} disabled={!activePeerId} onKeyDown={(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sendMessage(); } }} />
+                <Button onClick={sendMessage} disabled={!activePeerId || !newMsg.trim()} aria-label="Send"><Send className="h-4 w-4"/></Button>
               </div>
             </CardContent>
           </Card>
