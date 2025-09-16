@@ -267,6 +267,18 @@ const CoursesPage: React.FC = () => {
             {syllabusFile && <p className="text-sm text-muted-foreground mt-1">Selected: {syllabusFile.name}</p>}
           </div>
 
+          <div>
+            <Label>Thumbnail (optional)</Label>
+            <input accept="image/*" type="file" onChange={(e)=>handleThumbnailChange(e.target.files?.[0])} />
+            {errors.thumbnail && <p className="text-sm text-red-600 mt-1">{errors.thumbnail}</p>}
+            {thumbnailPreview && <img src={thumbnailPreview} alt="thumbnail preview" className="mt-2 h-16 w-24 object-cover rounded" />}
+          </div>
+
+          <div>
+            <Label>External Link (optional)</Label>
+            <Input type="url" value={externalLink} onChange={(e)=>setExternalLink(e.target.value)} placeholder="https://example.com/course" />
+          </div>
+
           <div className="flex items-center justify-end space-x-3">
             <Button variant="ghost" onClick={() => { setCourseName(''); setCourseCode(''); setFacultyId(null); setTags([]); setDescription(''); setDeadline(''); setCreditHours(''); setSyllabusFile(null); setErrors({}); }}>
               Reset
