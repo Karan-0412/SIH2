@@ -39,6 +39,19 @@ const FacultySchedule: React.FC = () => {
   // fetch schedule from DB (if exists)
   useEffect(()=>{
     let mounted = true;
+    // prepare fallback sample events (used when DB table is missing)
+    const now = new Date();
+    const base = new Date(now);
+    const day = base.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    base.setDate(base.getDate() + diff);
+    base.setHours(9,0,0,0);
+    const sampleEvents: EventItem[] = [
+      { id: 's1', course_name: 'Intro to Algorithms', start: new Date(base).toISOString(), end: new Date(new Date(base).setHours(base.getHours()+1,30,0,0)).toISOString(), room: 'R101', tags: ['Mandatory'], students_count: 30, notes: '', color: '#3b82f6' },
+      { id: 's2', course_name: 'Data Structures Lab', start: new Date(new Date(base).setDate(base.getDate()+2)).toISOString(), end: new Date(new Date(base).setDate(base.getDate()+2)).toISOString(), room: 'Lab 2', tags: ['Lab'], students_count: 20, notes: '', color: '#10b981' },
+      { id: 's3', course_name: 'Databases', start: new Date(new Date(base).setDate(base.getDate()+4)).toISOString(), end: new Date(new Date(base).setDate(base.getDate()+4)).toISOString(), room: 'R203', tags: ['Elective'], students_count: 25, notes: '', color: '#f59e0b' }
+    ];
+
     (async()=>{
       setLoading(true);
       try{
