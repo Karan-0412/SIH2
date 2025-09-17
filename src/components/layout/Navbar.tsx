@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
@@ -12,6 +12,7 @@ const Navbar = () => {
   const { signOut } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -26,6 +27,7 @@ const Navbar = () => {
         title: 'Success',
         description: 'Signed out successfully!',
       });
+      navigate('/auth', { replace: true });
     }
   };
 

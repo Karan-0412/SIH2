@@ -15,6 +15,8 @@ import AppLayout from "./components/layout/AppLayout";
 import CoursesPage from "./pages/Courses";
 import FacultySchedule from "./pages/FacultySchedule";
 import CommunityPage from "./pages/Community";
+import StudentGoals from "./pages/StudentGoals";
+import IntegrationsPage from "./pages/Integrations";
 import StudentRoute from "./components/routing/StudentRoute";
 import FacultyCommunity from "./pages/FacultyCommunity";
 import FacultyChatHub from "./pages/FacultyChatHub";
@@ -38,6 +40,8 @@ const App = () => (
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/schedule" element={<FacultySchedule />} />
             <Route path="/community" element={<StudentRoute><CommunityPage /></StudentRoute>} />
+            <Route path="/student/goals" element={<StudentRoute><StudentGoals /></StudentRoute>} />
+            <Route path="/integrations" element={<StudentRoute><IntegrationsPage /></StudentRoute>} />
             <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
             <Route path="/faculty/chat" element={<FacultyRoute><FacultyChatHub /></FacultyRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
