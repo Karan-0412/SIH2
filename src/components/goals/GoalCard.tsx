@@ -38,29 +38,35 @@ function Sparkline({ points }: { points: Array<{t:number;v:number}> }){
 const GoalCard: React.FC<Props> = ({ goal, onBump, onComplete, onTogglePause, onEdit, onOpenDetail }) => {
   const pct = Math.round((goal.progress/Math.max(1,goal.target))*100);
   return (
-    <Card className={`bg-white/95 ${goal.completed ? 'ring-2 ring-emerald-400' : ''}`}>
+    <Card className={`bg-white/95 overflow-hidden ${goal.completed ? 'ring-2 ring-emerald-400' : ''}`}>
       <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <span className="text-xl">🎯</span>
-            <button className="hover:underline text-left" onClick={()=>onOpenDetail(goal)}>{goal.title}</button>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2 min-w-0">
+            <span className="text-xl shrink-0">🎯</span>
+            <button className="hover:underline text-left truncate max-w-[65%] sm:max-w-[70%]" onClick={()=>onOpenDetail(goal)}>{goal.title}</button>
           </CardTitle>
-          <SyncStatusBadge status={goal.syncStatus || 'idle'} lastSyncAt={goal.lastSyncAt} />
+          <div className="shrink-0">
+            <SyncStatusBadge status={goal.syncStatus || 'idle'} lastSyncAt={goal.lastSyncAt} />
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
-          <div className="text-muted-foreground">{goal.platform.toUpperCase()} · {goal.account}</div>
-          <div className="font-medium">{goal.progress}/{goal.target} {goal.unit}</div>
+        <div className="flex items-center justify-between text-sm gap-3 flex-wrap">
+          <div className="text-muted-foreground min-w-0 truncate break-all max-w-[70%]">
+            {goal.platform.toUpperCase()} · {goal.account}
+          </div>
+          <div className="font-medium shrink-0">{goal.progress}/{goal.target} {goal.unit}</div>
         </div>
         <Progress value={pct} className="h-2 bg-indigo-100" />
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div className="text-sm text-muted-foreground">Due {new Date(goal.endDate+'T00:00:00').toLocaleDateString()}</div>
-          <div className="text-sm font-medium">{pct}%</div>
+          <div className="text-sm font-medium shrink-0">{pct}%</div>
         </div>
-        <div className="flex items-center justify-between">
-          <Sparkline points={goal.activity || []} />
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="sm:flex-1 min-w-[120px] overflow-hidden">
+            <Sparkline points={goal.activity || []} />
+          </div>
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <Button variant="secondary" className="rounded-full" onClick={()=>onBump(goal.id, 1)}><Plus className="h-4 w-4" /> +1</Button>
             <Button variant="secondary" className="rounded-full" onClick={()=>onBump(goal.id, Math.max(1, Math.round(goal.target*0.1)))}><PlusCircle className="h-4 w-4" /> +10%</Button>
             <Button variant="ghost" onClick={()=>onEdit(goal)}><Pencil className="h-4 w-4" /> Edit</Button>
