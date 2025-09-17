@@ -17,6 +17,7 @@ import FacultySchedule from "./pages/FacultySchedule";
 import CommunityPage from "./pages/Community";
 import StudentRoute from "./components/routing/StudentRoute";
 import FacultyCommunity from "./pages/FacultyCommunity";
+import FacultyChatHub from "./pages/FacultyChatHub";
 import FacultyRoute from "./components/routing/FacultyRoute";
 
 const queryClient = new QueryClient();
@@ -38,6 +39,7 @@ const App = () => (
             <Route path="/schedule" element={<FacultySchedule />} />
             <Route path="/community" element={<StudentRoute><CommunityPage /></StudentRoute>} />
             <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
+            <Route path="/faculty/chat" element={<FacultyRoute><FacultyChatHub /></FacultyRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
