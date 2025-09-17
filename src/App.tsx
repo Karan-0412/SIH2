@@ -15,6 +15,7 @@ import AppLayout from "./components/layout/AppLayout";
 import CoursesPage from "./pages/Courses";
 import FacultySchedule from "./pages/FacultySchedule";
 import CommunityPage from "./pages/Community";
+import StudentGoals from "./pages/StudentGoals";
 import StudentRoute from "./components/routing/StudentRoute";
 import FacultyCommunity from "./pages/FacultyCommunity";
 import FacultyChatHub from "./pages/FacultyChatHub";
