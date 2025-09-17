@@ -2,6 +2,8 @@ export interface PlatformData {
   solved: number;
   hours: number;
   courses: number;
+  contests?: number;
+  rating?: number;
 }
 
 /**
@@ -22,10 +24,18 @@ export async function fetchLeetCodeData(studentId: string): Promise<PlatformData
     }
 
     const solved = json.totalSolved || 0;
-    return { solved, hours: Math.floor(solved / 10), courses: 0 };
+    const contests = json.totalContests || 0;
+    const rating = json.contestRating || 0;
+    return { 
+      solved, 
+      hours: Math.floor(solved / 10), 
+      courses: 0,
+      contests,
+      rating
+    };
   } catch (err) {
     console.error('Network error fetching LeetCode data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -43,7 +53,7 @@ export async function fetchCodeforcesData(studentId: string): Promise<PlatformDa
     const json = await res.json();
 
     if (json.status !== "OK") {
-      return { solved: 0, hours: 0, courses: 0 };
+      return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
     }
 
     // count unique accepted problems
@@ -53,10 +63,26 @@ export async function fetchCodeforcesData(studentId: string): Promise<PlatformDa
         .map((s: any) => s.problem.name)
     ).size;
 
-    return { solved, hours: Math.floor(solved / 5), courses: 0 };
+    // Get user info for rating
+    const userRes = await fetch(`https://codeforces.com/api/user.info?handles=${studentId}`);
+    let rating = 0;
+    if (userRes.ok) {
+      const userJson = await userRes.json();
+      if (userJson.status === "OK" && userJson.result?.[0]) {
+        rating = userJson.result[0].rating || 0;
+      }
+    }
+
+    return { 
+      solved, 
+      hours: Math.floor(solved / 5), 
+      courses: 0,
+      contests: 0,
+      rating
+    };
   } catch (err) {
     console.error('Network error fetching Codeforces data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -74,14 +100,21 @@ export async function fetchCodewarsData(studentId: string): Promise<PlatformData
     const json = await res.json();
 
     if (json.success === false || json.name === undefined) {
-      return { solved: 0, hours: 0, courses: 0 };
+      return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
     }
 
     const solved = json.codeChallenges?.totalCompleted || 0;
-    return { solved, hours: Math.floor(solved / 8), courses: 0 };
+    const honor = json.honor || 0;
+    return { 
+      solved, 
+      hours: Math.floor(solved / 8), 
+      courses: 0,
+      contests: 0,
+      rating: Math.floor(honor / 100) // Convert honor to a rating-like number
+    };
   } catch (err) {
     console.error('Network error fetching Codewars data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -99,7 +132,7 @@ export async function fetchGFGData(studentId: string): Promise<PlatformData> {
     return res.json();
   } catch (err) {
     console.error('Network error fetching GFG data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -113,7 +146,7 @@ export async function fetchHackerRankData(studentId: string): Promise<PlatformDa
     return res.json();
   } catch (err) {
     console.error('Network error fetching HackerRank data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -127,7 +160,7 @@ export async function fetchHackerEarthData(studentId: string): Promise<PlatformD
     return res.json();
   } catch (err) {
     console.error('Network error fetching HackerEarth data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
@@ -141,11 +174,11 @@ export async function fetchCodeChefData(studentId: string): Promise<PlatformData
     return res.json();
   } catch (err) {
     console.error('Network error fetching CodeChef data for', studentId, err);
-    return { solved: 0, hours: 0, courses: 0 };
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
 // placeholder
 export async function fetchPlaceholderData(): Promise<PlatformData> {
-  return { solved: 0, hours: 0, courses: 0 };
+  return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
 }
