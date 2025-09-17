@@ -12,6 +12,7 @@ const Navbar = () => {
   const { signOut } = useAuth();
   const { profile } = useProfile();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSignOut = async () => {
     const { error } = await signOut();
@@ -26,6 +27,7 @@ const Navbar = () => {
         title: 'Success',
         description: 'Signed out successfully!',
       });
+      navigate('/auth', { replace: true });
     }
   };
 
