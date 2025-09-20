@@ -4,8 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useNotifications } from '@/hooks/useNotifications';
-import { NotificationService } from '@/services/notificationService';
+import { useSimpleNotifications } from '@/hooks/useSimpleNotifications';
 import { 
   Bell, 
   Check, 
@@ -31,11 +30,10 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   const { 
     notifications, 
     unreadCount, 
-    loading, 
     markAsRead, 
     markAllAsRead, 
     deleteNotification 
-  } = useNotifications();
+  } = useSimpleNotifications();
 
   const [selectedNotification, setSelectedNotification] = useState<string | null>(null);
 
@@ -53,15 +51,51 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
   };
 
   const getNotificationIcon = (type: string) => {
-    return NotificationService.getNotificationIcon(type as any);
+    const iconMap = {
+      'post_created': '📝',
+      'post_liked': '👍',
+      'post_disliked': '👎',
+      'post_commented': '💬',
+      'comment_liked': '👍',
+      'comment_disliked': '👎',
+      'user_joined_group': '👥',
+      'group_created': '🏗️',
+    };
+    return iconMap[type as keyof typeof iconMap] || '🔔';
   };
 
   const getNotificationColor = (type: string) => {
-    return NotificationService.getNotificationColor(type as any);
+    const colorMap = {
+      'post_created': 'text-blue-600',
+      'post_liked': 'text-green-600',
+      'post_disliked': 'text-red-600',
+      'post_commented': 'text-purple-600',
+      'comment_liked': 'text-green-600',
+      'comment_disliked': 'text-red-600',
+      'user_joined_group': 'text-blue-600',
+      'group_created': 'text-indigo-600',
+    };
+    return colorMap[type as keyof typeof colorMap] || 'text-gray-600';
   };
 
-  const formatTime = (createdAt: string) => {
-    return NotificationService.formatNotificationTime(createdAt);
+  const formatTime = (timestamp: number) => {
+    const now = Date.now();
+    const diffInSeconds = Math.floor((now - timestamp) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'Just now';
+    } else if (diffInSeconds < 3600) {
+      const minutes = Math.floor(diffInSeconds / 60);
+      return `${minutes}m ago`;
+    } else if (diffInSeconds < 86400) {
+      const hours = Math.floor(diffInSeconds / 3600);
+      return `${hours}h ago`;
+    } else if (diffInSeconds < 604800) {
+      const days = Math.floor(diffInSeconds / 86400);
+      return `${days}d ago`;
+    } else {
+      return new Date(timestamp).toLocaleDateString();
+    }
   };
 
   if (!isOpen) return null;
@@ -103,11 +137,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
         
         <CardContent className="p-0">
           <ScrollArea className="h-[60vh]">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : notifications.length === 0 ? (
+            {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-12 text-gray-500">
                 <Bell className="h-12 w-12 mb-4 text-gray-300" />
                 <p className="text-lg font-medium">No notifications yet</p>
@@ -119,7 +149,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                   <div
                     key={notification.id}
                     className={`p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors cursor-pointer ${
-                      !notification.read_at ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                      !notification.read ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification.id)}
                   >
@@ -137,7 +167,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                               <h4 className="font-medium text-gray-900 text-sm">
                                 {notification.title}
                               </h4>
-                              {!notification.read_at && (
+                              {!notification.read && (
                                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                               )}
                             </div>
@@ -151,7 +181,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                                 {notification.type.replace('_', ' ').toUpperCase()}
                               </span>
                               <span>•</span>
-                              <span>{formatTime(notification.created_at)}</span>
+                              <span>{formatTime(notification.timestamp)}</span>
                               {notification.from_user_name && (
                                 <>
                                   <span>•</span>
@@ -173,7 +203,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ isOpen, onClose
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              {!notification.read_at && (
+                              {!notification.read && (
                                 <DropdownMenuItem
                                   onClick={(e) => {
                                     e.stopPropagation();

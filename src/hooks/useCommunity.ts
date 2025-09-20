@@ -62,15 +62,18 @@ export const useCommunity = () => {
     try {
       const postsData = await CommunityService.getPosts(groupId, category);
       
-      // Load interactions for each post
+      // Load interactions and comments for each post
       const postsWithInteractions = await Promise.all(
         (postsData || []).map(async (post) => {
           try {
-            const interactions = await CommunityService.getPostInteractions(post.id, userId);
-            return { ...post, ...interactions };
+            const [interactions, comments] = await Promise.all([
+              CommunityService.getPostInteractions(post.id, userId),
+              CommunityService.getComments(post.id)
+            ]);
+            return { ...post, ...interactions, comments: comments || [] };
           } catch (interactionErr) {
             console.error('Error loading interactions for post:', post.id, interactionErr);
-            return { ...post, user_has_upvoted: false, user_has_downvoted: false, user_has_bookmarked: false };
+            return { ...post, user_has_upvoted: false, user_has_downvoted: false, user_has_bookmarked: false, comments: [] };
           }
         })
       );
@@ -120,19 +123,15 @@ export const useCommunity = () => {
     try {
       const newComment = await CommunityService.createComment(postId, userId, content);
       
-      // Update the post in the list to reflect the new comment
-      setPosts(prev => prev.map(post => 
-        post.id === postId 
-          ? { ...post, comments: [...(post.comments || []), newComment] }
-          : post
-      ));
+      // Reload posts to get updated comment counts and comments
+      await loadPosts();
       
       return newComment;
     } catch (err) {
       console.error('Error creating comment:', err);
       throw err;
     }
-  }, [userId]);
+  }, [userId, loadPosts]);
 
   const togglePostInteraction = useCallback(async (
     postId: string,
@@ -233,6 +232,19 @@ export const useCommunity = () => {
     }
   }, [userId]);
 
+  const deletePost = useCallback(async (postId: string) => {
+    if (!userId) throw new Error('User not authenticated');
+    
+    try {
+      await CommunityService.deletePost(postId);
+      // Reload posts to reflect the deletion
+      await loadPosts();
+    } catch (err) {
+      console.error('Error deleting post:', err);
+      throw err;
+    }
+  }, [userId, loadPosts]);
+
   return {
     posts,
     groups,
@@ -244,6 +256,7 @@ export const useCommunity = () => {
     createGroup,
     joinGroup,
     leaveGroup,
+    deletePost,
     loadPosts,
     loadGroups,
     refresh: loadData,

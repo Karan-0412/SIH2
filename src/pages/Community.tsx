@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
 import { useCommunity } from '@/hooks/useCommunity';
+import { simpleNotificationService } from '@/services/simpleNotificationService';
 import TextType from '@/components/TextType';
 import DarkVeil from '@/components/DarkVeil';
 import Galaxy from '@/components/Galaxy';
@@ -33,7 +34,8 @@ import {
   Sparkles,
   Heart,
   Reply,
-  Send
+  Send,
+  Trash2
 } from 'lucide-react';
 
 type Category = 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General';
@@ -60,7 +62,8 @@ export default function CommunityPage() {
     togglePostInteraction, 
     createGroup, 
     joinGroup, 
-    leaveGroup,
+    leaveGroup, 
+    deletePost,
     loadPosts 
   } = useCommunity();
 
@@ -210,6 +213,30 @@ export default function CommunityPage() {
     }
   };
 
+
+  const handleDeletePost = async (postId: string) => {
+    if (!profile) {
+      toast({ title: 'Sign in required' });
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm('Are you sure you want to delete this post? This action cannot be undone.');
+    if (!confirmed) return;
+
+    try {
+      await deletePost(postId);
+      toast({ title: 'Post deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to delete post. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
   const reportPost = (postId: string) => {
     // TODO: Implement reporting functionality
     toast({ title: 'Reported', description: 'Thanks — moderators will review.' });
@@ -277,19 +304,6 @@ export default function CommunityPage() {
     }
   };
 
-  const deletePost = async (postId: string) => {
-    try {
-      // TODO: Implement delete post in service
-      toast({ title: 'Post removed' });
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      toast({ 
-        title: 'Error', 
-        description: 'Failed to delete post. Please try again.', 
-        variant: 'destructive' 
-      });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -604,6 +618,16 @@ export default function CommunityPage() {
                       >
                         <Flag className="w-4 h-4" />
                       </Button>
+                      {post.author_id === profile?.id && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePost(post.id)}
+                          className="text-gray-600 hover:text-red-600"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
                       {groups.find(g => g.id === post.group_id)?.is_admin && (
                         <Button
                           variant="ghost"
