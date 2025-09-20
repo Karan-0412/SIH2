@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell } from 'lucide-react';
-import { useNotifications } from '@/hooks/useNotifications';
+import { useSimpleNotifications } from '@/hooks/useSimpleNotifications';
 import NotificationCenter from './NotificationCenter';
 
 const NotificationBell: React.FC = () => {
-  const { unreadCount } = useNotifications();
+  const { unreadCount } = useSimpleNotifications();
   const [isNotificationCenterOpen, setIsNotificationCenterOpen] = useState(false);
 
   const handleBellClick = () => {

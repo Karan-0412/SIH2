@@ -9,12 +9,20 @@ export const useAuth = () => {
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, sess) => {
+      console.log('Auth state change:', event, sess?.user?.id);
       setSession(sess);
       setUser(sess?.user ?? null);
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Error getting session:', error);
+        // Clear invalid session
+        if (error.message?.includes('refresh_token') || error.message?.includes('invalid_grant')) {
+          supabase.auth.signOut();
+        }
+      }
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);

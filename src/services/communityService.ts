@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { simpleNotificationService } from './simpleNotificationService';
 
 export interface CommunityPost {
   id: string;
@@ -130,11 +131,20 @@ export class CommunityService {
       throw error;
     }
 
-    return {
+    const result = {
       ...data,
       author_name: data.author_name || 'Anonymous',
       author_avatar: data.author_avatar || '',
     };
+
+    // Trigger notification for new post
+    simpleNotificationService.notifyPostCreated(
+      result.id,
+      result.author_name,
+      groupId ? 'Group' : 'General'
+    );
+
+    return result;
   }
 
   static async updatePost(postId: string, content: string): Promise<void> {
@@ -206,11 +216,20 @@ export class CommunityService {
       throw error;
     }
 
-    return {
+    const result = {
       ...data,
       author_name: data.author_name || 'Anonymous',
       author_avatar: data.author_avatar || '',
     };
+
+    // Trigger notification for new comment
+    simpleNotificationService.notifyPostCommented(
+      postId,
+      result.author_name,
+      'Post Author' // We don't have post author info here, so use placeholder
+    );
+
+    return result;
   }
 
   static async deleteComment(commentId: string): Promise<void> {
@@ -367,6 +386,13 @@ export class CommunityService {
           user_id: userId,
           interaction_type: interactionType,
         });
+
+      // Trigger notification for interaction
+      if (interactionType === 'upvote') {
+        simpleNotificationService.notifyPostLiked(postId, 'User', 'Post Author');
+      } else if (interactionType === 'downvote') {
+        simpleNotificationService.notifyPostDisliked(postId, 'User', 'Post Author');
+      }
     }
   }
 
