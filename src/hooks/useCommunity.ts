@@ -64,26 +64,33 @@ export const useCommunity = () => {
       
       // Load interactions for each post
       const postsWithInteractions = await Promise.all(
-        postsData.map(async (post) => {
-          const interactions = await CommunityService.getPostInteractions(post.id, userId);
-          return { ...post, ...interactions };
+        (postsData || []).map(async (post) => {
+          try {
+            const interactions = await CommunityService.getPostInteractions(post.id, userId);
+            return { ...post, ...interactions };
+          } catch (interactionErr) {
+            console.error('Error loading interactions for post:', post.id, interactionErr);
+            return { ...post, user_has_upvoted: false, user_has_downvoted: false, user_has_bookmarked: false };
+          }
         })
       );
 
-      setPosts(postsWithInteractions);
+      setPosts(postsWithInteractions || []);
     } catch (err) {
       console.error('Error loading posts:', err);
-      throw err;
+      setPosts([]); // Set empty array on error
+      setError(err instanceof Error ? err.message : 'Failed to load posts');
     }
   };
 
   const loadGroups = async () => {
     try {
       const groupsData = await CommunityService.getGroups(userId);
-      setGroups(groupsData);
+      setGroups(groupsData || []);
     } catch (err) {
       console.error('Error loading groups:', err);
-      throw err;
+      setGroups([]); // Set empty array on error
+      setError(err instanceof Error ? err.message : 'Failed to load groups');
     }
   };
 

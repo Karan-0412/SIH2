@@ -50,12 +50,16 @@ const Navbar = () => {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
   const baseItems = [
-    { label: 'Home', to: '/home' },
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },
     { label: 'Schedule', to: '/schedule' },
     { label: 'Events', to: '/events' },
+  ];
+
+  const studentItems = [
+    { label: 'Home', to: '/home' },
+    ...baseItems
   ];
 
   const adminItems = [
@@ -70,7 +74,7 @@ const Navbar = () => {
       return adminItems;
     }
     if (profile?.role === 'student') {
-      return baseItems; // student sees Community, not Faculty Community
+      return studentItems; // student sees Home + Community
     }
     // faculty: hide student Community, add Faculty Community and My Students
     const list = baseItems.filter(i=> i.label !== 'Community');
