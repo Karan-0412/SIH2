@@ -5,12 +5,14 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, Database, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { populateMockData, clearMockData } from '@/scripts/populateMockData';
 import { setMockDataLoaded, clearMockDataFlag } from '@/services/mockDataService';
+import { useMockData } from '@/hooks/useMockData';
 
 const TestDataButton = () => {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
   const [showDetails, setShowDetails] = useState(false);
+  const { enableMockData, disableMockData } = useMockData();
 
   const handlePopulateData = async () => {
     setLoading(true);
@@ -18,9 +20,20 @@ const TestDataButton = () => {
     setMessage('');
 
     try {
-      await populateMockData();
-      setStatus('success');
-      setMessage('Mock data loaded! Refresh the page to see the data in the dashboard.');
+      // First try to populate database
+      try {
+        await populateMockData();
+        // Enable mock data and trigger update
+        enableMockData();
+        setStatus('success');
+        setMessage('Mock data loaded to database! The dashboard will now show sample data.');
+      } catch (dbError) {
+        console.log('Database population failed, using local mock data instead');
+        // If database fails, use local mock data
+        enableMockData();
+        setStatus('success');
+        setMessage('Mock data loaded locally! The dashboard will now show sample data.');
+      }
     } catch (error) {
       setStatus('error');
       setMessage('Failed to load mock data. Check console for details.');
@@ -36,9 +49,16 @@ const TestDataButton = () => {
     setMessage('');
 
     try {
-      await clearMockData();
+      // Clear both database and local mock data
+      try {
+        await clearMockData();
+      } catch (dbError) {
+        console.log('Database clear failed, clearing local mock data only');
+      }
+      
+      disableMockData();
       setStatus('success');
-      setMessage('Mock data cleared! Refresh the page to see empty dashboard.');
+      setMessage('Mock data cleared! The dashboard will now show empty state.');
     } catch (error) {
       setStatus('error');
       setMessage('Failed to clear mock data. Check console for details.');

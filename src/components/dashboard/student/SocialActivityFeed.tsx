@@ -20,8 +20,9 @@ import {
   Eye
 } from 'lucide-react';
 import SocialActivityService from '@/services/socialActivityService';
-import { mockSocialActivities, isMockDataLoaded } from '@/services/mockDataService';
+import { mockSocialActivities } from '@/services/mockDataService';
 import { useProfile } from '@/hooks/useProfile';
+import { useMockData } from '@/hooks/useMockData';
 import { ActivityData } from '@/services/dashboardService';
 
 interface SocialActivityFeedProps {
@@ -32,6 +33,7 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
   loading: propLoading 
 }) => {
   const { profile } = useProfile();
+  const { mockDataEnabled } = useMockData();
   const [activities, setActivities] = useState<ActivityData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +47,8 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
       setError(null);
       
       try {
-        // Check if mock data is loaded
-        if (isMockDataLoaded()) {
+        // Check if mock data is enabled
+        if (mockDataEnabled) {
           console.log('Using mock social activities for testing');
           setActivities(mockSocialActivities);
         } else {
@@ -63,7 +65,7 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
     };
 
     fetchActivities();
-  }, [profile]);
+  }, [profile, mockDataEnabled]);
 
   const getActivityIcon = (type: ActivityData['type']) => {
     switch (type) {

@@ -37,6 +37,9 @@ import AdminDebug from "./pages/AdminDebug";
 import AcademicAchievements from "./pages/AcademicAchievements";
 import ResumeGenerator from "./pages/ResumeGenerator";
 import MyActivitiesPage from "./pages/MyActivitesPage";
+import MyProjectsPage from "./pages/MyProjectsPage";
+import GithubCallback from "./pages/GithubCallback";
+import GithubTest from "./pages/GithubTest";
 import CertificateManagement from "./pages/CertificateManagement";
 import Home from "./pages/Home";
 import TestData from "./pages/TestData";
@@ -85,8 +88,10 @@ const App = () => {
                 {/* Student Pages */}
                 <Route path="/academic-achievements" element={<StudentRoute><AcademicAchievements /></StudentRoute>} />
                 <Route path="/resume-generator" element={<StudentRoute><ResumeGenerator /></StudentRoute>} />
-                <Route path="/my-projects" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
+                <Route path="/my-projects" element={<StudentRoute><MyProjectsPage /></StudentRoute>} />
                         <Route path="/my-activities" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
+                        <Route path="/github-callback" element={<GithubCallback />} />
+                        <Route path="/github-test" element={<GithubTest />} />
                         <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
                         <Route path="/test-data" element={<TestData />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
