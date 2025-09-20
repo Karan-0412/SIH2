@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PixelBlast } from '@/components/ui/pixel-blast';
 import { 
   GraduationCap, 
   FileText, 
@@ -77,10 +78,29 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Hero Section */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl mb-12">
-          <div className="absolute inset-0 bg-black/10"></div>
-          <div className="relative px-8 py-16 text-white">
+        {/* Hero Section with PixelBlast */}
+        <div className="relative overflow-hidden bg-black rounded-3xl mb-12" style={{ height: '600px' }}>
+          <PixelBlast
+            variant="circle"
+            pixelSize={6}
+            color="#B19EEF"
+            patternScale={3}
+            patternDensity={1.2}
+            pixelSizeJitter={0.5}
+            enableRipples
+            rippleSpeed={0.4}
+            rippleThickness={0.12}
+            rippleIntensityScale={1.5}
+            liquid
+            liquidStrength={0.12}
+            liquidRadius={1.2}
+            liquidWobbleSpeed={5}
+            speed={0.6}
+            edgeFade={0.25}
+            transparent
+            className="absolute inset-0"
+          />
+          <div className="relative z-10 px-8 py-16 text-white h-full flex items-center">
             <div className="max-w-3xl">
               <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
                 <Zap className="w-3 h-3 mr-1" />
@@ -105,8 +125,6 @@ const Home = () => {
               </div>
             </div>
           </div>
-          <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
-          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full"></div>
         </div>
 
         {/* Stats Overview */}
