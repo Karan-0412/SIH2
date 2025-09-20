@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Verification Route</title>
+</head>
+<body>
+    <h1>Test Verification Route</h1>
+    <p>This page tests if the verification route is working.</p>
+    
+    <h2>Test Links:</h2>
+    <ul>
+        <li><a href="http://localhost:8080/verify?t=test-token-123" target="_blank">Test with token: test-token-123</a></li>
+        <li><a href="http://localhost:8080/verify?t=abc123def456" target="_blank">Test with token: abc123def456</a></li>
+        <li><a href="http://localhost:8080/verify" target="_blank">Test without token (should show error)</a></li>
+    </ul>
+    
+    <h2>Expected Results:</h2>
+    <ul>
+        <li>✅ <strong>With token:</strong> Should show verification page with credential details</li>
+        <li>❌ <strong>Without token:</strong> Should show "No verification token provided" error</li>
+        <li>🔍 <strong>Invalid token:</strong> Should show "Credential not found" or similar error</li>
+    </ul>
+    
+    <h2>If you still get "No page found":</h2>
+    <ol>
+        <li>Make sure your development server is running: <code>npm run dev</code></li>
+        <li>Check the browser console for any errors</li>
+        <li>Try refreshing the page (Ctrl+F5 or Cmd+Shift+R)</li>
+        <li>Check if the route was added correctly in App.tsx</li>
+    </ol>
+</body>
+</html>

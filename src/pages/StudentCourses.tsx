@@ -29,10 +29,14 @@ const StudentCourses: React.FC = () => {
 
   // Fetch courses assigned to this student - simple approach
   const fetchAssignedCourses = async () => {
-    if (!profile || profile.role !== 'student') return;
+    if (!profile || profile.role !== 'student') {
+      console.log('No profile or not a student:', { profile, role: profile?.role });
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching courses for student:', profile.id, profile.full_name);
       
       // Just fetch all courses - simple
       const { data: allCoursesData, error: allCoursesError } = await supabase
@@ -42,10 +46,15 @@ const StudentCourses: React.FC = () => {
 
       if (allCoursesError) {
         console.error('Error fetching courses:', allCoursesError);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch courses: ' + allCoursesError.message,
+          variant: 'destructive',
+        });
         return;
       }
 
-      console.log('All courses:', allCoursesData);
+      console.log('All courses fetched:', allCoursesData?.length || 0);
       console.log('Student profile ID:', profile.id, 'Type:', typeof profile.id);
 
       // Filter courses where this student is assigned
@@ -73,10 +82,12 @@ const StudentCourses: React.FC = () => {
     }
   };
 
-  // Load courses on component mount
+  // Load courses when profile is available
   useEffect(() => {
-    fetchAssignedCourses();
-  }, []);
+    if (profile) {
+      fetchAssignedCourses();
+    }
+  }, [profile]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -91,10 +102,21 @@ const StudentCourses: React.FC = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Courses</h1>
-          <p className="text-gray-600">
-            Courses assigned to you by your faculty mentors
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">My Courses</h1>
+              <p className="text-gray-600">
+                Courses assigned to you by your faculty mentors
+              </p>
+            </div>
+            <button
+              onClick={fetchAssignedCourses}
+              disabled={loading}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            >
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
         </div>
 
 

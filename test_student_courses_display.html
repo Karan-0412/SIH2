@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Student Courses Display</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        code { background-color: #f8f9fa; padding: 2px 4px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>Test Student Courses Display</h1>
+    
+    <div class="test-section info">
+        <h2>🔍 Debugging Steps</h2>
+        <ol>
+            <li><strong>Run the SQL fix:</strong> Execute <code>fix_student_courses_issue.sql</code> in Supabase SQL Editor</li>
+            <li><strong>Check browser console:</strong> Open DevTools (F12) and look for any errors</li>
+            <li><strong>Verify student role:</strong> Make sure you're logged in as a student</li>
+            <li><strong>Check network requests:</strong> Look for failed API calls in Network tab</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📋 Common Issues & Solutions</h2>
+        
+        <h3>Issue 1: "No Courses Assigned" message</h3>
+        <p><strong>Cause:</strong> No courses have students assigned to them</p>
+        <p><strong>Solution:</strong> Run the SQL fix script to assign students to courses</p>
+        
+        <h3>Issue 2: RLS (Row Level Security) blocking access</h3>
+        <p><strong>Cause:</strong> Database policies preventing student access</p>
+        <p><strong>Solution:</strong> The fix script creates permissive policies</p>
+        
+        <h3>Issue 3: Data type mismatch</h3>
+        <p><strong>Cause:</strong> Student IDs are UUIDs but stored as text in assigned_student_ids</p>
+        <p><strong>Solution:</strong> The fix script handles the conversion properly</p>
+        
+        <h3>Issue 4: No courses exist</h3>
+        <p><strong>Cause:</strong> No courses have been created</p>
+        <p><strong>Solution:</strong> The fix script creates test courses</p>
+    </div>
+
+    <div class="test-section">
+        <h2>🧪 Test URLs</h2>
+        <p>Try these URLs to test different scenarios:</p>
+        <ul>
+            <li><a href="http://localhost:8080/student-courses" target="_blank">Student Courses Page</a></li>
+            <li><a href="http://localhost:8080/courses" target="_blank">Faculty Courses Page</a></li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🔧 Manual Testing Steps</h2>
+        <ol>
+            <li><strong>Login as a student</strong></li>
+            <li><strong>Go to Student Courses page</strong></li>
+            <li><strong>Check browser console for errors</strong></li>
+            <li><strong>Look for network requests to Supabase</strong></li>
+            <li><strong>Verify the data is being fetched</strong></li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Expected Results</h2>
+        <p>After running the fix script, you should see:</p>
+        <ul>
+            <li>✅ Courses visible in student dashboard</li>
+            <li>✅ No console errors</li>
+            <li>✅ Successful API calls to Supabase</li>
+            <li>✅ Course details displayed properly</li>
+        </ul>
+    </div>
+
+    <div class="test-section">
+        <h2>🚨 If Still Not Working</h2>
+        <p>Check these additional things:</p>
+        <ul>
+            <li>Make sure your development server is running</li>
+            <li>Check if you're logged in with the correct role</li>
+            <li>Verify the Supabase connection is working</li>
+            <li>Look for any JavaScript errors in the console</li>
+        </ul>
+    </div>
+</body>
+</html>
