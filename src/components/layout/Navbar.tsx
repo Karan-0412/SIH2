@@ -78,6 +78,8 @@ const Navbar = () => {
     { label: 'Admin Dashboard', to: '/admin' },
     { label: 'Faculty Management', to: '/admin/faculty' },
     { label: 'Mentor Assignments', to: '/admin/assignments' },
+    { label: 'LMS Integrations', to: '/admin/integrations' },
+    { label: 'Reports', to: '/admin/reports' },
     { label: 'Debug', to: '/admin/debug' },
   ];
 

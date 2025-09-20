@@ -34,6 +34,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminFaculty from "./pages/AdminFaculty";
 import AdminAssignments from "./pages/AdminAssignments";
 import AdminDebug from "./pages/AdminDebug";
+import AdminIntegrations from "./pages/AdminIntegrations";
+import AdminApiTesting from "./pages/AdminApiTesting";
+import AdminReports from "./pages/AdminReports";
 import AcademicAchievements from "./pages/AcademicAchievements";
 import ResumeGenerator from "./pages/ResumeGenerator";
 import MyActivitiesPage from "./pages/MyActivitesPage";
@@ -107,6 +110,9 @@ const App = () => {
                 <Route index element={<AdminDashboard />} />
                 <Route path="faculty" element={<AdminFaculty />} />
                 <Route path="assignments" element={<AdminAssignments />} />
+                <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="api-testing" element={<AdminApiTesting />} />
                 <Route path="debug" element={<AdminDebug />} />
           </Route>
         </Routes>
