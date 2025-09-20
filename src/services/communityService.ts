@@ -71,10 +71,7 @@ export class CommunityService {
   static async getPosts(groupId?: string, category?: string, limit = 50, offset = 0): Promise<CommunityPost[]> {
     let query = supabase
       .from('community_posts')
-      .select(`
-        *,
-        profiles!community_posts_author_id_fkey(full_name, avatar_url)
-      `)
+      .select('*')
       .eq('is_blocked', false)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
@@ -97,8 +94,8 @@ export class CommunityService {
     // Transform the data to include author info
     return data?.map(post => ({
       ...post,
-      author_name: post.profiles?.full_name || 'Anonymous',
-      author_avatar: post.profiles?.avatar_url || '',
+      author_name: post.author_name || 'Anonymous',
+      author_avatar: post.author_avatar || '',
     })) || [];
   }
 
@@ -108,18 +105,24 @@ export class CommunityService {
     category: 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General',
     groupId?: string
   ): Promise<CommunityPost> {
+    // Get author info first
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', authorId)
+      .single();
+
     const { data, error } = await supabase
       .from('community_posts')
       .insert({
         author_id: authorId,
+        author_name: profile?.full_name || 'Anonymous',
+        author_avatar: profile?.avatar_url || '',
         content,
         category,
-        group_id: groupId || 'g-general',
+        group_id: groupId || null,
       })
-      .select(`
-        *,
-        profiles!community_posts_author_id_fkey(full_name, avatar_url)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -129,8 +132,8 @@ export class CommunityService {
 
     return {
       ...data,
-      author_name: data.profiles?.full_name || 'Anonymous',
-      author_avatar: data.profiles?.avatar_url || '',
+      author_name: data.author_name || 'Anonymous',
+      author_avatar: data.author_avatar || '',
     };
   }
 
@@ -162,12 +165,8 @@ export class CommunityService {
   static async getComments(postId: string): Promise<CommunityComment[]> {
     const { data, error } = await supabase
       .from('post_comments')
-      .select(`
-        *,
-        profiles!post_comments_author_id_fkey(full_name, avatar_url)
-      `)
+      .select('*')
       .eq('post_id', postId)
-      .eq('is_blocked', false)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -177,23 +176,29 @@ export class CommunityService {
 
     return data?.map(comment => ({
       ...comment,
-      author_name: comment.profiles?.full_name || 'Anonymous',
-      author_avatar: comment.profiles?.avatar_url || '',
+      author_name: comment.author_name || 'Anonymous',
+      author_avatar: comment.author_avatar || '',
     })) || [];
   }
 
   static async createComment(postId: string, authorId: string, content: string): Promise<CommunityComment> {
+    // Get author info first
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name, avatar_url')
+      .eq('id', authorId)
+      .single();
+
     const { data, error } = await supabase
       .from('post_comments')
       .insert({
         post_id: postId,
         author_id: authorId,
+        author_name: profile?.full_name || 'Anonymous',
+        author_avatar: profile?.avatar_url || '',
         content,
       })
-      .select(`
-        *,
-        profiles!post_comments_author_id_fkey(full_name, avatar_url)
-      `)
+      .select('*')
       .single();
 
     if (error) {
@@ -203,8 +208,8 @@ export class CommunityService {
 
     return {
       ...data,
-      author_name: data.profiles?.full_name || 'Anonymous',
-      author_avatar: data.profiles?.avatar_url || '',
+      author_name: data.author_name || 'Anonymous',
+      author_avatar: data.author_avatar || '',
     };
   }
 
@@ -222,32 +227,36 @@ export class CommunityService {
 
   // Groups
   static async getGroups(userId?: string): Promise<CommunityGroup[]> {
-    let query = supabase
+    const { data, error } = await supabase
       .from('community_groups')
-      .select(`
-        *,
-        group_memberships!group_memberships_group_id_fkey(user_id, role)
-      `);
-
-    const { data, error } = await query;
+      .select('*');
 
     if (error) {
       console.error('Error fetching groups:', error);
       throw error;
     }
 
-    return data?.map(group => {
-      const memberships = group.group_memberships || [];
-      const memberCount = memberships.length;
-      const userMembership = memberships.find((m: any) => m.user_id === userId);
-      
-      return {
-        ...group,
-        member_count: memberCount,
-        is_member: !!userMembership,
-        is_admin: userMembership?.role === 'admin',
-      };
-    }) || [];
+    // Get membership info for each group
+    const groupsWithMembership = await Promise.all(
+      (data || []).map(async (group) => {
+        const { data: memberships } = await supabase
+          .from('group_memberships')
+          .select('user_id, is_admin')
+          .eq('group_id', group.id);
+
+        const memberCount = memberships?.length || 0;
+        const userMembership = memberships?.find(m => m.user_id === userId);
+        
+        return {
+          ...group,
+          member_count: memberCount,
+          is_member: !!userMembership,
+          is_admin: userMembership?.is_admin || false,
+        };
+      })
+    );
+
+    return groupsWithMembership;
   }
 
   static async createGroup(name: string, description: string, createdBy: string): Promise<CommunityGroup> {
@@ -272,7 +281,7 @@ export class CommunityService {
       .insert({
         group_id: data.id,
         user_id: createdBy,
-        role: 'admin',
+        is_admin: true,
       });
 
     return {
@@ -289,7 +298,7 @@ export class CommunityService {
       .insert({
         group_id: groupId,
         user_id: userId,
-        role: 'member',
+        is_admin: false,
       });
 
     if (error) {
