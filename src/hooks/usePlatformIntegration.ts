@@ -27,16 +27,17 @@ interface ActivityData {
   difficultyDistribution: Array<{ difficulty: string; count: number; color: string }>;
   skillRadar: Array<{ skill: string; current: number; target: number }>;
   ratingHistory: Array<{ date: string; rating: number; contest: string }>;
+  platforms?: Record<string, { solved: number; rating: number; contests: number }>;
 }
 
-const STORAGE_KEY = 'platform_integrations_v1';
-const ACTIVITY_KEY = 'platform_activity_v1';
+const STORAGE_KEY = 'platform_integrations_v2';
+const ACTIVITY_KEY = 'platform_activity_v2';
 
 const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'leetcode',
     name: 'LeetCode',
-    icon: '🟧',
+    icon: 'leetcode',
     description: 'Practice coding problems and contests',
     authType: 'profile_url',
     isConnected: false
@@ -44,7 +45,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'codeforces',
     name: 'Codeforces',
-    icon: '🟦',
+    icon: 'codeforces',
     description: 'Competitive programming platform',
     authType: 'profile_url',
     isConnected: false
@@ -52,7 +53,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'hackerrank',
     name: 'HackerRank',
-    icon: '🟩',
+    icon: 'hackerrank',
     description: 'Coding challenges and skill assessment',
     authType: 'profile_url',
     isConnected: false
@@ -60,7 +61,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'gfg',
     name: 'GeeksforGeeks',
-    icon: '🟢',
+    icon: 'gfg',
     description: 'Programming tutorials and practice',
     authType: 'profile_url',
     isConnected: false
@@ -68,7 +69,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'codewars',
     name: 'Codewars',
-    icon: '⚔️',
+    icon: 'codewars',
     description: 'Code kata and programming challenges',
     authType: 'profile_url',
     isConnected: false
@@ -76,7 +77,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'hackerearth',
     name: 'HackerEarth',
-    icon: '🌍',
+    icon: 'hackerearth',
     description: 'Programming challenges and hackathons',
     authType: 'profile_url',
     isConnected: false
@@ -84,7 +85,7 @@ const DEFAULT_PLATFORMS: Platform[] = [
   {
     id: 'codechef',
     name: 'CodeChef',
-    icon: '👨‍🍳',
+    icon: 'codechef',
     description: 'Competitive programming and contests',
     authType: 'profile_url',
     isConnected: false
@@ -246,6 +247,7 @@ export const usePlatformIntegration = () => {
       };
 
       const username = extractUsername(platform.handle);
+      console.log(`Syncing ${platformId} with username: ${username}`);
 
       switch (platformId) {
         case 'leetcode':
@@ -273,6 +275,8 @@ export const usePlatformIntegration = () => {
           throw new Error('Unsupported platform');
       }
 
+      console.log(`Fetched data for ${platformId}:`, data);
+
       // Update activity stats
       setActivityStats(prev => ({
         ...prev,
@@ -280,12 +284,15 @@ export const usePlatformIntegration = () => {
         weekSolved: prev.weekSolved + Math.floor((data.solved || 0) * 0.1)
       }));
 
-      // Update activity data with new sync
-      const today = new Date().toISOString().split('T')[0];
+      // Update activity data with platform-specific data
       setActivityData(prev => ({
         ...prev,
+        platforms: {
+          ...prev.platforms,
+          [platformId]: data
+        },
         dailyProgress: prev.dailyProgress.map(day => 
-          day.date === today 
+          day.date === new Date().toISOString().split('T')[0]
             ? { ...day, solved: day.solved + (data.solved || 0) }
             : day
         )
@@ -303,7 +310,7 @@ export const usePlatformIntegration = () => {
 
       toast({
         title: 'Sync Successful',
-        description: `Updated data from ${platform.name}. Found ${data.solved} problems solved.`,
+        description: `Updated data from ${platform.name}. Solved: ${data.solved}, Rating: ${data.rating || 'N/A'}, Contests: ${data.contests || 0}`,
       });
 
     } catch (error) {
@@ -315,7 +322,7 @@ export const usePlatformIntegration = () => {
 
       toast({
         title: 'Sync Failed',
-        description: `Failed to sync data from ${platform.name}. Please check your connection.`,
+        description: `Failed to sync data from ${platform.name}. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please check your username/URL.`,
         variant: 'destructive'
       });
     }
