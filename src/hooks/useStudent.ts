@@ -61,8 +61,8 @@ export interface StudentGoal {
 
 export interface StudentConnection {
   id: string;
-  requester_id: string;
-  receiver_id: string;
+  student_id: string;
+  connection_id: string;
   status: 'pending' | 'accepted' | 'blocked';
   created_at: string;
   updated_at: string;
@@ -208,10 +208,10 @@ export const useStudent = () => {
         .from('student_connections')
         .select(`
           *,
-          requester:profiles!student_connections_requester_id_fkey(full_name, avatar_url),
-          receiver:profiles!student_connections_receiver_id_fkey(full_name, avatar_url)
+          student:profiles!student_connections_student_id_fkey(full_name, avatar_url),
+          connection:profiles!student_connections_connection_id_fkey(full_name, avatar_url)
         `)
-        .or(`requester_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
+        .or(`student_id.eq.${profile.id},connection_id.eq.${profile.id}`)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -424,8 +424,8 @@ export const useStudent = () => {
       const { data, error } = await supabase
         .from('student_connections')
         .insert({
-          requester_id: profile.id,
-          receiver_id: receiverId,
+          student_id: profile.id,
+          connection_id: receiverId,
           status: 'pending',
         })
         .select()
@@ -462,7 +462,7 @@ export const useStudent = () => {
         .from('student_connections')
         .update({ status: 'accepted' })
         .eq('id', connectionId)
-        .eq('receiver_id', profile.id)
+        .eq('connection_id', profile.id)
         .select()
         .single();
       
