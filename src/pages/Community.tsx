@@ -83,7 +83,7 @@ export default function CommunityPage() {
   const myId = profile?.id ?? 'anon_' + (profile?.email ?? 'guest');
   const myName = profile?.full_name ?? 'Anonymous';
 
-  const joinedGroups = groups.filter(g => g.is_member);
+  const joinedGroups = (groups || []).filter(g => g.is_member);
 
   // Note: Ban system will be implemented later
   const amBanned = false;
@@ -91,16 +91,18 @@ export default function CommunityPage() {
 
   // Compute profile stats for banner
   const profileStats = useMemo(() => {
-    const userPosts = posts.filter(p => p.author_id === myId && !p.is_blocked);
+    const safePosts = posts || [];
+    const safeGroups = groups || [];
+    const userPosts = safePosts.filter(p => p.author_id === myId && !p.is_blocked);
     const upvotesReceived = userPosts.reduce((sum, p) => sum + (p.upvotes || 0), 0);
     const downvotesReceived = userPosts.reduce((sum, p) => sum + (p.downvotes || 0), 0);
     return {
-      postsCount: userPosts.length,
-      groupsCount: joinedGroups.length,
+      postsCount: userPosts?.length || 0,
+      groupsCount: safeGroups?.length || 0,
       upvotesReceived,
       downvotesReceived,
     };
-  }, [posts, myId, joinedGroups]);
+  }, [posts, myId, groups]);
 
   // Avatar overrides from local profile edits
   const avatarOverrides = useMemo(() => {
@@ -323,11 +325,11 @@ export default function CommunityPage() {
                 <div className="mt-6 flex items-center justify-center lg:justify-start gap-3 flex-wrap">
                   <Badge variant="secondary" className="bg-white/20 text-white">
                     <Users className="w-4 h-4 mr-2" />
-                    {posts.length} Posts
+                    {posts?.length || 0} Posts
                   </Badge>
                   <Badge variant="secondary" className="bg-white/20 text-white">
                     <Users className="w-4 h-4 mr-2" />
-                    {groups.length} Groups
+                    {groups?.length || 0} Groups
                   </Badge>
                 </div>
               </div>
@@ -572,7 +574,7 @@ export default function CommunityPage() {
                         className="flex items-center gap-2 text-gray-600 hover:text-black"
                       >
                         <Reply className="w-4 h-4" />
-                        <span>{post.comments.length}</span>
+                        <span>{post.comments?.length || 0}</span>
                       </Button>
                     </div>
                     
@@ -619,7 +621,7 @@ export default function CommunityPage() {
                     <div className="mt-6 pt-6 border-t border-gray-100">
                       <h4 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                         <MessageSquare className="w-4 h-4" />
-                        Comments ({post.comments.length})
+                        Comments ({post.comments?.length || 0})
                       </h4>
                       <div className="space-y-4">
                         {post.comments.map(c => (
@@ -704,7 +706,7 @@ export default function CommunityPage() {
                           href={`#post-${p.id}`} 
                           className="flex-1 text-sm text-gray-700 hover:text-blue-600 transition-colors line-clamp-2"
                         >
-                          {p.content.slice(0, 80)}{p.content.length > 80 ? '...' : ''}
+                          {p.content?.slice(0, 80) || ''}{p.content?.length > 80 ? '...' : ''}
                         </a>
                       </div>
                     ));
