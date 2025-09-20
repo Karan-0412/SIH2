@@ -38,6 +38,8 @@ import ResumeGenerator from "./pages/ResumeGenerator";
 import MyActivitiesPage from "./pages/MyActivitesPage";
 import CertificateManagement from "./pages/CertificateManagement";
 import Home from "./pages/Home";
+import TestData from "./pages/TestData";
+import TestDataButton from "./components/TestDataButton";
 import { BlockchainProvider } from "./contexts/BlockchainContext";
 import ChatbotToggle from "./components/ai/ChatbotToggle";
 
@@ -83,12 +85,13 @@ const App = () => {
                 <Route path="/academic-achievements" element={<StudentRoute><AcademicAchievements /></StudentRoute>} />
                 <Route path="/resume-generator" element={<StudentRoute><ResumeGenerator /></StudentRoute>} />
                 <Route path="/my-projects" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
-                <Route path="/my-activities" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
-                <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="/profile" element={<Profile />} />
-                <Route path="/leaderboard" element={<Leaderboard />} />
-                <Route path="*" element={<NotFound />} />
+                        <Route path="/my-activities" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
+                        <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
+                        <Route path="/test-data" element={<TestData />} />
+                        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                        <Route path="/profile" element={<Profile />} />
+                        <Route path="/leaderboard" element={<Leaderboard />} />
+                        <Route path="*" element={<NotFound />} />
               </Route>
 
               {/* Admin Routes */}
@@ -99,9 +102,10 @@ const App = () => {
                 <Route path="debug" element={<AdminDebug />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-      <ChatbotToggle />
-    </TooltipProvider>
+                  </BrowserRouter>
+                  <ChatbotToggle />
+                  <TestDataButton />
+                </TooltipProvider>
   </BlockchainProvider>
 </QueryClientProvider>
   );

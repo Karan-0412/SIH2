@@ -37,23 +37,32 @@ const EnhancedAchievementDashboard: React.FC<EnhancedAchievementDashboardProps> 
   const [currentStreak, setCurrentStreak] = useState(0);
   const [totalPoints, setTotalPoints] = useState(0);
 
-  // Calculate stats
+  // Calculate stats with fallbacks
   useEffect(() => {
-    if (achievements && progress) {
-      const points = achievements.reduce((sum, achievement) => sum + achievement.points, 0);
-      setTotalPoints(points);
-      
-      // Calculate level (every 100 points = 1 level)
-      const level = Math.floor(points / 100) + 1;
-      setCurrentLevel(level);
-      
-      // Points needed for next level
-      const nextLevelPoints = level * 100;
-      setPointsToNextLevel(nextLevelPoints - points);
-      
-      // Current streak
-      setCurrentStreak(progress.current_streak_days || 0);
-    }
+    // Handle case where data might be null/undefined
+    const safeAchievements = achievements || [];
+    const safeProgress = progress || {
+      current_streak_days: 0,
+      total_certificates: 0,
+      approved_certificates: 0
+    };
+
+    const points = safeAchievements.reduce((sum, achievement) => {
+      return sum + (achievement?.points || 0);
+    }, 0);
+    
+    setTotalPoints(points);
+    
+    // Calculate level (every 100 points = 1 level)
+    const level = Math.max(1, Math.floor(points / 100) + 1);
+    setCurrentLevel(level);
+    
+    // Points needed for next level
+    const nextLevelPoints = level * 100;
+    setPointsToNextLevel(Math.max(0, nextLevelPoints - points));
+    
+    // Current streak with fallback
+    setCurrentStreak(safeProgress.current_streak_days || 0);
   }, [achievements, progress]);
 
   const getLevelTitle = (level: number) => {
@@ -112,8 +121,9 @@ const EnhancedAchievementDashboard: React.FC<EnhancedAchievementDashboardProps> 
     }
   };
 
-  const recentAchievements = achievements.slice(0, 3);
-  const achievementTypes = [...new Set(achievements.map(a => a.achievement_type))];
+  const safeAchievements = achievements || [];
+  const recentAchievements = safeAchievements.slice(0, 3);
+  const achievementTypes = [...new Set(safeAchievements.map(a => a?.achievement_type).filter(Boolean))];
 
   if (loading) {
     return (

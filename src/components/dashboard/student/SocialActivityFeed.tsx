@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,38 +19,53 @@ import {
   Clock,
   Eye
 } from 'lucide-react';
-
-interface SocialActivity {
-  id: string;
-  user: {
-    id: string;
-    name: string;
-    avatar?: string;
-    level: number;
-  };
-  type: 'achievement' | 'certificate' | 'course' | 'streak' | 'milestone' | 'goal';
-  title: string;
-  description: string;
-  points: number;
-  timestamp: string;
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-  category: string;
-}
+import SocialActivityService from '@/services/socialActivityService';
+import { mockSocialActivities, isMockDataLoaded } from '@/services/mockDataService';
+import { useProfile } from '@/hooks/useProfile';
+import { ActivityData } from '@/services/dashboardService';
 
 interface SocialActivityFeedProps {
-  activities: SocialActivity[];
   loading?: boolean;
 }
 
 const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({ 
-  activities, 
-  loading 
+  loading: propLoading 
 }) => {
+  const { profile } = useProfile();
+  const [activities, setActivities] = useState<ActivityData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [likedActivities, setLikedActivities] = useState<Set<string>>(new Set());
+  
+  useEffect(() => {
+    const fetchActivities = async () => {
+      if (!profile) return;
+      
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Check if mock data is loaded
+        if (isMockDataLoaded()) {
+          console.log('Using mock social activities for testing');
+          setActivities(mockSocialActivities);
+        } else {
+          const socialService = SocialActivityService.getInstance();
+          const data = await socialService.getSocialActivities(profile.id, 20);
+          setActivities(data);
+        }
+      } catch (err) {
+        console.error('Error fetching social activities:', err);
+        setError('Failed to load activities');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getActivityIcon = (type: SocialActivity['type']) => {
+    fetchActivities();
+  }, [profile]);
+
+  const getActivityIcon = (type: ActivityData['type']) => {
     switch (type) {
       case 'achievement':
         return <Trophy className="h-4 w-4" />;
@@ -69,7 +84,7 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
     }
   };
 
-  const getActivityColor = (type: SocialActivity['type']) => {
+  const getActivityColor = (type: ActivityData['type']) => {
     switch (type) {
       case 'achievement':
         return 'bg-yellow-100 text-yellow-800 border-yellow-200';
@@ -119,7 +134,7 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
 
-  if (loading) {
+  if (propLoading || loading) {
     return (
       <Card>
         <CardHeader>
@@ -156,7 +171,13 @@ const SocialActivityFeed: React.FC<SocialActivityFeedProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {activities.length > 0 ? (
+        {error ? (
+          <div className="text-center py-8 text-red-500">
+            <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">Error loading activities</p>
+            <p className="text-sm">{error}</p>
+          </div>
+        ) : activities.length > 0 ? (
           <div className="space-y-4">
             {activities.map((activity) => (
               <div
