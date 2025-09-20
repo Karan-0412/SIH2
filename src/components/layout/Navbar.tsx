@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { LogOut, User } from 'lucide-react';
-import NotificationsDropdown from '../dashboard/student/NotificationsDropdown';
+import NotificationBell from '../NotificationBell';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
@@ -15,19 +15,31 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
+    try {
+      console.log('Starting sign out process...');
+      const { error } = await signOut();
+      if (error) {
+        console.error('Sign out error:', error);
+        toast({
+          title: 'Error',
+          description: error.message,
+          variant: 'destructive',
+        });
+      } else {
+        console.log('Sign out successful, navigating to auth...');
+        toast({
+          title: 'Success',
+          description: 'Signed out successfully!',
+        });
+        navigate('/auth', { replace: true });
+      }
+    } catch (err) {
+      console.error('Unexpected error during sign out:', err);
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'An unexpected error occurred during sign out',
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Signed out successfully!',
-      });
-      navigate('/auth', { replace: true });
     }
   };
 
@@ -38,19 +50,32 @@ const Navbar = () => {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
   const baseItems = [
+    { label: 'Home', to: '/home' },
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },
     { label: 'Schedule', to: '/schedule' },
     { label: 'Events', to: '/events' },
   ];
+
+  const adminItems = [
+    { label: 'Admin Dashboard', to: '/admin' },
+    { label: 'Faculty Management', to: '/admin/faculty' },
+    { label: 'Mentor Assignments', to: '/admin/assignments' },
+    { label: 'Debug', to: '/admin/debug' },
+  ];
+
   const items = React.useMemo(() => {
+    if (profile?.role === 'admin') {
+      return adminItems;
+    }
     if (profile?.role === 'student') {
       return baseItems; // student sees Community, not Faculty Community
     }
-    // faculty: hide student Community, add Faculty Community
+    // faculty: hide student Community, add Faculty Community and My Students
     const list = baseItems.filter(i=> i.label !== 'Community');
     list.splice(2, 0, { label: 'Faculty Community', to: '/faculty/community' });
+    list.splice(3, 0, { label: 'My Students', to: '/faculty/students' });
     return list;
   }, [profile]);
 
@@ -114,7 +139,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {(profile?.role === 'student' || profile?.role === 'faculty') && <NotificationsDropdown />}
+            {profile && <NotificationBell />}
             {profile && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700 transition-colors">
                 <User className="h-4 w-4" />
