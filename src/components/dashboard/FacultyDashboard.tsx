@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { CheckCircle, XCircle, Clock, Users, FileText, MessageSquare } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MonitoringSection from './faculty/MonitoringSection';
+import StudentManagement from './faculty/StudentManagement';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
@@ -39,11 +40,22 @@ interface Student {
   student_id?: string;
 }
 
+interface Course {
+  id: string;
+  name: string;
+  course_code: string;
+  faculty_id: string | null;
+  thumbnail_url?: string | null;
+  description?: string | null;
+  external_link?: string | null;
+}
+
 const FacultyDashboard = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
   const [processingCert, setProcessingCert] = useState<string | null>(null);
   const [remarks, setRemarks] = useState<Record<string, string>>({});
@@ -58,6 +70,7 @@ const FacultyDashboard = () => {
       } else {
         fetchCertificates();
         fetchStudents();
+        fetchCourses();
       }
     }
   }, [profile, useMock]);
@@ -109,6 +122,24 @@ const FacultyDashboard = () => {
     setLoading(false);
   };
 
+  const fetchCourses = async () => {
+    if (!profile) return;
+
+    try {
+      // Faculty: show own courses; Senior/Admin could see all, but we filter to own here
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('faculty_id', profile.id)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setCourses((data as Course[]) || []);
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+    }
+  };
+
   const fetchCertificates = async () => {
     if (!profile) return;
 
@@ -119,52 +150,31 @@ const FacultyDashboard = () => {
 
     setLoading(true);
     try {
-      let query = supabase
-        .from('certificates')
-        .select(`
-          *,
-          student:student_id (
-            id,
-            full_name,
-            email,
-            student_id
-          )
-        `)
-        .order('uploaded_at', { ascending: false });
-
-      // If faculty is not senior/admin, only show assigned students' certificates
+      let filterIds: string[] | null = null;
       if (profile.faculty_level !== 'senior' && profile.faculty_level !== 'admin') {
-        const { data: assignedStudents } = await supabase
+        const { data: assigned } = await supabase
           .from('profiles')
           .select('id')
           .eq('assigned_faculty_id', profile.id);
-        
-        if (assignedStudents && assignedStudents.length > 0) {
-          const studentIds = assignedStudents.map(s => s.id);
-          query = query.in('student_id', studentIds);
-        } else {
-          // No assigned students, return empty array
+        const ids = (assigned || []).map((r: any) => r.id);
+        filterIds = ids.length ? ids : [];
+        if (filterIds.length === 0) {
           setCertificates([]);
           setLoading(false);
           return;
         }
       }
 
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching certificates:', error);
-        toast({
-          title: 'Error',
-          description: (error as any)?.message || 'Failed to fetch certificates',
-          variant: 'destructive',
-        });
-      } else {
-        setCertificates(data?.map((item: any) => ({
-          ...item,
-          student: item.student || { id: '', full_name: 'Unknown', email: 'Unknown' }
-        })) || []);
+      let query = supabase
+        .from('certificates')
+        .select(`*, student:student_id ( id, full_name, email, student_id )`)
+        .order('uploaded_at', { ascending: false });
+      if (filterIds) {
+        query = query.in('student_id', filterIds);
       }
+      const { data, error } = await query;
+      if (error) throw error;
+      setCertificates((data as any[]) || []);
     } catch (err) {
       console.error('Error fetching certificates:', err);
       toast({
@@ -201,7 +211,8 @@ const FacultyDashboard = () => {
           id,
           full_name,
           email,
-          student_id
+          student_id,
+          department
         `)
         .eq('role', 'student');
 
@@ -283,10 +294,7 @@ const FacultyDashboard = () => {
         .from('certificates')
         .update(updates)
         .eq('id', certificateId);
-
-      if (error) {
-        throw error;
-      }
+      if (error) throw error;
 
       toast({
         title: 'Success',
@@ -395,11 +403,13 @@ const FacultyDashboard = () => {
 
       {/* Main Content */}
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="pending">Pending Reviews ({pendingCertificates.length})</TabsTrigger>
           <TabsTrigger value="processed">Processed</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
+          <TabsTrigger value="management">Management</TabsTrigger>
+          <TabsTrigger value="courses">Courses</TabsTrigger>
         </TabsList>
         
         <TabsContent value="pending" className="space-y-4">
@@ -592,6 +602,53 @@ const FacultyDashboard = () => {
         </TabsContent>
         <TabsContent value="monitoring">
           <MonitoringSection />
+        </TabsContent>
+        <TabsContent value="management">
+          <StudentManagement />
+        </TabsContent>
+        <TabsContent value="courses" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Your Courses</CardTitle>
+              <CardDescription>Courses assigned to you</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {courses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">No courses assigned.</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {courses.map((c) => (
+                    <div key={c.id} className="border rounded-md bg-white p-4 flex gap-4 items-center">
+                      {c.thumbnail_url ? (
+                        <img src={c.thumbnail_url} alt={c.name} className="h-16 w-24 object-cover rounded" />
+                      ) : (
+                        <div className="h-16 w-24 bg-gray-200 rounded" />
+                      )}
+                      <div className="flex-1">
+                        <div className="font-semibold">
+                          {c.name}
+                          <span className="text-xs text-muted-foreground ml-2">{c.course_code}</span>
+                        </div>
+                        {c.description && (
+                          <div className="text-sm text-muted-foreground line-clamp-2">{c.description}</div>
+                        )}
+                        {c.external_link && (
+                          <a
+                            href={c.external_link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm text-primary underline"
+                          >
+                            Open
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

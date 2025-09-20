@@ -18,14 +18,21 @@ type Registration = {
 function loadEvents(): EventItem[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return initialEvents;
+    if (!raw) {
+      console.log('No events in localStorage, using initial events');
+      return initialEvents;
+    }
     const parsed = JSON.parse(raw) as EventItem[];
+    console.log('Loaded events from localStorage:', parsed.length);
     // Merge by id to ensure seeded events are available if missing
     const map = new Map<string, EventItem>();
     initialEvents.forEach(e => map.set(e.id, e));
     parsed.forEach(e => map.set(e.id, e));
-    return Array.from(map.values());
-  } catch {
+    const result = Array.from(map.values());
+    console.log('Merged events result:', result.length);
+    return result;
+  } catch (error) {
+    console.error('Error loading events from localStorage:', error);
     return initialEvents;
   }
 }
@@ -51,7 +58,10 @@ export function useEvents() {
   const [events, setEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
-    setEvents(loadEvents());
+    const loadedEvents = loadEvents();
+    console.log('Loaded events from storage:', loadedEvents.length);
+    console.log('Events data:', loadedEvents);
+    setEvents(loadedEvents);
   }, []);
 
   const addEvent = (payload: Omit<EventItem, 'id'>) => {
@@ -80,7 +90,13 @@ export function useEvents() {
     outside_university: events.filter(e => e.category === 'outside_university'),
   }), [events]);
 
-  const getById = (id: string) => events.find(e => e.id === id) || null;
+  const getById = (id: string) => {
+    console.log('getById called with:', id);
+    console.log('Current events:', events.map(e => e.id));
+    const found = events.find(e => e.id === id) || null;
+    console.log('getById result:', found);
+    return found;
+  };
 
   return { events, byCategory, addEvent, updateEvent, removeEvent, getById };
 }

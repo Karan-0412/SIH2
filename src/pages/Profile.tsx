@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -8,6 +8,9 @@ import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
 import { Trophy, Sparkles, Zap, Check, Star } from 'lucide-react';
+
+import ProfileCard from '../components/ProfileCard';
+
 
 const LevelRing: React.FC<{ percent: number; level: number }> = ({ percent, level }) => {
   const size = 120;
@@ -66,7 +69,7 @@ const LevelRing: React.FC<{ percent: number; level: number }> = ({ percent, leve
 };
 
 const ProfilePage: React.FC = () => {
-  const { profile } = useProfile();
+  const { profile, updateProfile } = useProfile();
   const [xp, setXp] = useState(380);
   const [level, setLevel] = useState(4);
   const [streak, setStreak] = useState(5);
@@ -74,6 +77,24 @@ const ProfilePage: React.FC = () => {
   const [classFilter, setClassFilter] = useState('all');
   const [batchFilter, setBatchFilter] = useState('all');
   const [showAllMonths, setShowAllMonths] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [avatarDataUrl, setAvatarDataUrl] = useState<string>('');
+  const [ageInput, setAgeInput] = useState<string>('');
+  const [yearInput, setYearInput] = useState<string>('');
+  const [courseInput, setCourseInput] = useState<string>('');
+  const [collegeInput, setCollegeInput] = useState<string>('');
+  const [phoneInput, setPhoneInput] = useState<string>('');
+  const [bioInput, setBioInput] = useState<string>('');
+  const [saving, setSaving] = useState(false);
+  const [showProfileCard, setShowProfileCard] = useState(false);
+
+  const overridesKey = 'profile_overrides_v1';
+  const loadOverrides = () => {
+    try { return JSON.parse(localStorage.getItem(overridesKey) || '{}'); } catch { return {}; }
+  };
+  const saveOverrides = (obj: any) => { try { localStorage.setItem(overridesKey, JSON.stringify(obj)); } catch {} };
 
   const badges = useMemo(() => [
     { id: 'b1', name: 'Getting Started', color: 'bg-yellow-100 text-yellow-800' },
@@ -117,32 +138,114 @@ const ProfilePage: React.FC = () => {
   if (!profile) return <div className="p-6">You need to be signed in to view your profile.</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
+    <>
+      <style>{`
+        .pc-card-wrapper-active {
+          --card-opacity: 1 !important;
+        }
+        .pc-card-wrapper-active::before {
+          filter: contrast(1.2) saturate(2.5) blur(40px) opacity(1) !important;
+          transform: scale(0.9) translate3d(0, 0, 0.1px) !important;
+          background-image: var(--behind-gradient) !important;
+        }
+        .pc-card-wrapper-active .pc-card {
+          background-image: 
+            linear-gradient(135deg, #2a2a4e 0%, #26315e 50%, #1f4470 100%) !important;
+          border: 1px solid transparent !important;
+          background-clip: padding-box !important;
+          position: relative !important;
+        }
+        .pc-card-wrapper-active .pc-card::before {
+          content: '' !important;
+          position: absolute !important;
+          top: -1px !important;
+          left: -1px !important;
+          right: -1px !important;
+          bottom: -1px !important;
+          background: linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ffff) !important;
+          border-radius: inherit !important;
+          z-index: -1 !important;
+          animation: borderGlow 3s linear infinite !important;
+        }
+        @keyframes borderGlow {
+          0% { background: linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ffff); }
+          25% { background: linear-gradient(135deg, #ff00ff, #ffff00, #00ffff, #ff00ff); }
+          50% { background: linear-gradient(135deg, #ffff00, #00ffff, #ff00ff, #ffff00); }
+          75% { background: linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ffff); }
+          100% { background: linear-gradient(135deg, #00ffff, #ff00ff, #ffff00, #00ffff); }
+        }
+        .pc-card-wrapper-active .pc-inside {
+          background: rgba(0, 0, 0, 0.6) !important;
+          background-image: none !important;
+        }
+        .pc-card-wrapper-active .pc-details h3 {
+          background-image: linear-gradient(to bottom, #ffffff, #cccccc) !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          -webkit-background-clip: text !important;
+        }
+        .pc-card-wrapper-active .pc-details p {
+          background-image: linear-gradient(to bottom, #ffffff, #999999) !important;
+          -webkit-text-fill-color: transparent !important;
+          background-clip: text !important;
+          -webkit-background-clip: text !important;
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Top hero */}
-        <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg -mt-6 mb-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-          <div className="md:col-span-2">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={''} />
-                <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
-              </Avatar>
-              <div>
-                <div className="text-sm text-muted-foreground">Hi {profile.full_name.split(' ')[0]},</div>
-                <h1 className="text-3xl font-bold tracking-tight">Welcome back!</h1>
+        {/* Hero Card */}
+        <div className="mb-6 -mt-6">
+          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Avatar className="h-16 w-16">
+                  <AvatarImage src={(typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('profile_overrides_v1') || '{}')?.avatarDataUrl || '') : '')} />
+                  <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <div className="text-sm text-muted-foreground">Hi {profile.full_name.split(' ')[0]},</div>
+                  <h1 className="text-3xl font-bold tracking-tight">
+                    <button onClick={() => setShowProfileCard(true)} className="underline decoration-dotted underline-offset-4 hover:decoration-solid">{profile.full_name}</button>
+                  </h1>
+                </div>
               </div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-end">
-            <div className="w-full md:w-72">
-              <Input placeholder="Search for content, challenges..." />
+              <div className="flex items-center gap-3">
+                <Button variant="outline" onClick={() => { const ov = (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('profile_overrides_v1') || '{}') : {}); setNameInput(profile.full_name || ''); setEmailInput(profile.email || ''); setAvatarDataUrl(ov?.avatarDataUrl || ''); setAgeInput(ov?.age || ''); setYearInput(ov?.year || ''); setCourseInput(ov?.course || ''); setCollegeInput(ov?.college || ''); setPhoneInput(ov?.phone || ''); setBioInput(ov?.bio || ''); setShowEdit(true); }}>
+                  Edit Profile
+                </Button>
+                <div className="w-72">
+                  <Input placeholder="Search for content, challenges..." />
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          <main className="lg:col-span-3 space-y-6">
+        {/* Profile Card at Top */}
+        <div className="flex justify-center mb-12">
+          <div>
+            <ProfileCard
+              name={profile.full_name || 'User'}
+              title={profile.role === 'faculty' ? 'Faculty' : 'Student'}
+              handle={(profile.email || '').split('@')[0]}
+              status="Online"
+              contactText="Contact Me"
+              avatarUrl="/spiderman-avatar.png"
+              iconUrl="/spiderman-avatar.png"
+              showUserInfo={true}
+              enableTilt={true}
+              enableMobileTilt={false}
+              onContactClick={() => console.log('Contact clicked')}
+              showBehindGradient={true}
+              behindGradient="radial-gradient(farthest-side circle at var(--pointer-x) var(--pointer-y),hsla(266,100%,90%,var(--card-opacity)) 4%,hsla(266,50%,80%,calc(var(--card-opacity)*0.75)) 10%,hsla(266,25%,70%,calc(var(--card-opacity)*0.5)) 50%,hsla(266,0%,60%,0) 100%),radial-gradient(35% 52% at 55% 20%,#00ffaac4 0%,#073aff00 100%),radial-gradient(100% 100% at 50% 50%,#00c1ffff 1%,#073aff00 76%),conic-gradient(from 124deg at 50% 50%,#c137ffff 0%,#07c6ffff 40%,#07c6ffff 60%,#c137ffff 100%)"
+              className="pc-card-wrapper-active"
+            />
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+          <main className="xl:col-span-3 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Card className="rounded-2xl p-4 shadow-md">
                 <div className="text-sm text-muted-foreground">Total XP</div>
@@ -160,7 +263,8 @@ const ProfilePage: React.FC = () => {
                 <div className="text-xs text-muted-foreground mt-2">Current streak</div>
               </Card>
             </div>
-
+            
+            {/* Progress Activity - Directly below XP cards */}
             <Card className="rounded-2xl overflow-hidden shadow-md">
               <CardHeader>
                 <CardTitle className="text-lg">Progress & Activity</CardTitle>
@@ -256,7 +360,7 @@ const ProfilePage: React.FC = () => {
 
           </main>
 
-          <aside className="space-y-6">
+          <aside className="xl:col-span-1 space-y-6">
             <Card className="rounded-3xl p-3">
               <div className="flex flex-col items-center">
                 <div className="text-3xl font-bold">{currentMonthName}</div>
@@ -383,7 +487,123 @@ const ProfilePage: React.FC = () => {
           </aside>
         </div>
       </div>
-    </div>
+      {/* Edit Profile Modal */}
+      {showEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-lg shadow-2xl">
+            <CardHeader>
+              <CardTitle>Edit Profile</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-5">
+                {/* Avatar selector */}
+                <div className="flex items-center gap-4">
+                  <div className="relative">
+                    <div className="h-20 w-20 rounded-full overflow-hidden border">
+                      {/* eslint-disable-next-line jsx-a11y/alt-text */}
+                      <img src={avatarDataUrl || (typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('profile_overrides_v1') || '{}')?.avatarDataUrl || '') : '')} className="h-full w-full object-cover" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input id="avatar-input" type="file" accept="image/*" className="hidden" onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setAvatarDataUrl(String(reader.result || ''));
+                      reader.readAsDataURL(file);
+                    }} />
+                    <Button variant="outline" onClick={() => document.getElementById('avatar-input')?.click()}>Select Image</Button>
+                    <Button variant="ghost" onClick={() => setAvatarDataUrl('')}>Remove</Button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <div className="text-sm font-medium mb-1">Full name</div>
+                    <Input value={nameInput} onChange={(e) => setNameInput(e.target.value)} placeholder="Your name" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Email</div>
+                    <Input type="email" value={emailInput} onChange={(e) => setEmailInput(e.target.value)} placeholder="you@example.com" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Age</div>
+                    <Input type="number" value={ageInput} onChange={(e) => setAgeInput(e.target.value)} placeholder="18" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Year</div>
+                    <Input value={yearInput} onChange={(e) => setYearInput(e.target.value)} placeholder="2nd Year" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Course</div>
+                    <Input value={courseInput} onChange={(e) => setCourseInput(e.target.value)} placeholder="B.Tech CSE" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">College</div>
+                    <Input value={collegeInput} onChange={(e) => setCollegeInput(e.target.value)} placeholder="Your College" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium mb-1">Phone</div>
+                    <Input value={phoneInput} onChange={(e) => setPhoneInput(e.target.value)} placeholder="+91-XXXXXXXXXX" />
+                  </div>
+                  <div className="md:col-span-2">
+                    <div className="text-sm font-medium mb-1">Bio</div>
+                    <Input value={bioInput} onChange={(e) => setBioInput(e.target.value)} placeholder="Short bio" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-1">
+                  <Button variant="ghost" onClick={() => setShowEdit(false)}>Cancel</Button>
+                  <Button onClick={async () => {
+                    if (!nameInput.trim() || !emailInput.trim()) return;
+                    setSaving(true);
+                    await updateProfile?.({ full_name: nameInput.trim(), email: emailInput.trim() });
+                    const existing = loadOverrides();
+                    const next = { ...existing, avatarDataUrl, age: ageInput, year: yearInput, course: courseInput, college: collegeInput, phone: phoneInput, bio: bioInput };
+                    saveOverrides(next);
+                    setSaving(false);
+                    setShowEdit(false);
+                  }} disabled={saving}>
+                    {saving ? 'Saving...' : 'Save Changes'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* 3D Profile Card Modal */}
+      {showProfileCard && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+          <div className="relative">
+            <ProfileCard
+              name={profile.full_name || 'User'}
+              title={profile.role === 'faculty' ? 'Faculty' : 'Student'}
+              handle={(profile.email || '').split('@')[0]}
+              status="Online"
+              contactText="Contact Me"
+              avatarUrl="/spiderman-avatar.png"
+              iconUrl="/spiderman-avatar.png"
+              showUserInfo={true}
+              enableTilt={true}
+              enableMobileTilt={false}
+              onContactClick={() => console.log('Contact clicked')}
+              showBehindGradient={true}
+              behindGradient="radial-gradient(farthest-side circle at var(--pointer-x) var(--pointer-y),hsla(266,100%,90%,var(--card-opacity)) 4%,hsla(266,50%,80%,calc(var(--card-opacity)*0.75)) 10%,hsla(266,25%,70%,calc(var(--card-opacity)*0.5)) 50%,hsla(266,0%,60%,0) 100%),radial-gradient(35% 52% at 55% 20%,#00ffaac4 0%,#073aff00 100%),radial-gradient(100% 100% at 50% 50%,#00c1ffff 1%,#073aff00 76%),conic-gradient(from 124deg at 50% 50%,#c137ffff 0%,#07c6ffff 40%,#07c6ffff 60%,#c137ffff 100%)"
+              className="pc-card-wrapper-active"
+            />
+            <button
+              onClick={() => setShowProfileCard(false)}
+              className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-white/20 backdrop-blur border border-white/20 text-white hover:bg-white/30 transition-colors flex items-center justify-center"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      </div>
+    </>
   );
 };
 
