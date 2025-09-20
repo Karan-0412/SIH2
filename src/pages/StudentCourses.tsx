@@ -46,13 +46,17 @@ const StudentCourses: React.FC = () => {
       }
 
       console.log('All courses:', allCoursesData);
+      console.log('Current profile:', profile);
+      console.log('Profile ID:', profile.id);
 
       // Filter courses where this student is assigned
-      const assignedCourses = (allCoursesData || []).filter(course => 
-        course.assigned_student_ids && 
-        Array.isArray(course.assigned_student_ids) && 
-        course.assigned_student_ids.includes(profile.id)
-      );
+      const assignedCourses = (allCoursesData || []).filter(course => {
+        const isAssigned = course.assigned_student_ids && 
+                          Array.isArray(course.assigned_student_ids) && 
+                          course.assigned_student_ids.includes(profile.id);
+        console.log(`Course ${course.name} (${course.id}): assigned_student_ids =`, course.assigned_student_ids, 'isAssigned =', isAssigned);
+        return isAssigned;
+      });
 
       console.log('Assigned courses:', assignedCourses);
       setCourses(assignedCourses);

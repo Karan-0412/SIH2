@@ -344,14 +344,24 @@ const CoursesPage: React.FC = () => {
             <p>Loading...</p>
           ) : (
             (() => {
+              console.log('Courses page - All courses:', courses);
+              console.log('Courses page - Current profile:', profile);
+              
               const visibleCourses = courses.filter(c => {
                 if (!profile) return false;
                 if (profile.role === 'faculty') return c.faculty_id === profile.id;
-                const sid = (profile as any).student_id ?? (profile as any).studentId ?? null;
-                if (!sid) return false;
-                const assigned = (c.assigned_student_ids || c.assigned_students || c.student_ids || c.student_id || '').toString();
-                return assigned.includes(String(sid));
+                // For students, check if their profile.id is in assigned_student_ids array
+                if (profile.role === 'student') {
+                  const isAssigned = c.assigned_student_ids && 
+                                   Array.isArray(c.assigned_student_ids) && 
+                                   c.assigned_student_ids.includes(profile.id);
+                  console.log(`Course ${c.name} (${c.id}): assigned_student_ids =`, c.assigned_student_ids, 'isAssigned =', isAssigned);
+                  return isAssigned;
+                }
+                return false;
               });
+              
+              console.log('Courses page - Visible courses:', visibleCourses);
 
               if (!visibleCourses.length) return <p className="text-sm text-muted-foreground">No courses assigned.</p>;
 
