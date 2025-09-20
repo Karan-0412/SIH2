@@ -5,11 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { useFaculty } from '@/hooks/useFaculty';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, UserPlus, UserMinus, Search, Filter } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Search } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface Student {
@@ -23,49 +22,75 @@ interface Student {
 
 const StudentManagement: React.FC = () => {
   const { profile } = useProfile();
-  const { assignedStudents, assignStudent, unassignStudent, loading } = useFaculty();
   const { toast } = useToast();
   
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [assignedStudents, setAssignedStudents] = useState<Student[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
-  const [assignedFilter, setAssignedFilter] = useState('all');
   const [loadingStudents, setLoadingStudents] = useState(false);
 
-  // Fetch all students
-  const fetchAllStudents = async () => {
+  // Fetch only assigned students
+  const fetchAssignedStudents = async () => {
     if (!profile || profile.role !== 'faculty') return;
 
     try {
       setLoadingStudents(true);
-      const { data, error } = await supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          student_id,
-          department,
-          assigned_faculty_id
-        `)
-        .eq('role', 'student')
-        .order('full_name');
+      
+      // First get the faculty record
+      const { data: facultyData, error: facultyError } = await supabase
+        .from('faculty')
+        .select('id')
+        .eq('email', profile.email)
+        .single();
 
-      if (error) {
-        console.error('Error fetching students:', error);
+      if (facultyError || !facultyData) {
+        console.error('Faculty record not found:', facultyError);
         toast({
           title: 'Error',
-          description: 'Failed to fetch students',
+          description: 'Faculty record not found',
           variant: 'destructive',
         });
-      } else {
-        setAllStudents(data || []);
+        return;
       }
+
+      // Get only assigned students by joining with assignments
+      const { data: assignedStudentsData, error: assignedError } = await supabase
+        .from('student_mentor_assignments')
+        .select(`
+          student_id,
+          profiles!inner(
+            id,
+            full_name,
+            email,
+            student_id,
+            department
+          )
+        `)
+        .eq('mentor_id', facultyData.id)
+        .order('profiles(full_name)');
+
+      if (assignedError) {
+        console.error('Error fetching assigned students:', assignedError);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch assigned students',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Extract student data from the joined result
+      const students = (assignedStudentsData || []).map(assignment => ({
+        ...assignment.profiles,
+        assigned_faculty_id: facultyData.id
+      }));
+
+      setAssignedStudents(students);
     } catch (err) {
-      console.error('Error fetching students:', err);
+      console.error('Error fetching assigned students:', err);
       toast({
         title: 'Error',
-        description: 'Failed to fetch students',
+        description: 'Failed to fetch assigned students',
         variant: 'destructive',
       });
     } finally {
@@ -75,62 +100,98 @@ const StudentManagement: React.FC = () => {
 
   // Handle assign/unassign student
   const handleStudentAction = async (studentId: string, action: 'assign' | 'unassign') => {
-    try {
-      const result = action === 'assign' 
-        ? await assignStudent(studentId)
-        : await unassignStudent(studentId);
+    if (!profile) return;
 
-      if (result?.error) {
+    try {
+      // Get faculty record
+      const { data: facultyData, error: facultyError } = await supabase
+        .from('faculty')
+        .select('id')
+        .eq('email', profile.email)
+        .single();
+
+      if (facultyError || !facultyData) {
         toast({
           title: 'Error',
-          description: `Failed to ${action} student`,
+          description: 'Faculty record not found',
           variant: 'destructive',
         });
-      } else {
-        toast({
-          title: 'Success',
-          description: `Student ${action === 'assign' ? 'assigned' : 'unassigned'} successfully`,
-        });
-        // Refresh all students to update assignment status
-        await fetchAllStudents();
+        return;
       }
-    } catch (err) {
+
+      if (action === 'assign') {
+        // Assign student to faculty
+        const { error } = await supabase
+          .from('student_mentor_assignments')
+          .insert({
+            student_id: studentId,
+            mentor_id: facultyData.id
+          });
+
+        if (error) {
+          if (error.code === '23505') {
+            toast({
+              title: 'Info',
+              description: 'Student is already assigned to you',
+            });
+          } else {
+            throw error;
+          }
+        } else {
+          toast({
+            title: 'Success',
+            description: 'Student assigned successfully',
+          });
+        }
+      } else {
+        // Unassign student from faculty
+        const { error } = await supabase
+          .from('student_mentor_assignments')
+          .delete()
+          .eq('student_id', studentId)
+          .eq('mentor_id', facultyData.id);
+
+        if (error) {
+          throw error;
+        } else {
+          toast({
+            title: 'Success',
+            description: 'Student unassigned successfully',
+          });
+        }
+      }
+
+      // Refresh assigned students to update the list
+      await fetchAssignedStudents();
+    } catch (err: any) {
       console.error(`Error ${action}ing student:`, err);
       toast({
         title: 'Error',
-        description: `Failed to ${action} student`,
+        description: err.message || `Failed to ${action} student`,
         variant: 'destructive',
       });
     }
   };
 
-  // Filter students based on search and filters
-  const filteredStudents = allStudents.filter(student => {
+  // Filter assigned students based on search and filters
+  const filteredStudents = assignedStudents.filter(student => {
     const matchesSearch = student.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          student.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (student.student_id && student.student_id.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesDepartment = departmentFilter === 'all' || student.department === departmentFilter;
-    
-    const matchesAssigned = assignedFilter === 'all' || 
-                           (assignedFilter === 'assigned' && student.assigned_faculty_id) ||
-                           (assignedFilter === 'unassigned' && !student.assigned_faculty_id);
 
-    return matchesSearch && matchesDepartment && matchesAssigned;
+    return matchesSearch && matchesDepartment;
   });
 
   // Get unique departments
-  const departments = Array.from(new Set(allStudents.map(s => s.department).filter(Boolean)));
+  const departments = Array.from(new Set(assignedStudents.map(s => s.department).filter(Boolean)));
 
-  // Load students on component mount
+  // Load assigned students on component mount
   useEffect(() => {
-    fetchAllStudents();
+    fetchAssignedStudents();
   }, []);
 
-  // Check if student is assigned to current faculty
-  const isAssignedToCurrentFaculty = (student: Student) => {
-    return student.assigned_faculty_id === profile?.id;
-  };
 
   return (
     <div className="space-y-6">
@@ -141,7 +202,7 @@ const StudentManagement: React.FC = () => {
             Student Management
           </CardTitle>
           <CardDescription>
-            Manage student assignments and view student information
+            View and manage your assigned students
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -176,19 +237,6 @@ const StudentManagement: React.FC = () => {
               </Select>
             </div>
 
-            <div className="min-w-[150px]">
-              <Label htmlFor="assigned">Assignment Status</Label>
-              <Select value={assignedFilter} onValueChange={setAssignedFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Students" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Students</SelectItem>
-                  <SelectItem value="assigned">Assigned to Me</SelectItem>
-                  <SelectItem value="unassigned">Unassigned</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Students Table */}
@@ -200,21 +248,33 @@ const StudentManagement: React.FC = () => {
                   <TableHead>Email</TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Status</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loadingStudents ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      Loading students...
+                    <TableCell colSpan={5} className="text-center py-8">
+                      Loading assigned students...
                     </TableCell>
                   </TableRow>
                 ) : filteredStudents.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      No students found matching your criteria
+                    <TableCell colSpan={5} className="text-center py-8">
+                      {assignedStudents.length === 0 ? (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <div className="mb-4">
+                            <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                          </div>
+                          <h3 className="text-lg font-semibold mb-2">No Assigned Students</h3>
+                          <p className="text-sm">
+                            You don't have any students assigned to you yet. 
+                            Contact your administrator to assign students to your faculty account.
+                          </p>
+                        </div>
+                      ) : (
+                        'No students found matching your criteria'
+                      )}
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -225,36 +285,15 @@ const StudentManagement: React.FC = () => {
                       <TableCell>{student.student_id || 'N/A'}</TableCell>
                       <TableCell>{student.department || 'N/A'}</TableCell>
                       <TableCell>
-                        {isAssignedToCurrentFaculty(student) ? (
-                          <Badge variant="default">Assigned to You</Badge>
-                        ) : student.assigned_faculty_id ? (
-                          <Badge variant="secondary">Assigned to Other</Badge>
-                        ) : (
-                          <Badge variant="outline">Unassigned</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {isAssignedToCurrentFaculty(student) ? (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleStudentAction(student.id, 'unassign')}
-                            disabled={loading}
-                          >
-                            <UserMinus className="h-4 w-4 mr-1" />
-                            Unassign
-                          </Button>
-                        ) : (
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => handleStudentAction(student.id, 'assign')}
-                            disabled={loading || !!student.assigned_faculty_id}
-                          >
-                            <UserPlus className="h-4 w-4 mr-1" />
-                            {student.assigned_faculty_id ? 'Already Assigned' : 'Assign'}
-                          </Button>
-                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleStudentAction(student.id, 'unassign')}
+                          disabled={loadingStudents}
+                        >
+                          <UserMinus className="h-4 w-4 mr-1" />
+                          Unassign
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))
@@ -266,10 +305,10 @@ const StudentManagement: React.FC = () => {
           {/* Summary */}
           <div className="mt-4 flex justify-between text-sm text-gray-600">
             <span>
-              Showing {filteredStudents.length} of {allStudents.length} students
+              Showing {filteredStudents.length} of {assignedStudents.length} assigned students
             </span>
             <span>
-              {assignedStudents.length} assigned to you
+              All students shown are assigned to you
             </span>
           </div>
         </CardContent>

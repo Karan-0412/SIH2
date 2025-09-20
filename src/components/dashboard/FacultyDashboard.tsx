@@ -6,10 +6,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, XCircle, Clock, Users, FileText, MessageSquare } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, Users, FileText, MessageSquare, BookOpen, ExternalLink } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MonitoringSection from './faculty/MonitoringSection';
 import StudentManagement from './faculty/StudentManagement';
+import CourseAssignment from './faculty/CourseAssignment';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
@@ -687,37 +688,54 @@ const FacultyDashboard = () => {
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                   {courses.map((c) => (
-                    <div key={c.id} className="border rounded-md bg-white p-4 flex gap-4 items-center">
-                      {c.thumbnail_url ? (
-                        <img src={c.thumbnail_url} alt={c.name} className="h-16 w-24 object-cover rounded" />
-                      ) : (
-                        <div className="h-16 w-24 bg-gray-200 rounded" />
-                      )}
-                      <div className="flex-1">
-                        <div className="font-semibold">
-                          {c.name}
-                          <span className="text-xs text-muted-foreground ml-2">{c.course_code}</span>
+                    <Card key={c.id} className="hover:shadow-md transition-shadow cursor-pointer group">
+                      <CardContent className="p-4">
+                        <div className="flex gap-4 items-start">
+                          {c.thumbnail_url ? (
+                            <img src={c.thumbnail_url} alt={c.name} className="h-16 w-24 object-cover rounded" />
+                          ) : (
+                            <div className="h-16 w-24 bg-gray-200 rounded flex items-center justify-center">
+                              <BookOpen className="h-8 w-8 text-gray-400" />
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="font-semibold group-hover:text-primary transition-colors">
+                              {c.name}
+                              <span className="text-xs text-muted-foreground ml-2">{c.course_code}</span>
+                            </div>
+                            {c.description && (
+                              <div className="text-sm text-muted-foreground line-clamp-2 mt-1">{c.description}</div>
+                            )}
+                            {c.external_link && (
+                              <a
+                                href={c.external_link}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 transition-colors mt-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <ExternalLink className="h-3 w-3" />
+                                Open Course
+                              </a>
+                            )}
+                            {c.assigned_student_ids && c.assigned_student_ids.length > 0 && (
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground mt-2">
+                                <Users className="h-3 w-3" />
+                                {c.assigned_student_ids.length} students assigned
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        {c.description && (
-                          <div className="text-sm text-muted-foreground line-clamp-2">{c.description}</div>
-                        )}
-                        {c.external_link && (
-                          <a
-                            href={c.external_link}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="text-sm text-primary underline"
-                          >
-                            Open
-                          </a>
-                        )}
-                      </div>
-                    </div>
+                      </CardContent>
+                    </Card>
                   ))}
                 </div>
               )}
             </CardContent>
           </Card>
+          
+          {/* Course Assignment Section */}
+          <CourseAssignment />
         </TabsContent>
       </Tabs>
     </div>

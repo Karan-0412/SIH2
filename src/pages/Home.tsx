@@ -320,6 +320,27 @@ const Home = () => {
                 </CardContent>
               </Card>
             </Link>
+
+            {/* My Courses */}
+            <Link to="/student-courses" className="group">
+              <Card className="h-full border-0 bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 group-hover:scale-105">
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center text-center space-y-4">
+                    <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-4 rounded-2xl group-hover:scale-110 transition-transform">
+                      <BookOpen className="h-8 w-8 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">My Courses</h3>
+                      <p className="text-sm text-gray-600 mb-3">View courses assigned by your faculty</p>
+                      <div className="flex items-center text-purple-600 text-sm font-medium">
+                        View Courses
+                        <ArrowRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
           </div>
         </div>
 

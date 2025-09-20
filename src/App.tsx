@@ -42,6 +42,7 @@ import GithubCallback from "./pages/GithubCallback";
 import GithubTest from "./pages/GithubTest";
 import CertificateManagement from "./pages/CertificateManagement";
 import Home from "./pages/Home";
+import StudentCourses from "./pages/StudentCourses";
 import TestData from "./pages/TestData";
 import TestDataButton from "./components/TestDataButton";
 import { BlockchainProvider } from "./contexts/BlockchainContext";
@@ -93,6 +94,7 @@ const App = () => {
                         <Route path="/github-callback" element={<GithubCallback />} />
                         <Route path="/github-test" element={<GithubTest />} />
                         <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
+                        <Route path="/student-courses" element={<StudentRoute><StudentCourses /></StudentRoute>} />
                         <Route path="/test-data" element={<TestData />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="/profile" element={<Profile />} />
