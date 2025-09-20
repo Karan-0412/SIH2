@@ -1,72 +1,84 @@
-"use client";
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 
-export const BackgroundBoxes = ({
-  children,
-  className,
-  containerClassName,
-  animate = true,
-}: {
-  children?: React.ReactNode;
-  className?: string;
-  containerClassName?: string;
-  animate?: boolean;
-}) => {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-  
-  const squares = Array.from({ length: 100 }, (_, i) => ({
-    x: i % 10,
-    y: Math.floor(i / 10),
-  }));
-
-  const renderSquares = () => {
-    return (
-      <div className="absolute inset-0 h-full w-full">
-        {squares.map((sq, i) => (
-          <motion.div
-            key={i}
-            className="absolute h-4 w-4 border border-white/20 cursor-pointer"
-            style={{
-              left: `${sq.x * 10}%`,
-              top: `${sq.y * 10}%`,
-            }}
-            initial={{ opacity: 0 }}
-            animate={animate ? { opacity: 1 } : { opacity: 0 }}
-            whileHover={{
-              scale: 1.2,
-              opacity: 0.8,
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-            }}
-            whileTap={{ scale: 0.9 }}
-            transition={{
-              duration: 1,
-              delay: i * 0.01,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
-            onMouseEnter={() => setHoveredIndex(i)}
-            onMouseLeave={() => setHoveredIndex(null)}
-          />
-        ))}
-      </div>
-    );
+export const Boxes = ({ className, ...props }: { className?: string }) => {
+  const rows = new Array(50).fill(1);
+  const cols = new Array(30).fill(1);
+  let colors = [
+    "#7dd3fc", // sky-300
+    "#f9a8d4", // pink-300
+    "#86efac", // green-300
+    "#fde047", // yellow-300
+    "#fca5a5", // red-300
+    "#c4b5fd", // purple-300
+    "#93c5fd", // blue-300
+    "#a5b4fc", // indigo-300
+    "#c4b5fd", // violet-300
+  ];
+  const getRandomColor = () => {
+    return colors[Math.floor(Math.random() * colors.length)];
   };
 
   return (
     <div
+      style={{
+        transform: `translate(-40%,-60%) skewX(-48deg) skewY(14deg) scale(0.675) rotate(0deg) translateZ(0)`,
+      }}
       className={cn(
-        "relative h-full w-full overflow-hidden bg-black p-10 group",
-        containerClassName
+        "absolute left-1/4 p-4 -top-14 flex -translate-x-1/2 -translate-y-1/2 w-full h-full z-0",
+        className
       )}
+      {...props}
     >
-      <div className="absolute inset-0 z-0">
-        {renderSquares()}
-      </div>
-      <div className={cn("relative z-10", className)}>
-        {children}
-      </div>
+      {rows.map((_, i) => (
+        <motion.div
+          key={`row` + i}
+          className="h-8 w-16 border-l border-slate-700/20 relative"
+        >
+          {cols.map((_, j) => (
+            <motion.div
+              whileHover={{
+                backgroundColor: getRandomColor(),
+                transition: { duration: 0 },
+              }}
+              key={`col` + j}
+              className="border-r border-t border-slate-700/20 w-16 h-8 relative"
+            >
+              {j % 2 === 0 && i % 2 === 0 ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  width="15"
+                  height="15"
+                  className="absolute h-6 w-10 -top-[14px] -left-[22px] text-slate-600"
+                >
+                  <path
+                    fill="currentColor"
+                    d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  />
+                </svg>
+              ) : null}
+            </motion.div>
+          ))}
+        </motion.div>
+      ))}
+    </div>
+  );
+};
+
+export const BackgroundBoxes = ({ className, ...props }: { className?: string }) => {
+  return (
+    <div
+      className={cn(
+        "absolute inset-0 w-full h-full overflow-hidden bg-slate-900",
+        className
+      )}
+      {...props}
+    >
+      <Boxes />
+      <div className="absolute inset-0 w-full h-full bg-slate-900 z-20 [mask-image:radial-gradient(transparent,white)] pointer-events-none" />
     </div>
   );
 };

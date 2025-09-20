@@ -5,7 +5,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { PixelBlast } from '@/components/ui/pixel-blast';
+import Waves from '@/components/Waves';
+import { cn } from '@/lib/utils';
 import { 
   GraduationCap, 
   FileText, 
@@ -78,51 +79,47 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="max-w-7xl mx-auto p-6">
-        {/* Hero Section with PixelBlast */}
-        <div className="relative overflow-hidden bg-black rounded-3xl mb-12" style={{ height: '600px' }}>
-          <PixelBlast
-            variant="circle"
-            pixelSize={6}
-            color="#B19EEF"
-            patternScale={3}
-            patternDensity={1.2}
-            pixelSizeJitter={0.5}
-            enableRipples
-            rippleSpeed={0.4}
-            rippleThickness={0.12}
-            rippleIntensityScale={1.5}
-            liquid
-            liquidStrength={0.12}
-            liquidRadius={1.2}
-            liquidWobbleSpeed={5}
-            speed={0.6}
-            edgeFade={0.25}
-            transparent
-            className="absolute inset-0"
+        {/* Hero Section with Waves */}
+        <div className="h-96 relative w-full overflow-hidden bg-slate-900 flex flex-col items-center justify-center rounded-3xl mb-12">
+          {/* Waves background - fully interactive */}
+          <Waves
+            lineColor="#fff"
+            backgroundColor="rgba(255, 255, 255, 0.2)"
+            waveSpeedX={0.02}
+            waveSpeedY={0.01}
+            waveAmpX={40}
+            waveAmpY={20}
+            friction={0.9}
+            tension={0.01}
+            maxCursorMove={120}
+            xGap={12}
+            yGap={36}
           />
-          <div className="relative z-10 px-8 py-16 text-white h-full flex items-center">
-            <div className="max-w-3xl">
+          
+          {/* Text content - positioned above but not blocking background interactions */}
+          <div className="relative z-20 text-center px-8 pointer-events-none">
+            <div className="pointer-events-auto">
               <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
                 <Zap className="w-3 h-3 mr-1" />
                 Welcome Back
               </Badge>
-              <h1 className="text-5xl font-bold mb-6 leading-tight">
-                Hello, {profile?.full_name?.split(' ')[0] || 'Student'}! 
-              </h1>
-              <p className="text-xl text-blue-100 mb-8 leading-relaxed">
-                Ready to continue your learning journey? Track your progress, manage achievements, 
-                and connect with your academic community.
-              </p>
-              <div className="flex flex-wrap gap-4">
-                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold">
-                  <BarChart3 className="w-5 h-5 mr-2" />
-                  View Dashboard
-                </Button>
-                <Button size="lg" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-white/20 hover:text-white hover:border-white/60 shadow-lg">
-                  <Calendar className="w-5 h-5 mr-2" />
-                  View Schedule
-                </Button>
-              </div>
+            </div>
+            <h1 className={cn("md:text-5xl text-3xl text-white font-bold mb-6 leading-tight")}>
+              Hello, {profile?.full_name?.split(' ')[0] || 'Student'}!
+            </h1>
+            <p className="text-center mt-2 text-neutral-300 text-xl mb-8 leading-relaxed max-w-3xl">
+              Ready to continue your learning journey? Track your progress, manage achievements,
+              and connect with your academic community.
+            </p>
+            <div className="flex flex-wrap gap-4 justify-center pointer-events-auto">
+              <Button size="lg" className="bg-white text-slate-900 hover:bg-slate-100 font-semibold">
+                <BarChart3 className="w-5 h-5 mr-2" />
+                View Dashboard
+              </Button>
+              <Button size="lg" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-white/20 hover:text-white hover:border-white/60 shadow-lg">
+                <Calendar className="w-5 h-5 mr-2" />
+                View Schedule
+              </Button>
             </div>
           </div>
         </div>
