@@ -16,7 +16,7 @@ const AuthPage = () => {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState('student');
   const [loading, setLoading] = useState(false);
-  
+
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -32,7 +32,7 @@ const AuthPage = () => {
     setLoading(true);
 
     const { error } = await signIn(email, password);
-    
+
     if (error) {
       toast({
         title: 'Error',
@@ -45,7 +45,7 @@ const AuthPage = () => {
         description: 'Signed in successfully!',
       });
     }
-    
+
     setLoading(false);
   };
 
@@ -54,7 +54,7 @@ const AuthPage = () => {
     setLoading(true);
 
     const { error } = await signUp(email, password, { fullName, role });
-    
+
     if (error) {
       toast({
         title: 'Error',
@@ -67,7 +67,7 @@ const AuthPage = () => {
         description: 'Account created successfully! Please check your email to verify your account.',
       });
     }
-    
+
     setLoading(false);
   };
 
@@ -86,7 +86,7 @@ const AuthPage = () => {
               <TabsTrigger value="signin">Sign In</TabsTrigger>
               <TabsTrigger value="signup">Sign Up</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
@@ -114,7 +114,7 @@ const AuthPage = () => {
                 </Button>
               </form>
             </TabsContent>
-            
+
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
@@ -156,6 +156,7 @@ const AuthPage = () => {
                     <SelectContent>
                       <SelectItem value="student">Student</SelectItem>
                       <SelectItem value="faculty">Faculty</SelectItem>
+                      <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

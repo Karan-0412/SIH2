@@ -7,7 +7,7 @@ export interface Profile {
   user_id: string;
   full_name: string;
   email: string;
-  role: 'student' | 'faculty';
+  role: 'student' | 'faculty' | 'admin';
   faculty_level?: 'basic' | 'senior' | 'admin';
   student_id?: string;
   faculty_id?: string;
@@ -34,7 +34,7 @@ export const useProfile = () => {
   }, [user]);
 
   const fetchProfile = async () => {
-    if (!user) { setLoading(false); return; }
+    if (!user) { setLoading(false); return }
 
     try {
       const { data, error } = await supabase
@@ -52,7 +52,7 @@ export const useProfile = () => {
           try {
             const meta = (user as any)?.user_metadata ?? {};
             const full_name = meta.full_name ?? user.email ?? '';
-            const role = meta.role === 'faculty' ? 'faculty' : 'student';
+            const role = meta.role === 'faculty' ? 'faculty' : meta.role === 'admin' ? 'admin' : 'student';
 
             const { data: created, error: createError } = await supabase
               .from('profiles')
