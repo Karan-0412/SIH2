@@ -176,6 +176,32 @@ export const usePlatformIntegration = () => {
   });
 
   // Save to localStorage whenever platforms change
+  // Load platforms from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsedPlatforms = JSON.parse(stored);
+        setPlatforms(parsedPlatforms);
+      } catch (error) {
+        console.error('Error loading platforms from localStorage:', error);
+      }
+    }
+  }, []);
+
+  // Load activity data from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(ACTIVITY_KEY);
+    if (stored) {
+      try {
+        const parsedActivityData = JSON.parse(stored);
+        setActivityData(parsedActivityData);
+      } catch (error) {
+        console.error('Error loading activity data from localStorage:', error);
+      }
+    }
+  }, []);
+
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(platforms));
   }, [platforms]);

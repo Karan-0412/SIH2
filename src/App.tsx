@@ -38,6 +38,7 @@ import AcademicAchievements from "./pages/AcademicAchievements";
 import ResumeGenerator from "./pages/ResumeGenerator";
 import MyActivitiesPage from "./pages/MyActivitesPage";
 import MyProjectsPage from "./pages/MyProjectsPage";
+import AchievementsPage from "./pages/AchievementsPage";
 import GithubCallback from "./pages/GithubCallback";
 import GithubTest from "./pages/GithubTest";
 import CertificateManagement from "./pages/CertificateManagement";
@@ -89,6 +90,7 @@ const App = () => {
                 <Route path="/academic-achievements" element={<StudentRoute><AcademicAchievements /></StudentRoute>} />
                 <Route path="/resume-generator" element={<StudentRoute><ResumeGenerator /></StudentRoute>} />
                 <Route path="/my-projects" element={<StudentRoute><MyProjectsPage /></StudentRoute>} />
+                <Route path="/achievements" element={<StudentRoute><AchievementsPage /></StudentRoute>} />
                         <Route path="/my-activities" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
                         <Route path="/github-callback" element={<GithubCallback />} />
                         <Route path="/github-test" element={<GithubTest />} />

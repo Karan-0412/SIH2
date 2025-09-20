@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
+import PlatformIcons from '@/components/icons/PlatformIcons';
 
 interface Platform {
   id: string;
@@ -78,7 +79,9 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
         <CardHeader className="relative pb-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="text-2xl">{platform.icon}</div>
+              <div className="w-10 h-10 rounded-lg overflow-hidden">
+                <PlatformIcons platform={platform.name} size="md" />
+              </div>
               <div>
                 <CardTitle className="text-lg font-semibold">{platform.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{platform.description}</p>
@@ -157,7 +160,9 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <span className="text-xl">{platform.icon}</span>
+              <div className="w-8 h-8 rounded-lg overflow-hidden">
+                <PlatformIcons platform={platform.name} size="sm" />
+              </div>
               Connect {platform.name}
             </DialogTitle>
           </DialogHeader>

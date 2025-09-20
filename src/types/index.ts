@@ -24,20 +24,27 @@ export interface Profile extends User {
   graduation_year?: number;
 }
 
+// Updated Certificate interface to match database schema
 export interface Certificate {
   id: string;
   student_id: string;
   title: string;
   description?: string;
-  category: 'academic' | 'co_curricular';
-  status: 'pending' | 'approved' | 'rejected';
-  file_url: string;
+  category: 'academic' | 'co_curricular' | 'professional' | 'achievement';
+  issuing_organization: string;
+  issue_date: string;
+  expiry_date?: string;
+  certificate_url?: string;
   file_name: string;
-  uploaded_at: string;
-  verified_at?: string;
-  verified_by?: string;
+  file_url: string;
+  file_size?: number;
+  status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
+  verified_by?: string;
+  verified_at?: string;
   remark?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface Notification {

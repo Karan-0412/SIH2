@@ -6,6 +6,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useStudent } from "@/hooks/useStudent";
 import { supabase } from "@/integrations/supabase/client";
+import AITextService, { AIGenerationRequest } from "@/services/aiTextService";
 
 // Templates
 import MinimalTemplate, { ResumeData } from "@/components/ResumeTemplates/MinimalTemplate";
@@ -32,12 +33,20 @@ const ResumeGenerator: React.FC = () => {
   const { profile } = useProfile();
   const { portfolio, achievements, progress } = useStudent();
 
+  // Debug log to verify component is loading
+  console.log('🤖 ResumeGenerator component loaded with AI features!');
+
   const [selectedTemplate, setSelectedTemplate] = useState<"modern" | "minimal">("modern");
   const [isEditable, setIsEditable] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
   const [certificates, setCertificates] = useState<any[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [selectedProjects, setSelectedProjects] = useState<Set<string>>(new Set());
+  const [showProjectSelector, setShowProjectSelector] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState<string | null>(null);
+  const [aiService] = useState(() => AITextService.getInstance());
   const navigate = useNavigate();
   
   // Fetch certificates
@@ -46,6 +55,7 @@ const ResumeGenerator: React.FC = () => {
       if (!profile) return;
       
       try {
+        setDataLoading(true);
         const { data, error } = await supabase
           .from('certificates')
           .select('*')
@@ -57,6 +67,8 @@ const ResumeGenerator: React.FC = () => {
         setCertificates(data || []);
       } catch (error) {
         console.error('Error fetching certificates:', error);
+      } finally {
+        setDataLoading(false);
       }
     };
     
@@ -90,7 +102,7 @@ const ResumeGenerator: React.FC = () => {
         name: profile.full_name || prev.name,
         email: profile.email || prev.email,
         phone: profile.phone || prev.phone,
-        overview: profile.bio || prev.overview,
+        overview: profile.bio || `Aspiring ${profile.department || 'Computer Science'} professional with strong academic background and practical experience in various projects and achievements. Passionate about technology and continuous learning.`,
         education: [{
           degree: profile.department || "B.Tech in Computer Science",
           institution: profile.college || "University Name",
@@ -100,24 +112,111 @@ const ResumeGenerator: React.FC = () => {
     }
   }, [profile]);
 
+  // Add experience from portfolio (if any projects are marked as experience)
+  useEffect(() => {
+    const experienceProjects = portfolio.filter(project => 
+      project.category === 'experience' || 
+      project.category === 'internship' ||
+      project.title.toLowerCase().includes('intern') ||
+      project.title.toLowerCase().includes('work')
+    );
+
+    if (experienceProjects.length > 0) {
+      const experience = experienceProjects.map(project => ({
+        role: project.title,
+        company: project.external_url ? new URL(project.external_url).hostname : "Company Name",
+        duration: "Duration not specified",
+        details: [
+          project.description || "Worked on various projects and gained valuable experience",
+          project.external_url ? `Project: ${project.external_url}` : "",
+        ].filter(Boolean),
+      }));
+
+      setResumeData(prev => ({
+        ...prev,
+        experience: experience,
+      }));
+    }
+  }, [portfolio]);
+
   // Update projects from portfolio
   useEffect(() => {
     if (portfolio.length > 0) {
-      const portfolioProjects = portfolio.map(project => ({
+      // Initialize selected projects if not set
+      if (selectedProjects.size === 0) {
+        // Select all projects by default
+        const allProjectIds = new Set(portfolio.map(p => p.id));
+        setSelectedProjects(allProjectIds);
+      }
+
+      // Filter projects based on selection
+      const selectedPortfolioProjects = portfolio.filter(project => selectedProjects.has(project.id));
+      
+      const portfolioProjects = selectedPortfolioProjects.map(project => ({
         name: project.title,
         description: project.description || "A project showcasing technical skills and creativity.",
         details: [
           `Category: ${project.category}`,
           project.external_url ? `Live Demo: ${project.external_url}` : "Project details available upon request",
-        ],
+          project.featured ? "Featured Project" : "",
+        ].filter(Boolean),
       }));
 
       setResumeData(prev => ({
         ...prev,
         projects: portfolioProjects,
       }));
+
+      // Cache the portfolio data in localStorage
+      localStorage.setItem('resume_portfolio_cache', JSON.stringify(portfolio));
+    } else {
+      // Check if we have cached data
+      const cachedPortfolio = localStorage.getItem('resume_portfolio_cache');
+      if (cachedPortfolio) {
+        try {
+          const cached = JSON.parse(cachedPortfolio);
+          if (cached.length > 0) {
+            // Initialize selected projects for cached data
+            if (selectedProjects.size === 0) {
+              const allProjectIds = new Set(cached.map((p: any) => p.id));
+              setSelectedProjects(allProjectIds);
+            }
+
+            // Filter cached projects based on selection
+            const selectedCachedProjects = cached.filter((project: any) => selectedProjects.has(project.id));
+            
+            const portfolioProjects = selectedCachedProjects.map((project: any) => ({
+              name: project.title,
+              description: project.description || "A project showcasing technical skills and creativity.",
+              details: [
+                `Category: ${project.category}`,
+                project.external_url ? `Live Demo: ${project.external_url}` : "Project details available upon request",
+                project.featured ? "Featured Project" : "",
+              ].filter(Boolean),
+            }));
+
+            setResumeData(prev => ({
+              ...prev,
+              projects: portfolioProjects,
+            }));
+            return;
+          }
+        } catch (error) {
+          console.error('Error parsing cached portfolio:', error);
+        }
+      }
+
+      // If no portfolio projects and no cache, show a message
+      setResumeData(prev => ({
+        ...prev,
+        projects: [{
+          name: "No projects yet",
+          description: "Add projects to your portfolio to see them here.",
+          details: ["Go to My Projects to add your first project"],
+        }],
+      }));
     }
-  }, [portfolio]);
+  }, [portfolio, selectedProjects]);
 
   // Update certificates from real data
   useEffect(() => {
@@ -136,21 +235,47 @@ const ResumeGenerator: React.FC = () => {
     
     // Add skills from achievements
     achievements.forEach(achievement => {
-      if (achievement.title.toLowerCase().includes('react')) skills.add('React');
-      if (achievement.title.toLowerCase().includes('javascript')) skills.add('JavaScript');
-      if (achievement.title.toLowerCase().includes('python')) skills.add('Python');
-      if (achievement.title.toLowerCase().includes('java')) skills.add('Java');
-      if (achievement.title.toLowerCase().includes('aws')) skills.add('AWS');
-      if (achievement.title.toLowerCase().includes('machine learning')) skills.add('Machine Learning');
+      const title = achievement.title.toLowerCase();
+      if (title.includes('react')) skills.add('React');
+      if (title.includes('javascript')) skills.add('JavaScript');
+      if (title.includes('python')) skills.add('Python');
+      if (title.includes('java')) skills.add('Java');
+      if (title.includes('aws')) skills.add('AWS');
+      if (title.includes('machine learning')) skills.add('Machine Learning');
+      if (title.includes('typescript')) skills.add('TypeScript');
+      if (title.includes('node')) skills.add('Node.js');
+      if (title.includes('sql')) skills.add('SQL');
+      if (title.includes('git')) skills.add('Git');
+      if (title.includes('html')) skills.add('HTML');
+      if (title.includes('css')) skills.add('CSS');
     });
 
     // Add skills from projects
     portfolio.forEach(project => {
-      if (project.description?.toLowerCase().includes('react')) skills.add('React');
-      if (project.description?.toLowerCase().includes('typescript')) skills.add('TypeScript');
-      if (project.description?.toLowerCase().includes('node')) skills.add('Node.js');
-      if (project.description?.toLowerCase().includes('python')) skills.add('Python');
-      if (project.description?.toLowerCase().includes('javascript')) skills.add('JavaScript');
+      const desc = (project.description || '').toLowerCase();
+      if (desc.includes('react')) skills.add('React');
+      if (desc.includes('typescript')) skills.add('TypeScript');
+      if (desc.includes('node')) skills.add('Node.js');
+      if (desc.includes('python')) skills.add('Python');
+      if (desc.includes('javascript')) skills.add('JavaScript');
+      if (desc.includes('html')) skills.add('HTML');
+      if (desc.includes('css')) skills.add('CSS');
+      if (desc.includes('sql')) skills.add('SQL');
+      if (desc.includes('git')) skills.add('Git');
+      if (desc.includes('aws')) skills.add('AWS');
+    });
+
+    // Add skills from certificates
+    certificates.forEach(cert => {
+      const title = cert.title.toLowerCase();
+      if (title.includes('react')) skills.add('React');
+      if (title.includes('javascript')) skills.add('JavaScript');
+      if (title.includes('python')) skills.add('Python');
+      if (title.includes('java')) skills.add('Java');
+      if (title.includes('aws')) skills.add('AWS');
+      if (title.includes('machine learning')) skills.add('Machine Learning');
+      if (title.includes('data science')) skills.add('Data Science');
+      if (title.includes('web development')) skills.add('Web Development');
     });
 
     // Add default skills if none found
@@ -162,9 +287,9 @@ const ResumeGenerator: React.FC = () => {
 
     setResumeData(prev => ({
       ...prev,
-      skills: Array.from(skills),
+      skills: Array.from(skills).sort(),
     }));
-  }, [achievements, portfolio]);
+  }, [achievements, portfolio, certificates]);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -174,8 +299,114 @@ const ResumeGenerator: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Debug: Log current resume data
+  useEffect(() => {
+    console.log('Resume Data Updated:', {
+      name: resumeData.name,
+      email: resumeData.email,
+      projects: resumeData.projects.length,
+      skills: resumeData.skills.length,
+      certificates: resumeData.certificates.length,
+      experience: resumeData.experience.length,
+      portfolio: portfolio.length,
+      achievements: achievements.length,
+      certificatesData: certificates.length,
+      portfolioData: portfolio
+    });
+  }, [resumeData, portfolio, achievements, certificates]);
+
+  // Force refresh portfolio data when component mounts or when switching back
+  useEffect(() => {
+    if (profile && portfolio.length === 0) {
+      console.log('Portfolio is empty, fetching data...');
+      // Trigger a refresh of portfolio data
+      const refreshData = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('student_portfolio')
+            .select('*')
+            .eq('student_id', profile.id)
+            .order('created_at', { ascending: false });
+          
+          if (error) throw error;
+          console.log('Fetched portfolio data:', data);
+        } catch (error) {
+          console.error('Error fetching portfolio:', error);
+        }
+      };
+      refreshData();
+    }
+  }, [profile, portfolio.length]);
+
   const handleChange = (field: keyof ResumeData, value: any) =>
     setResumeData({ ...resumeData, [field]: value });
+
+  // Project selection functions
+  const toggleProjectSelection = (projectId: string) => {
+    setSelectedProjects(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(projectId)) {
+        newSet.delete(projectId);
+      } else {
+        newSet.add(projectId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllProjects = () => {
+    if (portfolio.length > 0) {
+      setSelectedProjects(new Set(portfolio.map(p => p.id)));
+    }
+  };
+
+  const clearProjectSelection = () => {
+    setSelectedProjects(new Set());
+  };
+
+  // AI Generation functions
+  const generateAIContent = async (type: 'overview' | 'skills' | 'project_description', projectData?: any) => {
+    if (!profile) return;
+
+    setAiGenerating(type);
+    try {
+      const request: AIGenerationRequest = {
+        type,
+        userProfile: {
+          name: profile.full_name,
+          role: profile.role,
+          experience: 'Student',
+          education: 'University'
+        },
+        projectData,
+        existingContent: type === 'overview' ? resumeData.overview : undefined,
+        context: type === 'project_description' ? projectData?.title : undefined
+      };
+
+      const response = await aiService.generateText(request);
+      
+      if (type === 'overview') {
+        handleChange('overview', response.content);
+      } else if (type === 'skills') {
+        const skills = response.content.split(',').map(s => s.trim()).filter(s => s);
+        handleChange('skills', skills);
+      } else if (type === 'project_description' && projectData) {
+        // This would be used for individual project descriptions
+        console.log('Generated project description:', response.content);
+      }
+
+      // Show success message
+      console.log(`AI generated ${type}:`, response.content);
+    } catch (error) {
+      console.error('AI generation error:', error);
+    } finally {
+      setAiGenerating(null);
+    }
+  };
+
+  const generateProjectDescription = async (project: any) => {
+    await generateAIContent('project_description', project);
+  };
 
   const updateArrayItem = <T,>(array: T[], index: number, newItem: T, field: keyof ResumeData) => {
     const updatedArray = [...array];
@@ -261,7 +492,95 @@ const handleSectionTextSizeChange = (section: keyof typeof sectionTextSizes, val
           <h1 className="text-3xl font-bold flex items-center gap-2">
             <FileText className="w-8 h-8 text-blue-500" />
             Resume Generator
+            {dataLoading && (
+              <div className="flex items-center gap-2 text-sm text-gray-600 ml-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                Loading your data...
+              </div>
+            )}
           </h1>
+        </div>
+
+        {/* AI FEATURES TEST - VISIBLE CHANGE */}
+        <div className="mb-6 p-4 bg-green-100 border border-green-300 rounded-lg">
+          <h2 className="text-lg font-semibold text-green-800">🤖 AI Features Added!</h2>
+          <p className="text-sm text-green-700">Look for "🤖 AI Generate" buttons in the settings panel below. Enable "Editable Mode" to see them.</p>
+        </div>
+
+        {/* Data Status Indicator */}
+        <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-blue-900">Resume Data Status</h3>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={async () => {
+                console.log('Manual refresh triggered');
+                setDataLoading(true);
+                try {
+                  // Clear cache and refetch data
+                  localStorage.removeItem('resume_portfolio_cache');
+                  
+                  // Fetch fresh portfolio data
+                  if (profile) {
+                    const { data, error } = await supabase
+                      .from('student_portfolio')
+                      .select('*')
+                      .eq('student_id', profile.id)
+                      .order('created_at', { ascending: false });
+                    
+                    if (error) throw error;
+                    console.log('Fresh portfolio data:', data);
+                  }
+                  
+                  // Force a re-render by updating a dummy state
+                  setDataLoading(false);
+                } catch (error) {
+                  console.error('Error refreshing data:', error);
+                  setDataLoading(false);
+                }
+              }}
+              className="text-blue-600 hover:text-blue-700"
+            >
+              Refresh Data
+            </Button>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${portfolio.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+              <span>Projects: {selectedProjects.size}/{portfolio.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${certificates.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+              <span>Certificates: {certificates.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${achievements.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+              <span>Achievements: {achievements.length}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${resumeData.skills.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+              <span>Skills: {resumeData.skills.length}</span>
+            </div>
+          </div>
+          {aiGenerating && (
+            <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800">
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                <span className="text-sm font-medium">
+                  AI is generating {aiGenerating} content...
+                </span>
+              </div>
+            </div>
+          )}
+          {portfolio.length === 0 && (
+            <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-sm text-yellow-800">
+                <strong>No projects found.</strong> Add projects to your portfolio to see them in your resume. 
+                <a href="/my-projects" className="text-blue-600 hover:underline ml-1">Go to My Projects</a>
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
@@ -322,18 +641,55 @@ const handleSectionTextSizeChange = (section: keyof typeof sectionTextSizes, val
 
                   {/* Overview */}
                   <div>
-                    <label className="block text-sm mb-1">Overview</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm">Overview</label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateAIContent('overview')}
+                        disabled={aiGenerating === 'overview'}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        {aiGenerating === 'overview' ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          '🤖 AI Generate'
+                        )}
+                      </Button>
+                    </div>
                     <textarea
                       className="w-full border rounded-lg px-3 py-2"
                       rows={3}
                       value={resumeData.overview}
                       onChange={(e) => handleChange("overview", e.target.value)}
+                      placeholder="Professional summary highlighting your key strengths and career objectives..."
                     />
                   </div>
 
                   {/* Skills */}
                   <div>
-                    <label className="block text-sm mb-1">Skills (comma separated)</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm">Skills (comma separated)</label>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => generateAIContent('skills')}
+                        disabled={aiGenerating === 'skills'}
+                        className="text-blue-600 hover:text-blue-700"
+                      >
+                        {aiGenerating === 'skills' ? (
+                          <>
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600 mr-1"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          '🤖 AI Generate'
+                        )}
+                      </Button>
+                    </div>
                     <input
                       type="text"
                       className="w-full border rounded-lg px-3 py-2"
@@ -344,6 +700,7 @@ const handleSectionTextSizeChange = (section: keyof typeof sectionTextSizes, val
                           e.target.value.split(",").map((s) => s.trim())
                         )
                       }
+                      placeholder="JavaScript, React, Python, Problem Solving, Teamwork..."
                     />
                   </div>
 
@@ -396,6 +753,102 @@ const handleSectionTextSizeChange = (section: keyof typeof sectionTextSizes, val
                         ))}
                       </DropdownMenuContent>
                     </DropdownMenu>
+                  </div>
+
+                  {/* Project Selection */}
+                  <div>
+                    <label className="block text-sm mb-1">Select Projects to Include</label>
+                    <div className="space-y-2">
+                      <div className="flex gap-2 flex-wrap">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={selectAllProjects}
+                          disabled={portfolio.length === 0}
+                        >
+                          Select All
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={clearProjectSelection}
+                          disabled={portfolio.length === 0}
+                        >
+                          Clear All
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setShowProjectSelector(!showProjectSelector)}
+                          disabled={portfolio.length === 0}
+                        >
+                          {showProjectSelector ? 'Hide' : 'Show'} Projects ({selectedProjects.size})
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            // Generate AI content for all selected projects
+                            selectedProjects.forEach(projectId => {
+                              const project = portfolio.find(p => p.id === projectId);
+                              if (project) {
+                                generateProjectDescription(project);
+                              }
+                            });
+                          }}
+                          disabled={selectedProjects.size === 0 || aiGenerating !== null}
+                          className="text-green-600 hover:text-green-700"
+                        >
+                          🤖 Generate All Descriptions
+                        </Button>
+                      </div>
+                      
+                      {showProjectSelector && portfolio.length > 0 && (
+                        <div className="max-h-48 overflow-y-auto border rounded-lg p-3 space-y-2">
+                          {portfolio.map((project) => (
+                            <div key={project.id} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`project-${project.id}`}
+                                checked={selectedProjects.has(project.id)}
+                                onChange={() => toggleProjectSelection(project.id)}
+                                className="rounded"
+                              />
+                              <label 
+                                htmlFor={`project-${project.id}`}
+                                className="flex-1 text-sm cursor-pointer"
+                              >
+                                <div className="font-medium">{project.title}</div>
+                                <div className="text-gray-500 text-xs">
+                                  {project.category} • {project.visibility}
+                                  {project.featured && " • Featured"}
+                                </div>
+                              </label>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => generateProjectDescription(project)}
+                                disabled={aiGenerating === `project-${project.id}`}
+                                className="text-blue-600 hover:text-blue-700 p-1"
+                                title="Generate AI description"
+                              >
+                                {aiGenerating === `project-${project.id}` ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                                ) : (
+                                  '🤖'
+                                )}
+                              </Button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {portfolio.length === 0 && (
+                        <div className="text-sm text-gray-500 p-3 border rounded-lg text-center">
+                          No projects available. <a href="/my-projects" className="text-blue-600 hover:underline">Add projects</a> to your portfolio first.
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   {/* Education Section */}

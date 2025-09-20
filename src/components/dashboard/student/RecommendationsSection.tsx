@@ -4,10 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Lightbulb, ExternalLink, BookOpen, Trophy, Users, Star } from 'lucide-react';
 
-interface Certificate {
-  category: 'academic' | 'co_curricular';
-  status: 'pending' | 'approved' | 'rejected';
-}
+import { Certificate } from '@/types';
 
 interface RecommendationsSectionProps {
   certificates: Certificate[];

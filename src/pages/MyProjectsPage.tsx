@@ -1,43 +1,42 @@
-import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  FolderOpen, 
-  Plus, 
-  Search, 
-  Filter, 
+import { Checkbox } from '@/components/ui/checkbox';
+import {
   ArrowLeft,
+  Plus,
+  Search,
+  Filter,
   ExternalLink,
-  Eye,
-  EyeOff,
-  Star,
-  Calendar,
-  Tag,
   Edit,
-  Trash2,
-  Image as ImageIcon,
+  Trash,
+  Github,
   Code,
-  Palette,
-  Camera,
-  Music,
   BookOpen,
   Briefcase,
   Award,
   Globe,
   Lock,
   Users,
-  Github,
-  Loader2
+  Loader2,
+  Eye,
+  Star,
+  Calendar,
+  Trash2,
+  Palette,
+  GraduationCap,
+  FolderOpen
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { useStudent, StudentPortfolio } from '@/hooks/useStudent';
+import { useProjects, Project } from '@/hooks/useProjects';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import GitHubService, { GitHubRepository } from '@/services/githubService';
@@ -45,17 +44,17 @@ import GitHubService, { GitHubRepository } from '@/services/githubService';
 const MyProjectsPage: React.FC = () => {
   const { signOut } = useAuth();
   const { profile } = useProfile();
-  const { portfolio, addPortfolioItem, updatePortfolioItem, deletePortfolioItem, loading, fetchPortfolio } = useStudent();
+  const { projects, addProject, updateProject, deleteProject, loading, fetchProjects } = useProjects();
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [showAddProjectDialog, setShowAddProjectDialog] = useState(false);
   const [showEditProjectDialog, setShowEditProjectDialog] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<StudentPortfolio | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showGithubImportDialog, setShowGithubImportDialog] = useState(false);
   const [githubRepos, setGithubRepos] = useState<GitHubRepository[]>([]);
@@ -65,7 +64,7 @@ const MyProjectsPage: React.FC = () => {
   const [githubUser, setGithubUser] = useState<any>(null);
   const [showUsernameDialog, setShowUsernameDialog] = useState(false);
   const [githubUsername, setGithubUsername] = useState('');
-  const [editProject, setEditProject] = useState<StudentPortfolio | null>(null);
+  const [editProject, setEditProject] = useState<Project | null>(null);
   const [githubProjects, setGithubProjects] = useState<GitHubRepository[]>([]);
 
   // Form state for new project
@@ -76,7 +75,7 @@ const MyProjectsPage: React.FC = () => {
     image_url: '',
     external_url: '',
     visibility: 'public' as 'public' | 'private' | 'connections_only',
-    featured: false
+    featured: false,
   });
 
   // Categories with icons
@@ -89,37 +88,52 @@ const MyProjectsPage: React.FC = () => {
     academic: { icon: BookOpen, color: 'bg-indigo-500', label: 'Academic' }
   };
 
-  // Convert GitHub repositories to display format
-  const githubProjectsDisplay = githubProjects.map(repo => ({
-    id: `github-${repo.id}`,
-    title: repo.name,
-    description: repo.description || `A ${repo.language || 'software'} project with ${repo.stargazers_count} stars and ${repo.forks_count} forks.`,
-    category: 'project',
-    image_url: null,
-    external_url: repo.html_url,
-    visibility: repo.private ? 'private' : 'public',
-    featured: repo.stargazers_count > 10 || repo.forks_count > 5,
-    created_at: repo.created_at,
-    updated_at: repo.updated_at,
-    isGithubProject: true,
-    githubData: repo
-  }));
-
-  // Combine portfolio and GitHub projects
-  const allProjects = [...portfolio, ...githubProjectsDisplay];
+  // All projects come from the database now (including GitHub-imported ones)
+  const allProjects = projects;
 
   // Filter projects based on search and category
   const filteredProjects = allProjects.filter(project => {
-    const matchesSearch = project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = searchTerm === '' ||
+      project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.description?.toLowerCase().includes(searchTerm.toLowerCase());
+
     const matchesCategory = filterCategory === 'all' || project.category === filterCategory;
-    const matchesTab = activeTab === 'all' || 
-                      (activeTab === 'featured' && project.featured) ||
-                      (activeTab === 'public' && project.visibility === 'public') ||
-                      (activeTab === 'private' && project.visibility === 'private');
-    
+
+    const matchesTab = activeTab === 'all' ||
+      (activeTab === 'featured' && project.featured) ||
+      (activeTab === 'public' && project.visibility === 'public') ||
+      (activeTab === 'private' && project.visibility === 'private');
+
     return matchesSearch && matchesCategory && matchesTab;
   });
+
+  const getCategoryIcon = (category: string) => {
+    return categories[category as keyof typeof categories]?.icon || Code;
+  };
+
+  const getCategoryColor = (category: string) => {
+    return categories[category as keyof typeof categories]?.color || 'bg-gray-500';
+  };
+
+  const openEditDialog = (project: Project) => {
+    setSelectedProject(project);
+    setEditProject({
+      id: project.id,
+      student_id: project.student_id,
+      title: project.title,
+      description: project.description || '',
+      category: project.category,
+      image_url: project.image_url || '',
+      external_url: project.external_url || '',
+      visibility: project.visibility,
+      featured: project.featured,
+      github_repo_id: project.github_repo_id,
+      github_data: project.github_data,
+      created_at: project.created_at,
+      updated_at: project.updated_at
+    });
+    setShowEditProjectDialog(true);
+  };
 
   const handleAddProject = async () => {
     if (!newProject.title.trim()) {
@@ -131,8 +145,26 @@ const MyProjectsPage: React.FC = () => {
       return;
     }
 
+    if (!profile) {
+      toast({
+        title: 'Error',
+        description: 'No profile found. Please refresh the page.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
-      await addPortfolioItem(newProject);
+      const result = await addProject({
+        title: newProject.title,
+        description: newProject.description || null,
+        category: newProject.category || 'project',
+        image_url: newProject.image_url || null,
+        external_url: newProject.external_url || null,
+        visibility: newProject.visibility || 'public',
+        featured: newProject.featured || false
+      });
+
       setNewProject({
         title: '',
         description: '',
@@ -143,8 +175,17 @@ const MyProjectsPage: React.FC = () => {
         featured: false
       });
       setShowAddProjectDialog(false);
-    } catch (error) {
+      toast({
+        title: 'Success',
+        description: 'Project added successfully!',
+      });
+    } catch (error: any) {
       console.error('Error adding project:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to add project: ${error.message || 'Unknown error'}`,
+        variant: 'destructive'
+      });
     }
   };
 
@@ -152,12 +193,23 @@ const MyProjectsPage: React.FC = () => {
     if (!editProject || !editProject.title.trim()) return;
 
     try {
-      await updatePortfolioItem(editProject.id, editProject);
+      await updateProject(editProject.id, editProject);
+      
+      toast({
+        title: 'Success',
+        description: 'Project updated successfully!',
+      });
+      
       setShowEditProjectDialog(false);
       setSelectedProject(null);
       setEditProject(null);
     } catch (error) {
       console.error('Error updating project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update project',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -165,27 +217,20 @@ const MyProjectsPage: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
 
     try {
-      await deletePortfolioItem(projectId);
+      await deleteProject(projectId);
+      
+      toast({
+        title: 'Success',
+        description: 'Project deleted successfully!',
+      });
     } catch (error) {
       console.error('Error deleting project:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete project',
+        variant: 'destructive',
+      });
     }
-  };
-
-  const openEditDialog = (project: StudentPortfolio) => {
-    setSelectedProject(project);
-    setEditProject({
-      id: project.id,
-      title: project.title,
-      description: project.description || '',
-      category: project.category,
-      image_url: project.image_url || '',
-      external_url: project.external_url || '',
-      visibility: project.visibility,
-      featured: project.featured,
-      created_at: project.created_at,
-      updated_at: project.updated_at
-    });
-    setShowEditProjectDialog(true);
   };
 
   const getVisibilityIcon = (visibility: string) => {
@@ -237,7 +282,7 @@ const MyProjectsPage: React.FC = () => {
     if (!githubService.isAuthenticated()) {
       toast({
         title: 'Not Connected',
-        description: 'Please connect to GitHub first',
+        description: 'Please connect to GitHub first by entering a username.',
         variant: 'destructive'
       });
       return;
@@ -265,7 +310,6 @@ const MyProjectsPage: React.FC = () => {
     }
   };
 
-
   const handleImportSelectedRepos = async () => {
     if (selectedRepos.size === 0) {
       toast({
@@ -279,20 +323,25 @@ const MyProjectsPage: React.FC = () => {
     setImportLoading(true);
     const reposToImport = githubRepos.filter(repo => selectedRepos.has(repo.id));
     
-    console.log('Adding repositories to display:', reposToImport);
-    
     try {
-      // Simply add the selected repositories to the display state
-      setGithubProjects(prev => {
-        const newProjects = reposToImport.filter(repo => 
-          !prev.some(existing => existing.id === repo.id)
-        );
-        return [...prev, ...newProjects];
-      });
+      // Save each GitHub repository as a project in the database
+      for (const repo of reposToImport) {
+        await addProject({
+          title: repo.name,
+          description: repo.description || `A ${repo.language || 'software'} project with ${repo.stargazers_count} stars and ${repo.forks_count} forks.`,
+          category: 'project',
+          image_url: null,
+          external_url: repo.html_url,
+          visibility: (repo.private ? 'private' : 'public') as 'public' | 'private' | 'connections_only',
+          featured: repo.stargazers_count > 10 || repo.forks_count > 5,
+          github_repo_id: repo.id,
+          github_data: repo
+        });
+      }
 
       toast({
         title: 'Success',
-        description: `Added ${reposToImport.length} project${reposToImport.length !== 1 ? 's' : ''} to your projects display!`,
+        description: `Added ${reposToImport.length} project${reposToImport.length !== 1 ? 's' : ''} to your projects!`,
       });
 
       setShowGithubImportDialog(false);
@@ -330,58 +379,30 @@ const MyProjectsPage: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-300 ${
-      isDarkMode ? 'bg-gray-900' : 'bg-gradient-to-br from-slate-50 to-blue-50'
-    }`}>
-      <div className="pt-4 px-4 py-2">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => navigate('/')}
-              className={isDarkMode ? 'text-gray-300 hover:text-white' : 'text-slate-600 hover:text-slate-800'}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back
-            </Button>
-            <div>
-              <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-slate-800'}`}>
-                My Projects
-              </h1>
-              <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
-                Showcase your work and achievements
-              </p>
-            </div>
+    <div className={`min-h-screen transition-colors duration-300 ${isDarkMode ? 'bg-gray-900 text-white' : 'bg-gray-50 text-slate-800'}`}>
+      <div className="max-w-7xl mx-auto p-6 space-y-8">
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">My Projects</h1>
+            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-slate-600'}`}>
+              Showcase your work and achievements
+            </p>
           </div>
           <div className="flex space-x-3">
             <Button
-              onClick={() => {
-                // Scroll to projects section
-                const projectsSection = document.querySelector('.projects-grid');
-                if (projectsSection) {
-                  projectsSection.scrollIntoView({ 
-                    behavior: 'smooth',
-                    block: 'start',
-                    inline: 'nearest'
-                  });
-                } else {
-                  // Fallback: scroll to a specific element or position
-                  const searchSection = document.querySelector('.search-filter-section');
-                  if (searchSection) {
-                    searchSection.scrollIntoView({ 
-                      behavior: 'smooth',
-                      block: 'start'
-                    });
-                  }
-                }
+              onClick={async () => {
+                await fetchProjects();
+                toast({
+                  title: 'Refreshed',
+                  description: 'Projects data updated!',
+                });
               }}
               variant="outline"
               className="border-green-300 text-green-700 hover:bg-green-50"
             >
               <Eye className="h-4 w-4 mr-2" />
-              View Gallery
+              Refresh
             </Button>
             {GitHubService.getInstance().isAuthenticated() ? (
               <Button
@@ -417,11 +438,10 @@ const MyProjectsPage: React.FC = () => {
           </div>
         </div>
 
-
-        {/* Search and Filter */}
-        <div className="search-filter-section mb-6 flex flex-col sm:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
+        {/* Search and Filter Section */}
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <Input
                 placeholder="Search projects..."
@@ -430,108 +450,106 @@ const MyProjectsPage: React.FC = () => {
                 className="pl-10"
               />
             </div>
+            <Select value={filterCategory} onValueChange={setFilterCategory}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Filter by category" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="project">Projects</SelectItem>
+                <SelectItem value="certificate">Certificates</SelectItem>
+                <SelectItem value="achievement">Achievements</SelectItem>
+                <SelectItem value="experience">Experience</SelectItem>
+                <SelectItem value="creative">Creative</SelectItem>
+                <SelectItem value="academic">Academic</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
-            <SelectTrigger className="w-full sm:w-48">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Filter by category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {Object.entries(categories).map(([key, { label }]) => (
-                <SelectItem key={key} value={key}>{label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+          {/* Tabs */}
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="all">All Projects</TabsTrigger>
+              <TabsTrigger value="featured">Featured</TabsTrigger>
+              <TabsTrigger value="public">Public</TabsTrigger>
+              <TabsTrigger value="private">Private</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="all">All Projects</TabsTrigger>
-            <TabsTrigger value="featured">Featured</TabsTrigger>
-            <TabsTrigger value="public">Public</TabsTrigger>
-            <TabsTrigger value="private">Private</TabsTrigger>
-          </TabsList>
-        </Tabs>
-
         {/* Projects Grid */}
-        {loading ? (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Loading projects...</p>
-          </div>
-        ) : filteredProjects.length === 0 ? (
-          <Card className="text-center py-12">
-            <CardContent>
-              <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No projects found</h3>
-              <p className="text-gray-600 mb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            <div className="col-span-full flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin" />
+              <span className="ml-2">Loading projects...</span>
+            </div>
+          ) : filteredProjects.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <FolderOpen className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
+              <p className="text-gray-500 mb-4">
                 {searchTerm || filterCategory !== 'all' 
-                  ? 'Try adjusting your search or filter criteria'
-                  : 'Start by adding your first project to showcase your work'
+                  ? 'Try adjusting your search or filter criteria.'
+                  : 'Get started by adding your first project or importing from GitHub.'
                 }
               </p>
               <Button onClick={() => setShowAddProjectDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
-                Add Project
+                Add Your First Project
               </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="projects-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredProjects.map((project) => {
-              const categoryInfo = categories[project.category as keyof typeof categories] || categories.project;
-              const CategoryIcon = categoryInfo.icon;
-              const isGithubProject = (project as any).isGithubProject;
-              const githubData = (project as any).githubData;
+            </div>
+          ) : (
+            filteredProjects.map((project) => {
+              const CategoryIcon = getCategoryIcon(project.category);
+              const categoryColor = getCategoryColor(project.category);
               
               return (
-                <Card key={project.id} className="group hover:shadow-lg transition-all duration-300">
+                <Card key={project.id} className="group hover:shadow-lg transition-shadow duration-200">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-2">
-                        <div className={`p-2 rounded-lg ${isGithubProject ? 'bg-gray-600' : categoryInfo.color}`}>
-                          {isGithubProject ? <Github className="h-4 w-4 text-white" /> : <CategoryIcon className="h-4 w-4 text-white" />}
+                        <div className={`p-2 rounded-lg ${categoryColor} text-white`}>
+                          <CategoryIcon className="h-4 w-4" />
                         </div>
                         <div>
-                          <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
+                          <CardTitle className="text-lg font-semibold line-clamp-1 flex items-center">
+                            {project.title}
+                            {project.github_repo_id && (
+                              <Github className="h-4 w-4 ml-2 text-gray-500" />
+                            )}
+                          </CardTitle>
                           <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {isGithubProject ? 'GitHub Project' : categoryInfo.label}
+                            <Badge variant="secondary" className="text-xs">
+                              {categories[project.category as keyof typeof categories]?.label || project.category}
                             </Badge>
                             {project.featured && (
-                              <Badge variant="secondary" className="text-xs">
+                              <Badge variant="default" className="text-xs bg-yellow-500">
                                 <Star className="h-3 w-3 mr-1" />
                                 Featured
                               </Badge>
                             )}
-                            {isGithubProject && (
+                            {project.github_repo_id && (
                               <Badge variant="outline" className="text-xs">
-                                {githubData?.language || 'Code'}
+                                <Github className="h-3 w-3 mr-1" />
+                                GitHub
                               </Badge>
                             )}
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => window.open(project.external_url || '#', '_blank')}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="View Project"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </Button>
-                        {!isGithubProject && (
-                          <>
+                        <div className="flex items-center text-xs text-gray-500">
+                          {getVisibilityIcon(project.visibility)}
+                          <span className="ml-1">{getVisibilityLabel(project.visibility)}</span>
+                        </div>
+                        {!project.github_repo_id && (
+                          <div className="flex space-x-1">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => openEditDialog(project)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Edit Project"
+                              className="h-8 w-8 p-0"
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
@@ -539,124 +557,57 @@ const MyProjectsPage: React.FC = () => {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDeleteProject(project.id)}
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700"
-                              title="Delete Project"
+                              className="h-8 w-8 p-0 text-red-500 hover:text-red-700"
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash className="h-4 w-4" />
                             </Button>
-                          </>
-                        )}
-                        {isGithubProject && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              setGithubProjects(prev => prev.filter(p => p.id !== githubData.id));
-                              toast({
-                                title: 'Removed',
-                                description: 'GitHub project removed from display',
-                              });
-                            }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-red-600 hover:text-red-700"
-                            title="Remove from Display"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          </div>
                         )}
                       </div>
                     </div>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="pt-0">
+                    <CardDescription className="text-sm text-gray-600 line-clamp-2 mb-4">
+                      {project.description || 'No description provided.'}
+                    </CardDescription>
+                    
                     {project.image_url && (
-                      <div className="mb-4 rounded-lg overflow-hidden">
+                      <div className="mb-4">
                         <img
                           src={project.image_url}
                           alt={project.title}
-                          className="w-full h-32 object-cover"
+                          className="w-full h-32 object-cover rounded-lg"
                         />
                       </div>
                     )}
                     
-                    <p className="text-sm text-gray-600 mb-4 line-clamp-3">
-                      {project.description || 'No description provided'}
-                    </p>
-                    
-                    <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                      <div className="flex items-center space-x-1">
-                        {getVisibilityIcon(project.visibility)}
-                        <span>{getVisibilityLabel(project.visibility)}</span>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center text-xs text-gray-500">
+                        <Calendar className="h-3 w-3 mr-1" />
+                        {new Date(project.created_at).toLocaleDateString()}
                       </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="h-3 w-3" />
-                        <span>{new Date(project.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    
-                    {isGithubProject && githubData && (
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-4">
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-1">
-                            <Star className="h-3 w-3" />
-                            <span>{githubData.stargazers_count} stars</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <ExternalLink className="h-3 w-3" />
-                            <span>{githubData.forks_count} forks</span>
-                          </div>
-                        </div>
-                        <div className="text-xs text-gray-400">
-                          Updated {new Date(githubData.updated_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      {project.external_url ? (
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => window.open(project.external_url, '_blank')}
-                        >
-                          <ExternalLink className="h-4 w-4 mr-2" />
-                          {isGithubProject ? 'View on GitHub' : 'View Project'}
-                        </Button>
-                      ) : (
+                      {project.external_url && (
                         <Button
                           variant="outline"
                           size="sm"
-                          className="flex-1"
-                          onClick={() => {
-                            // Show project details in a modal or expand the card
-                            toast({
-                              title: 'Project Details',
-                              description: `${project.title}: ${project.description || 'No external link available'}`,
-                            });
-                          }}
+                          onClick={() => window.open(project.external_url, '_blank')}
+                          className="text-xs"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
-                          View Details
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          View
                         </Button>
                       )}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(project)}
-                        title="Edit Project"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
               );
-            })}
-          </div>
-        )}
+            })
+          )}
+        </div>
 
         {/* Add Project Dialog */}
         <Dialog open={showAddProjectDialog} onOpenChange={setShowAddProjectDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Add New Project</DialogTitle>
             </DialogHeader>
@@ -667,52 +618,35 @@ const MyProjectsPage: React.FC = () => {
                   id="title"
                   value={newProject.title}
                   onChange={(e) => setNewProject({ ...newProject, title: e.target.value })}
-                  onKeyPress={(e) => e.key === 'Enter' && newProject.title.trim() && handleAddProject()}
                   placeholder="Enter project title"
                 />
               </div>
-              
               <div>
                 <Label htmlFor="description">Description</Label>
-                <textarea
+                <Textarea
                   id="description"
                   value={newProject.description}
                   onChange={(e) => setNewProject({ ...newProject, description: e.target.value })}
-                  placeholder="Describe your project..."
-                  className="w-full p-2 border rounded-md resize-none h-20"
+                  placeholder="Describe your project"
+                  rows={3}
                 />
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="category">Category</Label>
-                  <Select value={newProject.category} onValueChange={(value) => setNewProject({ ...newProject, category: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(categories).map(([key, { label }]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div>
-                  <Label htmlFor="visibility">Visibility</Label>
-                  <Select value={newProject.visibility} onValueChange={(value: any) => setNewProject({ ...newProject, visibility: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="public">Public</SelectItem>
-                      <SelectItem value="private">Private</SelectItem>
-                      <SelectItem value="connections_only">Connections Only</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div>
+                <Label htmlFor="category">Category</Label>
+                <Select value={newProject.category} onValueChange={(value) => setNewProject({ ...newProject, category: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="project">Project</SelectItem>
+                    <SelectItem value="certificate">Certificate</SelectItem>
+                    <SelectItem value="achievement">Achievement</SelectItem>
+                    <SelectItem value="experience">Experience</SelectItem>
+                    <SelectItem value="creative">Creative</SelectItem>
+                    <SelectItem value="academic">Academic</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
               <div>
                 <Label htmlFor="image_url">Image URL</Label>
                 <Input
@@ -722,103 +656,112 @@ const MyProjectsPage: React.FC = () => {
                   placeholder="https://example.com/image.jpg"
                 />
               </div>
-              
               <div>
                 <Label htmlFor="external_url">External URL</Label>
                 <Input
                   id="external_url"
                   value={newProject.external_url}
                   onChange={(e) => setNewProject({ ...newProject, external_url: e.target.value })}
-                  placeholder="https://example.com/project"
+                  placeholder="https://github.com/username/repo"
                 />
               </div>
-              
+              <div>
+                <Label htmlFor="visibility">Visibility</Label>
+                <Select value={newProject.visibility} onValueChange={(value: any) => setNewProject({ ...newProject, visibility: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="public">Public</SelectItem>
+                    <SelectItem value="private">Private</SelectItem>
+                    <SelectItem value="connections_only">Connections Only</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
+                <Checkbox
                   id="featured"
                   checked={newProject.featured}
-                  onChange={(e) => setNewProject({ ...newProject, featured: e.target.checked })}
-                  className="rounded"
+                  onCheckedChange={(checked) => setNewProject({ ...newProject, featured: !!checked })}
                 />
                 <Label htmlFor="featured">Featured Project</Label>
               </div>
-              
-              <div className="flex justify-between items-center pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  {newProject.title ? (
-                    <span className="text-green-600 font-medium">
-                      Ready to add "{newProject.title}"
-                    </span>
-                  ) : (
-                    <span>Fill in the project details to continue</span>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setShowAddProjectDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleAddProject}
-                    disabled={!newProject.title.trim()}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Project
-                  </Button>
-                </div>
-              </div>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddProjectDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleAddProject}>
+                Add Project
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
         {/* Edit Project Dialog */}
         <Dialog open={showEditProjectDialog} onOpenChange={setShowEditProjectDialog}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Edit Project</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="edit-title">Project Title *</Label>
-                <Input
-                  id="edit-title"
-                  value={editProject?.title || ''}
-                  onChange={(e) => setEditProject({ ...editProject!, title: e.target.value })}
-                  onKeyPress={(e) => e.key === 'Enter' && editProject?.title?.trim() && handleEditProject()}
-                  placeholder="Enter project title"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-description">Description</Label>
-                <textarea
-                  id="edit-description"
-                  value={editProject?.description || ''}
-                  onChange={(e) => setEditProject({ ...editProject!, description: e.target.value })}
-                  placeholder="Describe your project..."
-                  className="w-full p-2 border rounded-md resize-none h-20"
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
+            {editProject && (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="edit-title">Project Title *</Label>
+                  <Input
+                    id="edit-title"
+                    value={editProject.title}
+                    onChange={(e) => setEditProject({ ...editProject, title: e.target.value })}
+                    placeholder="Enter project title"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Textarea
+                    id="edit-description"
+                    value={editProject.description}
+                    onChange={(e) => setEditProject({ ...editProject, description: e.target.value })}
+                    placeholder="Describe your project"
+                    rows={3}
+                  />
+                </div>
                 <div>
                   <Label htmlFor="edit-category">Category</Label>
-                  <Select value={editProject?.category || 'project'} onValueChange={(value) => setEditProject({ ...editProject!, category: value })}>
+                  <Select value={editProject.category} onValueChange={(value) => setEditProject({ ...editProject, category: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.entries(categories).map(([key, { label }]) => (
-                        <SelectItem key={key} value={key}>{label}</SelectItem>
-                      ))}
+                      <SelectItem value="project">Project</SelectItem>
+                      <SelectItem value="certificate">Certificate</SelectItem>
+                      <SelectItem value="achievement">Achievement</SelectItem>
+                      <SelectItem value="experience">Experience</SelectItem>
+                      <SelectItem value="creative">Creative</SelectItem>
+                      <SelectItem value="academic">Academic</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                
+                <div>
+                  <Label htmlFor="edit-image_url">Image URL</Label>
+                  <Input
+                    id="edit-image_url"
+                    value={editProject.image_url}
+                    onChange={(e) => setEditProject({ ...editProject, image_url: e.target.value })}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit-external_url">External URL</Label>
+                  <Input
+                    id="edit-external_url"
+                    value={editProject.external_url}
+                    onChange={(e) => setEditProject({ ...editProject, external_url: e.target.value })}
+                    placeholder="https://github.com/username/repo"
+                  />
+                </div>
                 <div>
                   <Label htmlFor="edit-visibility">Visibility</Label>
-                  <Select value={editProject?.visibility || 'public'} onValueChange={(value: any) => setEditProject({ ...editProject!, visibility: value })}>
+                  <Select value={editProject.visibility} onValueChange={(value: any) => setEditProject({ ...editProject, visibility: value })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -829,248 +772,24 @@ const MyProjectsPage: React.FC = () => {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-image_url">Image URL</Label>
-                <Input
-                  id="edit-image_url"
-                  value={editProject?.image_url || ''}
-                  onChange={(e) => setEditProject({ ...editProject!, image_url: e.target.value })}
-                  placeholder="https://example.com/image.jpg"
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="edit-external_url">External URL</Label>
-                <Input
-                  id="edit-external_url"
-                  value={editProject?.external_url || ''}
-                  onChange={(e) => setEditProject({ ...editProject!, external_url: e.target.value })}
-                  placeholder="https://example.com/project"
-                />
-              </div>
-              
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="edit-featured"
-                  checked={editProject?.featured || false}
-                  onChange={(e) => setEditProject({ ...editProject!, featured: e.target.checked })}
-                  className="rounded"
-                />
-                <Label htmlFor="edit-featured">Featured Project</Label>
-              </div>
-              
-              <div className="flex justify-between items-center pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  {editProject?.title ? (
-                    <span className="text-green-600 font-medium">
-                      Ready to update "{editProject.title}"
-                    </span>
-                  ) : (
-                    <span>Fill in the project details to continue</span>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setShowEditProjectDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleEditProject}
-                    disabled={!editProject?.title?.trim()}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    <Edit className="h-4 w-4 mr-2" />
-                    Update Project
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* GitHub Import Dialog */}
-        <Dialog open={showGithubImportDialog} onOpenChange={setShowGithubImportDialog}>
-          <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Github className="h-5 w-5" />
-                Add GitHub Projects to Portfolio
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 overflow-hidden flex flex-col">
-              {githubUser && (
-                <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                  <img 
-                    src={githubUser.avatar_url} 
-                    alt={githubUser.name || githubUser.login}
-                    className="w-10 h-10 rounded-full"
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="edit-featured"
+                    checked={editProject.featured}
+                    onCheckedChange={(checked) => setEditProject({ ...editProject, featured: !!checked })}
                   />
-                  <div>
-                    <p className="font-semibold">{githubUser.name || githubUser.login}</p>
-                    <p className="text-sm text-gray-600">@{githubUser.login}</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <p className="text-sm text-gray-600">
-                  Select repositories to add to your portfolio ({selectedRepos.size} selected)
-                </p>
-                <div className="flex gap-2">
-                  <Button variant="outline" size="sm" onClick={selectAllRepos}>
-                    Select All
-                  </Button>
-                  <Button variant="outline" size="sm" onClick={clearSelection}>
-                    Clear
-                  </Button>
-                  <Button 
-                    onClick={handleImportSelectedRepos}
-                    disabled={selectedRepos.size === 0 || importLoading}
-                    size="sm"
-                    className="bg-blue-600 hover:bg-blue-700 text-white disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {importLoading ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Plus className="h-3 w-3 mr-1" />
-                    )}
-                    {selectedRepos.size === 0 ? 'Add to Portfolio' : `Add ${selectedRepos.size} to Portfolio`}
-                  </Button>
-                  <Button 
-                    onClick={async () => {
-                      selectAllRepos();
-                      // Small delay to ensure selection is updated
-                      setTimeout(() => {
-                        handleImportSelectedRepos();
-                      }, 100);
-                    }}
-                    disabled={importLoading}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    {importLoading ? (
-                      <Loader2 className="h-3 w-3 mr-1 animate-spin" />
-                    ) : (
-                      <Plus className="h-3 w-3 mr-1" />
-                    )}
-                    Add All Projects
-                  </Button>
+                  <Label htmlFor="edit-featured">Featured Project</Label>
                 </div>
               </div>
-
-              <div className="overflow-y-auto max-h-96 space-y-2">
-                {githubRepos.map((repo) => (
-                  <div
-                    key={repo.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors ${
-                      selectedRepos.has(repo.id)
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => toggleRepoSelection(repo.id)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedRepos.has(repo.id)}
-                        onChange={() => toggleRepoSelection(repo.id)}
-                        className="mt-1"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <h4 className="font-semibold text-sm truncate">{repo.name}</h4>
-                          {repo.private && (
-                            <Badge variant="outline" className="text-xs">
-                              <Lock className="h-3 w-3 mr-1" />
-                              Private
-                            </Badge>
-                          )}
-                          {repo.fork && (
-                            <Badge variant="outline" className="text-xs">
-                              Fork
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                          {repo.description || 'No description available'}
-                        </p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          {repo.language && (
-                            <span className="flex items-center gap-1">
-                              <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                              {repo.language}
-                            </span>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Star className="h-3 w-3" />
-                            {repo.stargazers_count}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <ExternalLink className="h-3 w-3" />
-                            {repo.forks_count} forks
-                          </span>
-                          <span>
-                            Updated {new Date(repo.updated_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Prominent Add Button */}
-              {githubRepos.length > 0 && (
-                <div className="flex justify-center pt-4">
-                  <Button 
-                    onClick={handleImportSelectedRepos}
-                    disabled={selectedRepos.size === 0 || importLoading}
-                    size="lg"
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 text-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
-                  >
-                    {importLoading ? (
-                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-5 w-5 mr-2" />
-                    )}
-                    {importLoading ? 'Adding Projects...' : 
-                     selectedRepos.size === 0 ? 'Select Projects to Add' : 
-                     `Add ${selectedRepos.size} Selected Project${selectedRepos.size !== 1 ? 's' : ''} to Portfolio`}
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex justify-between items-center pt-4 border-t">
-                <div className="text-sm text-gray-600">
-                  {selectedRepos.size > 0 ? (
-                    <span className="text-green-600 font-medium">
-                      {selectedRepos.size} project{selectedRepos.size !== 1 ? 's' : ''} selected
-                    </span>
-                  ) : (
-                    <span>Select projects to import</span>
-                  )}
-                </div>
-                <div className="flex space-x-2">
-                  <Button variant="outline" onClick={() => setShowGithubImportDialog(false)}>
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleImportSelectedRepos}
-                    disabled={selectedRepos.size === 0 || importLoading}
-                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6"
-                  >
-                    {importLoading ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <Plus className="h-4 w-4 mr-2" />
-                    )}
-                    {importLoading ? 'Adding Projects...' : `Add ${selectedRepos.size} Project${selectedRepos.size !== 1 ? 's' : ''} to Portfolio`}
-                  </Button>
-                </div>
-              </div>
-            </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditProjectDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleEditProject}>
+                Update Project
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 
@@ -1078,10 +797,7 @@ const MyProjectsPage: React.FC = () => {
         <Dialog open={showUsernameDialog} onOpenChange={setShowUsernameDialog}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Github className="h-5 w-5" />
-                Connect to GitHub
-              </DialogTitle>
+              <DialogTitle>Connect to GitHub</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
               <div>
@@ -1090,23 +806,83 @@ const MyProjectsPage: React.FC = () => {
                   id="github-username"
                   value={githubUsername}
                   onChange={(e) => setGithubUsername(e.target.value)}
-                  placeholder="Enter GitHub username (e.g., octocat)"
-                  onKeyPress={(e) => e.key === 'Enter' && handleUsernameSubmit()}
+                  placeholder="Enter your GitHub username"
                 />
-                <p className="text-sm text-gray-500 mt-1">
-                  Enter any GitHub username to view their public repositories
-                </p>
-              </div>
-              
-              <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setShowUsernameDialog(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleUsernameSubmit}>
-                  Connect
-                </Button>
               </div>
             </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowUsernameDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleUsernameSubmit}>
+                Connect
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* GitHub Import Dialog */}
+        <Dialog open={showGithubImportDialog} onOpenChange={setShowGithubImportDialog}>
+          <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Import Projects from GitHub</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-600">
+                  Select repositories to add to your projects display
+                </p>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm" onClick={selectAllRepos}>
+                    Select All
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={clearSelection}>
+                    Clear
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid gap-3 max-h-96 overflow-y-auto">
+                {githubRepos.map((repo) => (
+                  <div key={repo.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                    <Checkbox
+                      checked={selectedRepos.has(repo.id)}
+                      onCheckedChange={() => toggleRepoSelection(repo.id)}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h4 className="font-medium truncate">{repo.name}</h4>
+                        {repo.private && (
+                          <Lock className="h-4 w-4 text-gray-400" />
+                        )}
+                      </div>
+                      <p className="text-sm text-gray-600 truncate">
+                        {repo.description || 'No description'}
+                      </p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <span>{repo.language || 'No language'}</span>
+                        <span>{repo.stargazers_count} stars</span>
+                        <span>{repo.forks_count} forks</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowGithubImportDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleImportSelectedRepos}
+                disabled={selectedRepos.size === 0 || importLoading}
+              >
+                {importLoading ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : null}
+                Add Selected ({selectedRepos.size})
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

@@ -2,82 +2,58 @@ import React, { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import AnalyticsCards from "@/components/certificates/AnalyticsCards";
 import ActionBar from "@/components/certificates/ActionBar";
-import CertificateCard, { Certificate } from "@/components/certificates/CertificateCard";
+import CertificateCard from "@/components/certificates/CertificateCard";
 import UploadCertificateForm from "@/components/certificates/UploadCertificateForm";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
-import { ArrowLeft, Award } from "lucide-react"; // use Award or any other icon
+import { ArrowLeft, Award, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Certificate } from "@/types";
+import { supabase } from "@/integrations/supabase/client";
 
-// Mock data for certificates
-const mockCertificates: Certificate[] = [
+// Sample certificates for testing (can be removed once real data is working)
+const sampleCertificates: Omit<Certificate, 'id' | 'student_id' | 'created_at' | 'updated_at'>[] = [
   {
-    id: "1",
-    title: "Google Cloud Associate Certificate",
-    category: "Verified Professional Certificates",
-    issuingCompany: "Google",
-    reviewer: "Dr. Ramesh Sharma",
-    status: "Verified",
-    uploadedAt: "2024-01-15T10:00:00Z",
-    description:
-      "Professional certification in Google Cloud Platform fundamentals and core infrastructure.",
+    title: "AWS Cloud Practitioner",
+    description: "Amazon Web Services Cloud Practitioner certification",
+    category: "academic",
+    issuing_organization: "Amazon Web Services",
+    issue_date: new Date().toISOString().split('T')[0],
+    expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    certificate_url: "https://aws.amazon.com/certification/",
+    file_name: "aws-cloud-practitioner.pdf",
+    file_url: "https://example.com/certificates/aws-cloud-practitioner.pdf",
+    file_size: 1024000,
+    status: "approved",
+    remark: "Excellent performance in cloud computing fundamentals"
   },
   {
-    id: "2",
-    title: "National Hackathon Winner",
-    category: "Co-Curricular",
-    subcategory: "National",
-    reviewer: "Dr. A.K. Singh",
-    status: "Approved",
-    uploadedAt: "2024-01-10T14:30:00Z",
-    description:
-      "First place winner in the National Level Coding Hackathon organized by IIT Delhi.",
+    title: "Google Data Analytics Professional Certificate",
+    description: "Google Career Certificate in Data Analytics",
+    category: "academic",
+    issuing_organization: "Google",
+    issue_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    certificate_url: "https://www.coursera.org/professional-certificates/google-data-analytics",
+    file_name: "google-data-analytics.pdf",
+    file_url: "https://example.com/certificates/google-data-analytics.pdf",
+    file_size: 2048000,
+    status: "approved",
+    remark: "Comprehensive data analysis skills demonstrated"
   },
   {
-    id: "3",
-    title: "Volunteer at NSS Camp",
-    category: "Co-Curricular",
-    subcategory: "Volunteer / Social Work",
-    reviewer: "Amit Tiwari",
-    status: "Pending",
-    uploadedAt: "2024-01-20T09:15:00Z",
-    description:
-      "Active participation in National Service Scheme camp for community development.",
-  },
-  {
-    id: "4",
-    title: "AWS Solutions Architect",
-    category: "Verified Professional Certificates",
-    issuingCompany: "AWS",
-    reviewer: "Prof. Anjali Mehta",
-    status: "Verified",
-    uploadedAt: "2024-01-05T16:45:00Z",
-    description:
-      "Professional certification demonstrating expertise in AWS cloud architecture.",
-  },
-  {
-    id: "5",
-    title: "State Level Science Exhibition",
-    category: "Co-Curricular",
-    subcategory: "State",
-    reviewer: "Dr. Vijay Deshmukh",
-    status: "Approved",
-    uploadedAt: "2024-01-12T11:20:00Z",
-    description:
-      "Second prize winner in State Level Science and Technology Exhibition.",
-  },
-  {
-    id: "6",
-    title: "Workshop on Machine Learning",
-    category: "Academic",
-    subcategory: "Workshops / Training",
-    reviewer: "Deepak Kumar",
-    status: "Pending",
-    uploadedAt: "2024-01-18T13:00:00Z",
-    description:
-      "Completed intensive workshop on Machine Learning and AI fundamentals.",
-  },
+    title: "Hackathon Winner - TechFest 2024",
+    description: "First place in university hackathon competition",
+    category: "co_curricular",
+    issuing_organization: "University TechFest",
+    issue_date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    certificate_url: "https://university.edu/techfest2024",
+    file_name: "hackathon-winner.pdf",
+    file_url: "https://example.com/certificates/hackathon-winner.pdf",
+    file_size: 512000,
+    status: "approved",
+    remark: "Outstanding innovation and teamwork"
+  }
 ];
 
 const CertificateManagement: React.FC = () => {
@@ -85,7 +61,8 @@ const CertificateManagement: React.FC = () => {
   const { signOut } = useAuth();
   const { profile } = useProfile();
 
-  const [certificates, setCertificates] = useState<Certificate[]>(mockCertificates);
+  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -100,11 +77,49 @@ const CertificateManagement: React.FC = () => {
     }
   }, [isDarkMode]);
 
+  // Fetch certificates from database
+  useEffect(() => {
+    if (profile) {
+      fetchCertificates();
+    }
+  }, [profile]);
+
+  const fetchCertificates = async () => {
+    if (!profile) return;
+
+    setLoading(true);
+    try {
+      console.log('Fetching certificates for student_id:', profile.id);
+      const { data, error } = await supabase
+        .from('certificates')
+        .select('*')
+        .eq('student_id', profile.id)
+        .order('created_at', { ascending: false });
+      
+      if (error) {
+        console.error('Database error fetching certificates:', error);
+        throw error;
+      }
+      
+      console.log('Fetched certificates:', data);
+      setCertificates((data as unknown as Certificate[]) || []);
+    } catch (error) {
+      console.error('Error fetching certificates:', error);
+      toast({
+        title: 'Certificate Fetch Error',
+        description: 'Failed to fetch certificates. Check console for details.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Calculate analytics data
   const totalCertificates = certificates.length;
-  const verifiedCertificates = certificates.filter((cert) => cert.status === "Verified").length;
-  const pendingCertificates = certificates.filter((cert) => cert.status === "Pending").length;
-  const approvedCertificates = certificates.filter((cert) => cert.status === "Approved").length;
+  const verifiedCertificates = certificates.filter((cert) => cert.status === "approved").length;
+  const pendingCertificates = certificates.filter((cert) => cert.status === "pending").length;
+  const rejectedCertificates = certificates.filter((cert) => cert.status === "rejected").length;
 
   const handleUploadClick = () => {
     setIsUploadModalOpen(true);
@@ -126,20 +141,90 @@ const CertificateManagement: React.FC = () => {
     // TODO: Implement export functionality
   };
 
-  const handleCertificateSubmit = (certificateData: any) => {
-    const newCertificate: Certificate = {
-      id: Date.now().toString(),
-      title: certificateData.title,
-      description: certificateData.description,
-      category: certificateData.category,
-      subcategory: certificateData.subcategory,
-      issuingCompany: certificateData.issuingCompany,
-      reviewer: certificateData.reviewer,
-      status: certificateData.status,
-      uploadedAt: certificateData.uploadedAt,
-    };
+  // Add sample certificates for testing
+  const addSampleCertificates = async () => {
+    if (!profile) return;
 
-    setCertificates((prev) => [newCertificate, ...prev]);
+    try {
+      console.log('Adding sample certificates:', sampleCertificates);
+      const { data, error } = await supabase
+        .from('certificates')
+        .insert(sampleCertificates.map(cert => ({
+          ...cert,
+          student_id: profile.id
+        })));
+
+      if (error) {
+        console.error('Error adding sample certificates:', error);
+        toast({
+          title: 'Error',
+          description: `Failed to add sample certificates: ${error.message}`,
+          variant: 'destructive',
+        });
+      } else {
+        console.log('Sample certificates added successfully:', data);
+        await fetchCertificates(); // Refresh the certificates list
+        toast({
+          title: 'Sample Certificates Added!',
+          description: '3 sample certificates have been added to your profile.',
+        });
+      }
+    } catch (error) {
+      console.error('Error adding sample certificates:', error);
+      toast({
+        title: 'Error',
+        description: `Failed to add sample certificates: ${error}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleCertificateSubmit = async (certificateData: any) => {
+    if (!profile) return;
+
+    try {
+      const newCertificate = {
+        student_id: profile.id,
+        title: certificateData.title,
+        description: certificateData.description,
+        category: certificateData.category,
+        issuing_organization: certificateData.issuingCompany || 'Unknown',
+        issue_date: new Date().toISOString().split('T')[0],
+        certificate_url: certificateData.certificateUrl || '',
+        file_name: certificateData.fileName || 'certificate.pdf',
+        file_url: certificateData.fileUrl || '',
+        file_size: certificateData.fileSize || 0,
+        status: 'pending' as const,
+        remark: certificateData.remark || ''
+      };
+
+      const { data, error } = await supabase
+        .from('certificates')
+        .insert([newCertificate]);
+
+      if (error) {
+        console.error('Error adding certificate:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to add certificate. Please try again.',
+          variant: 'destructive',
+        });
+      } else {
+        console.log('Certificate added successfully:', data);
+        await fetchCertificates(); // Refresh the certificates list
+        toast({
+          title: 'Certificate Added!',
+          description: 'Your certificate has been submitted for review.',
+        });
+      }
+    } catch (error) {
+      console.error('Error adding certificate:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to add certificate. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleViewCertificate = (certificate: Certificate) => {
@@ -194,15 +279,25 @@ const CertificateManagement: React.FC = () => {
           totalCertificates={totalCertificates}
           verifiedCertificates={verifiedCertificates}
           pendingCertificates={pendingCertificates}
-          approvedCertificates={approvedCertificates}
+          approvedCertificates={rejectedCertificates}
         />
 
         {/* Action Bar */}
-        <ActionBar
-          onUploadClick={handleUploadClick}
-          onFindReviewersClick={handleFindReviewersClick}
-          onExportClick={handleExportClick}
-        />
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <ActionBar
+            onUploadClick={handleUploadClick}
+            onFindReviewersClick={handleFindReviewersClick}
+            onExportClick={handleExportClick}
+          />
+          <Button
+            onClick={addSampleCertificates}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Sample Certificates (Test)
+          </Button>
+        </div>
 
         {/* Recent Certificates Section */}
         <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
@@ -221,7 +316,12 @@ const CertificateManagement: React.FC = () => {
             </div>
           </div>
 
-          {certificates.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-10">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading certificates...</p>
+            </div>
+          ) : certificates.length === 0 ? (
             <div className="text-center py-10">
               <div className="text-5xl mb-3">📄</div>
               <h3 className="text-base font-medium text-gray-900 mb-2">
@@ -231,12 +331,20 @@ const CertificateManagement: React.FC = () => {
                 Upload your first certificate to get started with tracking your
                 achievements.
               </p>
-              <button
-                onClick={handleUploadClick}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md font-medium transition-colors duration-200"
-              >
-                Upload Certificate
-              </button>
+              <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                <button
+                  onClick={handleUploadClick}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-md font-medium transition-colors duration-200"
+                >
+                  Upload Certificate
+                </button>
+                <button
+                  onClick={addSampleCertificates}
+                  className="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-md font-medium transition-colors duration-200"
+                >
+                  Add Sample Certificates (Test)
+                </button>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">

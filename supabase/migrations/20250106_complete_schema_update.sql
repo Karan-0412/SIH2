@@ -205,16 +205,32 @@ ALTER TABLE public.student_milestones ENABLE ROW LEVEL SECURITY;
 
 -- 14. Create RLS Policies for student_portfolio
 CREATE POLICY "Students can view their own portfolio items" ON public.student_portfolio
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can insert their own portfolio items" ON public.student_portfolio
-  FOR INSERT WITH CHECK (auth.uid() = student_id);
+  FOR INSERT WITH CHECK (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can update their own portfolio items" ON public.student_portfolio
-  FOR UPDATE USING (auth.uid() = student_id);
+  FOR UPDATE USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can delete their own portfolio items" ON public.student_portfolio
-  FOR DELETE USING (auth.uid() = student_id);
+  FOR DELETE USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 -- Allow public viewing of public portfolio items
 CREATE POLICY "Anyone can view public portfolio items" ON public.student_portfolio
@@ -228,34 +244,74 @@ CREATE POLICY "Users can update their own profile" ON public.profiles
   FOR UPDATE USING (auth.uid() = user_id);
 
 CREATE POLICY "Students can view their own certificates" ON public.certificates
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can insert their own certificates" ON public.certificates
-  FOR INSERT WITH CHECK (auth.uid() = student_id);
+  FOR INSERT WITH CHECK (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can view their own progress" ON public.student_progress
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can update their own progress" ON public.student_progress
-  FOR UPDATE USING (auth.uid() = student_id);
+  FOR UPDATE USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can view their own achievements" ON public.student_achievements
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can insert their own achievements" ON public.student_achievements
-  FOR INSERT WITH CHECK (auth.uid() = student_id);
+  FOR INSERT WITH CHECK (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can view their own activities" ON public.student_activities
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can insert their own activities" ON public.student_activities
-  FOR INSERT WITH CHECK (auth.uid() = student_id);
+  FOR INSERT WITH CHECK (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can view their own goals" ON public.student_goals
-  FOR SELECT USING (auth.uid() = student_id);
+  FOR SELECT USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 CREATE POLICY "Students can manage their own goals" ON public.student_goals
-  FOR ALL USING (auth.uid() = student_id);
+  FOR ALL USING (
+    student_id IN (
+      SELECT id FROM public.profiles WHERE user_id = auth.uid()
+    )
+  );
 
 -- 16. Grant Permissions
 GRANT ALL ON public.profiles TO authenticated;

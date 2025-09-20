@@ -22,17 +22,7 @@ import {
   QrCode
 } from 'lucide-react';
 
-interface Certificate {
-  id: string;
-  title: string;
-  description: string;
-  category: 'academic' | 'co_curricular';
-  status: 'pending' | 'approved' | 'rejected';
-  file_url: string;
-  verified_at: string;
-  verified_by: string;
-  faculty_name: string;
-}
+import { Certificate } from '@/types';
 
 interface StudentProfile {
   id: string;

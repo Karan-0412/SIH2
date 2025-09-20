@@ -14,17 +14,9 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 
-interface Certificate {
-  id: string;
-  title: string;
-  description: string;
-  category: 'academic' | 'co_curricular';
-  status: 'pending' | 'approved' | 'rejected';
-  file_url: string;
-  file_name: string;
-  uploaded_at: string;
-  rejection_reason?: string;
-  remark?: string;
+import { Certificate } from '@/types';
+
+interface CertificateWithStudent extends Certificate {
   student: {
     id: string;
     full_name: string;
@@ -53,7 +45,7 @@ interface Course {
 const FacultyDashboard = () => {
   const { profile } = useProfile();
   const { toast } = useToast();
-  const [certificates, setCertificates] = useState<Certificate[]>([]);
+  const [certificates, setCertificates] = useState<CertificateWithStudent[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(false);
@@ -80,7 +72,7 @@ const FacultyDashboard = () => {
   const mockFetchCertificates = async () => {
     setLoading(true);
     await mockDelay(500);
-    const data: Certificate[] = [
+    const data: CertificateWithStudent[] = [
       {
         id: 'mock-1',
         title: 'National Science Fair',

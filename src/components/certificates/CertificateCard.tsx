@@ -3,18 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Eye, Edit, FileText, User } from 'lucide-react';
-
-export interface Certificate {
-  id: string;
-  title: string;
-  category: 'Academic' | 'Co-Curricular' | 'Verified Professional Certificates';
-  subcategory?: string;
-  issuingCompany?: string;
-  reviewer: string;
-  status: 'Pending' | 'Approved' | 'Verified';
-  uploadedAt: string;
-  description?: string;
-}
+import { Certificate } from '@/types';
 
 interface CertificateCardProps {
   certificate: Certificate;
@@ -29,12 +18,12 @@ const CertificateCard: React.FC<CertificateCardProps> = ({
 }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending':
+      case 'pending':
         return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'Approved':
+      case 'approved':
         return 'bg-green-100 text-green-800 border-green-200';
-      case 'Verified':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'rejected':
+        return 'bg-red-100 text-red-800 border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200';
     }
@@ -42,14 +31,16 @@ const CertificateCard: React.FC<CertificateCardProps> = ({
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
-      case 'Academic':
+      case 'academic':
         return '🎓';
-      case 'Co-Curricular':
+      case 'co_curricular':
         return '🏆';
-      case 'Verified Professional Certificates':
+      case 'professional':
         return '🏢';
+      case 'achievement':
+        return '🏅';
       default:
-        return '📄';
+        return '📜';
     }
   };
 
@@ -65,8 +56,7 @@ const CertificateCard: React.FC<CertificateCardProps> = ({
               </CardTitle>
               <CardDescription className="text-sm text-gray-600 mt-1">
                 {certificate.category}
-                {certificate.subcategory && ` • ${certificate.subcategory}`}
-                {certificate.issuingCompany && ` • ${certificate.issuingCompany}`}
+                {certificate.issuing_organization && ` • ${certificate.issuing_organization}`}
               </CardDescription>
             </div>
           </div>
@@ -78,14 +68,16 @@ const CertificateCard: React.FC<CertificateCardProps> = ({
 
       <CardContent className="pt-0">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <User className="h-4 w-4" />
-            <span>Reviewer: {certificate.reviewer}</span>
-          </div>
+          {certificate.verified_by && (
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <User className="h-4 w-4" />
+              <span>Verified by: {certificate.verified_by}</span>
+            </div>
+          )}
 
           <div className="flex items-center gap-2 text-sm text-gray-500">
             <FileText className="h-4 w-4" />
-            <span>Uploaded: {new Date(certificate.uploadedAt).toLocaleDateString()}</span>
+            <span>Issued: {new Date(certificate.issue_date).toLocaleDateString()}</span>
           </div>
 
           {certificate.description && (

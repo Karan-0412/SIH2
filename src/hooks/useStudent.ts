@@ -206,12 +206,8 @@ export const useStudent = () => {
     try {
       const { data, error } = await supabase
         .from('student_connections')
-        .select(`
-          *,
-          student:profiles!student_connections_student_id_fkey(full_name, avatar_url),
-          connection:profiles!student_connections_connection_id_fkey(full_name, avatar_url)
-        `)
-        .or(`student_id.eq.${profile.id},connection_id.eq.${profile.id}`)
+        .select('*')
+        .or(`requester_id.eq.${profile.id},receiver_id.eq.${profile.id}`)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
@@ -223,7 +219,12 @@ export const useStudent = () => {
 
   // Fetch portfolio
   const fetchPortfolio = async () => {
-    if (!profile) return;
+    if (!profile) {
+      console.log('No profile available for fetchPortfolio');
+      return;
+    }
+    
+    console.log('Fetching portfolio for profile:', profile.id);
     
     try {
       const { data, error } = await supabase
@@ -232,8 +233,12 @@ export const useStudent = () => {
         .eq('student_id', profile.id)
         .order('created_at', { ascending: false });
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error in fetchPortfolio:', error);
+        throw error;
+      }
       
+      console.log('Fetched portfolio data:', data);
       setPortfolio(data || []);
     } catch (error) {
       console.error('Error fetching portfolio:', error);
@@ -468,8 +473,8 @@ export const useStudent = () => {
       const { data, error } = await supabase
         .from('student_connections')
         .insert({
-          student_id: profile.id,
-          connection_id: receiverId,
+          requester_id: profile.id,
+          receiver_id: receiverId,
           status: 'pending',
         })
         .select()

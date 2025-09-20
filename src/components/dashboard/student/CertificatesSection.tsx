@@ -5,19 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { CheckCircle, XCircle, Clock, Eye, Download, Search, GraduationCap, Trophy } from 'lucide-react';
-
-interface Certificate {
-  id: string;
-  title: string;
-  description: string;
-  category: 'academic' | 'co_curricular';
-  status: 'pending' | 'approved' | 'rejected';
-  file_url: string;
-  file_name: string;
-  uploaded_at: string;
-  rejection_reason?: string;
-  remark?: string;
-}
+import { Certificate } from '@/types';
 
 interface CertificatesSectionProps {
   certificates: Certificate[];
@@ -72,7 +60,7 @@ const CertificatesSection: React.FC<CertificatesSectionProps> = ({ certificates 
             )}
             <div className="flex items-center justify-between">
               <span className="text-xs text-muted-foreground">
-                {new Date(certificate.uploaded_at).toLocaleDateString()}
+                {new Date(certificate.created_at).toLocaleDateString()}
               </span>
               {getStatusBadge(certificate.status)}
             </div>

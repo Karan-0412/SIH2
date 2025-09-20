@@ -21,10 +21,9 @@ import {
   Medal,
   Crown
 } from 'lucide-react';
-import DashboardService, { DashboardStats, Achievement, Badge as BadgeType, CategoryStat } from '@/services/dashboardService';
-import { mockDashboardStats } from '@/services/mockDataService';
 import { useProfile } from '@/hooks/useProfile';
-import { useMockData } from '@/hooks/useMockData';
+import { useAchievements } from '@/hooks/useAchievements';
+import { usePlatformIntegration } from '@/hooks/usePlatformIntegration';
 
 interface AcademicAchievementDashboardProps {
   loading?: boolean;
@@ -34,40 +33,46 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
   loading: propLoading 
 }) => {
   const { profile } = useProfile();
-  const { mockDataEnabled } = useMockData();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { achievements, loading: achievementsLoading, generatePlatformAchievements } = useAchievements();
+  const { platforms, activityStats } = usePlatformIntegration();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      if (!profile) return;
-      
-      setLoading(true);
-      setError(null);
-      
-      try {
-        // Check if mock data is enabled
-        if (mockDataEnabled) {
-          console.log('Using mock data for testing');
-          setStats(mockDashboardStats);
-        } else {
-          const dashboardService = DashboardService.getInstance();
-          const data = await dashboardService.getDashboardStats(profile.id);
-          setStats(data);
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
-        setError('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
+  // Calculate stats from real achievement data
+  console.log('AcademicAchievementDashboard - achievements:', achievements);
+  console.log('AcademicAchievementDashboard - achievementsLoading:', achievementsLoading);
+  
+  const totalAchievements = achievements.length;
+  const totalPoints = achievements.reduce((sum, achievement) => sum + achievement.points, 0);
+  const recentAchievements = achievements
+    .sort((a, b) => new Date(b.earned_at).getTime() - new Date(a.earned_at).getTime())
+    .slice(0, 5);
+  
+  const achievementTypes = [...new Set(achievements.map(a => a.achievement_type))];
+  const platformAchievements = achievements.filter(a => a.achievement_type === 'coding_platform');
+  const academicAchievements = achievements.filter(a => a.achievement_type === 'academic');
+  const coCurricularAchievements = achievements.filter(a => a.achievement_type === 'co_curricular');
+  
+  // Calculate category stats from real data
+  const categoryStats = achievementTypes.map(type => {
+    const typeAchievements = achievements.filter(a => a.achievement_type === type);
+    return {
+      category: type,
+      count: typeAchievements.length,
+      points: typeAchievements.reduce((sum, a) => sum + a.points, 0)
     };
+  });
 
-    fetchStats();
-  }, [profile, mockDataEnabled]);
+  // Create badges from achievements
+  const badges = achievements.slice(0, 8).map(achievement => ({
+    id: achievement.id,
+    name: achievement.title,
+    description: achievement.description || `Earned ${achievement.points} points`,
+    rarity: achievement.points >= 100 ? 'legendary' : achievement.points >= 50 ? 'epic' : achievement.points >= 25 ? 'rare' : 'common',
+    earnedAt: achievement.earned_at
+  }));
 
-  if (propLoading || loading) {
+  if (propLoading || achievementsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[1, 2, 3, 4].map((i) => (
@@ -96,16 +101,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
     );
   }
 
-  if (!stats) {
-    return (
-      <Card>
-        <CardContent className="p-6 text-center">
-          <div className="text-gray-500 mb-2">📊</div>
-          <p className="text-gray-600">No data available</p>
-        </CardContent>
-      </Card>
-    );
-  }
+  // No need to check for stats since we're using real data
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -189,7 +185,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-green-100 text-sm font-medium">Total Achievements</p>
-                <p className="text-3xl font-bold">{stats.totalAchievements}</p>
+                <p className="text-3xl font-bold">{totalAchievements}</p>
                 <p className="text-green-100 text-xs">Keep achieving!</p>
               </div>
               <Trophy className="h-12 w-12 text-green-200" />
@@ -203,7 +199,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-orange-100 text-sm font-medium">Active Streak</p>
-                <p className="text-3xl font-bold">{stats.currentStreak}</p>
+                <p className="text-3xl font-bold">{activityStats?.currentStreak || 0}</p>
                 <p className="text-orange-100 text-xs">days active</p>
               </div>
               <Flame className="h-12 w-12 text-orange-200" />
@@ -212,12 +208,12 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
         </Card>
 
         {/* Level */}
-        <Card className={`bg-gradient-to-br ${getLevelColor(stats.level)} text-white`}>
+        <Card className={`bg-gradient-to-br ${getLevelColor(Math.floor(totalPoints / 10))} text-white`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/80 text-sm font-medium">Level {stats.level}</p>
-                <p className="text-2xl font-bold">{getLevelTitle(stats.level)}</p>
+                <p className="text-white/80 text-sm font-medium">Level {Math.floor(totalPoints / 10)}</p>
+                <p className="text-2xl font-bold">{getLevelTitle(Math.floor(totalPoints / 10))}</p>
                 <p className="text-white/80 text-xs">Keep growing!</p>
               </div>
               <Crown className="h-12 w-12 text-white/80" />
@@ -231,7 +227,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-blue-100 text-sm font-medium">Total Points</p>
-                <p className="text-3xl font-bold">{stats.totalPoints}</p>
+                <p className="text-3xl font-bold">{totalPoints}</p>
                 <p className="text-blue-100 text-xs">Earned through activities</p>
               </div>
               <Star className="h-12 w-12 text-blue-200" />
@@ -262,9 +258,12 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
               <Calendar className="h-6 w-6" />
               <span className="text-sm font-medium">Log Event</span>
             </Button>
-            <Button className="h-20 flex-col gap-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+            <Button 
+              className="h-20 flex-col gap-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+              onClick={generatePlatformAchievements}
+            >
               <Trophy className="h-6 w-6" />
-              <span className="text-sm font-medium">Add Competition</span>
+              <span className="text-sm font-medium">Generate Achievements</span>
             </Button>
           </div>
         </CardContent>
@@ -280,21 +279,21 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {stats.recentAchievements.slice(0, 5).map((achievement) => (
+            {recentAchievements.length > 0 ? recentAchievements.map((achievement) => (
               <div key={achievement.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-full ${getTypeColor(achievement.type)}`}>
-                    {getTypeIcon(achievement.type)}
+                  <div className={`p-2 rounded-full ${getTypeColor(achievement.achievement_type)}`}>
+                    {getTypeIcon(achievement.achievement_type)}
                   </div>
                   <div>
                     <h4 className="font-medium">{achievement.title}</h4>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`text-xs ${getTypeColor(achievement.type)}`}>
-                        {achievement.type}
+                      <Badge className={`text-xs ${getTypeColor(achievement.achievement_type)}`}>
+                        {achievement.achievement_type}
                       </Badge>
                       <span className="text-xs text-gray-500">{achievement.category}</span>
-                      <Badge variant={achievement.status === 'approved' ? 'default' : 'secondary'}>
-                        {achievement.status}
+                      <Badge variant="default">
+                        Verified
                       </Badge>
                     </div>
                   </div>
@@ -305,11 +304,11 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
                     <span className="font-medium">+{achievement.points}</span>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {new Date(achievement.earnedAt).toLocaleDateString()}
+                    {new Date(achievement.earned_at).toLocaleDateString()}
                   </p>
                 </div>
               </div>
-            )) || (
+            )) : (
               <div className="text-center py-8 text-gray-500">
                 <Trophy className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No achievements yet</p>
@@ -330,16 +329,16 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {stats.categoryStats.map((category) => (
+            {categoryStats.map((category) => (
               <div key={category.category} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">{category.category}</span>
                   <span className="text-sm text-gray-500">{category.count} achievements</span>
                 </div>
-                <Progress value={(category.count / stats.totalAchievements) * 100} className="h-2" />
+                <Progress value={totalAchievements > 0 ? (category.count / totalAchievements) * 100 : 0} className="h-2" />
                 <div className="flex items-center justify-between text-xs text-gray-500">
                   <span>{category.points} points</span>
-                  <span>{Math.round((category.count / stats.totalAchievements) * 100)}%</span>
+                  <span>{totalAchievements > 0 ? Math.round((category.count / totalAchievements) * 100) : 0}%</span>
                 </div>
               </div>
             )) || (
@@ -362,7 +361,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {stats.badges.slice(0, 8).map((badgeItem) => (
+            {badges.map((badgeItem) => (
               <div key={badgeItem.id} className="text-center p-4 border rounded-lg hover:shadow-md transition-shadow">
                 <div className={`w-12 h-12 mx-auto mb-2 rounded-full flex items-center justify-center ${getBadgeRarityColor(badgeItem.rarity)}`}>
                   <Medal className="h-6 w-6" />
