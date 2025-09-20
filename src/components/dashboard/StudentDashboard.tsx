@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
-import { useStudent } from '@/hooks/useStudent';
+import { useStudentSafe as useStudent } from '@/hooks/useStudentSafe';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
 import ProfileSection from './student/ProfileSection';
 import CertificatesSection from './student/CertificatesSection';
 import RecommendationsSection from './student/RecommendationsSection';
+import CourseRecommendations from '../recommendations/CourseRecommendations';
+import ExternalCourseRecommendations from '../recommendations/ExternalCourseRecommendations';
+import ProfileSetup from '../recommendations/ProfileSetup';
+import { StudentCredentials } from '../verifiableCredentials/StudentCredentials';
 import UploadCertificateSection from './student/UploadCertificateSection';
 import NotificationsDropdown from './student/NotificationsDropdown';
 import StudentProgressCard from './student/StudentProgressCard';
@@ -149,7 +153,7 @@ const StudentDashboard = () => {
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
           <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)}>My Certificates</Button>
-          <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-[#6D28D9] hover:bg-[#5b21b6] text-white">
+          <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-violet-100 hover:bg-violet-200 text-violet-700 border border-violet-200">
             <Upload className="h-4 w-4 mr-2" />
             {showUploadPanel ? 'Close Upload' : 'Upload Certificate'}
           </Button>
@@ -160,12 +164,14 @@ const StudentDashboard = () => {
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -208,6 +214,29 @@ const StudentDashboard = () => {
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
           <SocialActivityFeed loading={studentLoading} />
+        </TabsContent>
+
+        {/* Recommendations Tab */}
+        <TabsContent value="recommendations" className="space-y-6">
+          <div className="space-y-6">
+            {/* Internal Course Recommendations */}
+            <CourseRecommendations />
+            
+            {/* External Course Recommendations */}
+            <ExternalCourseRecommendations />
+            
+            {/* Profile Setup */}
+            <ProfileSetup />
+          </div>
+        </TabsContent>
+
+        {/* Verifiable Credentials Tab */}
+        <TabsContent value="credentials" className="space-y-6">
+          {profile && (
+            <StudentCredentials 
+              studentId={profile.id} 
+            />
+          )}
         </TabsContent>
       </Tabs>
 

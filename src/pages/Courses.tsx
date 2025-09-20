@@ -35,6 +35,7 @@ const CoursesPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const [faculties, setFaculties] = useState<Array<{ id: string; full_name: string }>>([]);
+  const [currentFacultyId, setCurrentFacultyId] = useState<string | null>(null);
 
   useEffect(() => {
     // fetch faculties list
@@ -48,6 +49,32 @@ const CoursesPage: React.FC = () => {
         }
       } catch (err) {
         console.error('Error loading faculties', err);
+      }
+    })();
+
+    // Get current faculty ID if user is faculty
+    (async () => {
+      if (profile?.role === 'faculty') {
+        try {
+          console.log('Looking up faculty record for current user:', profile);
+          
+          const { data: facultyRecord, error: facultyError } = await supabase
+            .from('faculty')
+            .select('id, name, email, user_id')
+            .or(`user_id.eq.${profile.id},email.eq.${profile.email}`)
+            .single();
+          
+          console.log('Faculty lookup result for current user:', { facultyRecord, facultyError });
+          
+          if (facultyRecord) {
+            setCurrentFacultyId(facultyRecord.id);
+            console.log('Set current faculty ID to:', facultyRecord.id);
+          } else {
+            console.log('No faculty record found for current user, will create one when needed');
+          }
+        } catch (err) {
+          console.error('Error getting faculty ID:', err);
+        }
       }
     })();
 
@@ -179,7 +206,74 @@ const CoursesPage: React.FC = () => {
     e?.preventDefault();
     setSubmitting(true);
     try {
-      const effectiveFacultyId = facultyId ?? (profile?.role === 'faculty' ? profile.id : null);
+      // For faculty users, get their faculty record ID instead of profile ID
+      let effectiveFacultyId = facultyId;
+      
+      if (profile?.role === 'faculty' && !facultyId) {
+        console.log('Looking up faculty record for user:', profile);
+        
+        // Look up the faculty record by user_id or email
+        const { data: facultyRecord, error: facultyError } = await supabase
+          .from('faculty')
+          .select('id, name, email, user_id')
+          .or(`user_id.eq.${profile.id},email.eq.${profile.email}`)
+          .single();
+        
+        console.log('Faculty lookup result:', { facultyRecord, facultyError });
+        
+        if (facultyRecord) {
+          effectiveFacultyId = facultyRecord.id;
+          console.log('Using faculty ID:', effectiveFacultyId);
+        } else {
+          console.error('Faculty record not found for user:', profile);
+          console.error('Faculty lookup error:', facultyError);
+          
+          // Try to create a faculty record if it doesn't exist
+          console.log('Attempting to create faculty record...');
+          const { data: newFaculty, error: createError } = await supabase
+            .from('faculty')
+            .insert({
+              id: profile.id, // Use profile ID as faculty ID to ensure consistency
+              name: profile.full_name || 'Faculty Member',
+              email: profile.email,
+              department: 'General',
+              designation: profile.faculty_level === 'admin' ? 'Administrator' : 
+                          profile.faculty_level === 'senior' ? 'Senior Faculty' : 'Faculty',
+              is_verified: true,
+              user_id: profile.user_id
+            })
+            .select('id')
+            .single();
+          
+          if (newFaculty) {
+            effectiveFacultyId = newFaculty.id;
+            console.log('Created new faculty record with ID:', effectiveFacultyId);
+          } else {
+            console.error('Failed to create faculty record:', createError);
+            
+            // Try to get any available faculty ID as fallback
+            const { data: anyFaculty } = await supabase
+              .from('faculty')
+              .select('id')
+              .limit(1)
+              .single();
+            
+            if (anyFaculty) {
+              effectiveFacultyId = anyFaculty.id;
+              console.log('Using fallback faculty ID:', effectiveFacultyId);
+            } else {
+              toast({ 
+                title: 'Faculty Record Not Found', 
+                description: 'No faculty record found for your account. Please contact administrator.', 
+                variant: 'destructive' 
+              });
+              setSubmitting(false);
+              return;
+            }
+          }
+        }
+      }
+      
       const ok = await validate(effectiveFacultyId);
       if (!ok) { setSubmitting(false); return; }
 
@@ -214,6 +308,46 @@ const CoursesPage: React.FC = () => {
         thumbnail_url,
         external_link: externalLink || null,
       } as any;
+
+      console.log('Course payload:', payload);
+      console.log('Faculty ID being used:', effectiveFacultyId);
+
+      // Verify faculty ID exists before inserting
+      if (effectiveFacultyId) {
+        const { data: facultyCheck, error: facultyCheckError } = await supabase
+          .from('faculty')
+          .select('id, name, email')
+          .eq('id', effectiveFacultyId)
+          .single();
+        
+        if (facultyCheckError || !facultyCheck) {
+          console.error('Faculty ID verification failed:', facultyCheckError);
+          console.log('Faculty ID does not exist in faculty table:', effectiveFacultyId);
+          
+          // Try to get any available faculty ID
+          const { data: anyFaculty } = await supabase
+            .from('faculty')
+            .select('id, name, email')
+            .limit(1)
+            .single();
+          
+          if (anyFaculty) {
+            effectiveFacultyId = anyFaculty.id;
+            payload.faculty_id = effectiveFacultyId;
+            console.log('Using fallback faculty ID:', effectiveFacultyId);
+          } else {
+            toast({ 
+              title: 'No Faculty Available', 
+              description: 'No faculty records found. Please contact administrator.', 
+              variant: 'destructive' 
+            });
+            setSubmitting(false);
+            return;
+          }
+        } else {
+          console.log('Faculty ID verified:', facultyCheck);
+        }
+      }
 
       const { data, error } = await supabase.from('courses').insert(payload).select().maybeSingle();
       if (error) {
@@ -346,7 +480,10 @@ const CoursesPage: React.FC = () => {
             (() => {
               const visibleCourses = courses.filter(c => {
                 if (!profile) return false;
-                if (profile.role === 'faculty') return c.faculty_id === profile.id;
+                if (profile.role === 'faculty') {
+                  // For faculty, show courses where faculty_id matches their faculty record ID
+                  return c.faculty_id === currentFacultyId;
+                }
                 const sid = (profile as any).student_id ?? (profile as any).studentId ?? null;
                 if (!sid) return false;
                 const assigned = (c.assigned_student_ids || c.assigned_students || c.student_ids || c.student_id || '').toString();

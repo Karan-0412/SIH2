@@ -456,12 +456,12 @@ export default function FacultyCommunity(){
         setFaculties(allFaculties);
       }catch(err){ 
         console.error('Load faculties err', err); 
-        setFaculties(MOCK_FACULTIES);
+          setFaculties(MOCK_FACULTIES);
         toast({ 
           title:'Using Mock Data', 
           description: 'Faculty directory loaded with comprehensive sample data.', 
         });
-      }
+        }
     })();
   },[toast]);
 
@@ -736,7 +736,7 @@ export default function FacultyCommunity(){
                     </span>
                     <span>Database Faculty</span>
                   </div>
-                </div>
+              </div>
                 <span className="text-sm font-normal text-muted-foreground">
                   {filteredFaculties.length} faculty member{filteredFaculties.length !== 1 ? 's' : ''}
                 </span>
@@ -758,10 +758,10 @@ export default function FacultyCommunity(){
                         </div>
                       )}
                       <div className="flex flex-col items-center text-center space-y-3">
-                        <div className="relative">
+                      <div className="relative">
                           <Avatar className="h-16 w-16"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback className="text-lg">{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
                           <span className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-white ${getAvailabilityColor(getAvailabilityStatus(f))}`} />
-                        </div>
+                      </div>
                         <div className="space-y-1">
                           <div className="font-semibold text-sm">{f.full_name}</div>
                           <div className="text-xs text-muted-foreground font-medium">{f.designation || f.department || '—'}</div>
@@ -770,39 +770,39 @@ export default function FacultyCommunity(){
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <Briefcase className="h-3 w-3" />
                               {f.experience} years exp
-                            </div>
+                      </div>
                           )}
                           {f.publications && (
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <BookOpen className="h-3 w-3" />
                               {f.publications} publications
-                            </div>
+                      </div>
                           )}
                           {(f.subjects||[]).length > 0 && (
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <GraduationCap className="h-3 w-3" />
                               {f.subjects.slice(0,2).join(', ')}
                               {f.subjects.length > 2 && ` +${f.subjects.length - 2} more`}
-                            </div>
+                    </div>
                           )}
                           {(f.sections||[]).length > 0 && (
                             <div className="text-[11px] text-muted-foreground flex items-center gap-1">
                               <Users className="h-3 w-3" />
                               {f.sections.slice(0,2).join(', ')}
                               {f.sections.length > 2 && ` +${f.sections.length - 2} more`}
-                            </div>
+                    </div>
                           )}
                           {(f.research_areas||[]).length > 0 && (
                             <div className="text-[10px] text-muted-foreground">
                               Research: {f.research_areas.slice(0,1).join(', ')}
                               {f.research_areas.length > 1 && ` +${f.research_areas.length - 1} more`}
-                            </div>
+                  </div>
                           )}
                           <div className={`text-[10px] font-medium flex items-center gap-1 ${getAvailabilityStatus(f) === 'available' ? 'text-green-600' : getAvailabilityStatus(f) === 'busy' ? 'text-yellow-600' : getAvailabilityStatus(f) === 'away' ? 'text-orange-600' : 'text-gray-500'}`}>
                             <span className={`w-2 h-2 rounded-full ${getAvailabilityColor(getAvailabilityStatus(f))}`}></span>
                             {getAvailabilityText(getAvailabilityStatus(f))}
-                          </div>
-                        </div>
+              </div>
+                      </div>
                         <div className="flex items-center gap-2">
                           <Button 
                             size="sm" 
@@ -815,7 +815,7 @@ export default function FacultyCommunity(){
                             {unreadCount > 0 && (
                               <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                                 {unreadCount > 99 ? '99+' : unreadCount}
-                              </div>
+                      </div>
                             )}
                           </Button>
                           <Button 
@@ -825,9 +825,9 @@ export default function FacultyCommunity(){
                           >
                             View
                           </Button>
-                        </div>
                       </div>
                     </div>
+                  </div>
                   );
                 })}
                 {!filteredFaculties.length && (
@@ -1095,7 +1095,7 @@ export default function FacultyCommunity(){
                           {language}
                         </span>
                       ))}
-                    </div>
+                </div>
                   </CardContent>
                 </Card>
               )}
@@ -1135,7 +1135,7 @@ export default function FacultyCommunity(){
                           ORCID
                         </a>
                       )}
-                    </div>
+              </div>
                   </CardContent>
                 </Card>
               )}

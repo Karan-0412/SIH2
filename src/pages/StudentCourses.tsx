@@ -46,13 +46,22 @@ const StudentCourses: React.FC = () => {
       }
 
       console.log('All courses:', allCoursesData);
+      console.log('Student profile ID:', profile.id, 'Type:', typeof profile.id);
 
       // Filter courses where this student is assigned
-      const assignedCourses = (allCoursesData || []).filter(course => 
-        course.assigned_student_ids && 
-        Array.isArray(course.assigned_student_ids) && 
-        course.assigned_student_ids.includes(profile.id)
-      );
+      const assignedCourses = (allCoursesData || []).filter(course => {
+        console.log('Course:', course.name, 'assigned_student_ids:', course.assigned_student_ids);
+        return course.assigned_student_ids && 
+          Array.isArray(course.assigned_student_ids) && 
+          course.assigned_student_ids.some(id => {
+            // Convert both to strings for comparison
+            const studentIdStr = profile.id.toString();
+            const assignedIdStr = id.toString();
+            const matches = assignedIdStr === studentIdStr;
+            console.log('Comparing:', assignedIdStr, 'with', studentIdStr, 'matches:', matches);
+            return matches;
+          });
+      });
 
       console.log('Assigned courses:', assignedCourses);
       setCourses(assignedCourses);

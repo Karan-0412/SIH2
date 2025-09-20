@@ -42,7 +42,18 @@ const CourseAssignment: React.FC = () => {
 
   // Fetch courses - simple approach
   const fetchCourses = async () => {
-    if (!profile || profile.role !== 'faculty') return;
+    console.log('fetchCourses called, profile:', profile);
+    console.log('Profile role:', profile?.role);
+    
+    if (!profile) {
+      console.log('No profile found, cannot fetch courses');
+      return;
+    }
+    
+    if (profile.role !== 'faculty') {
+      console.log('Profile role is not faculty, cannot fetch courses');
+      return;
+    }
 
     try {
       setLoading(true);
@@ -59,6 +70,7 @@ const CourseAssignment: React.FC = () => {
       }
 
       console.log('Fetched courses:', coursesData);
+      console.log('Number of courses:', coursesData?.length || 0);
       setCourses(coursesData || []);
 
     } catch (err) {
@@ -70,7 +82,12 @@ const CourseAssignment: React.FC = () => {
 
   // Fetch assigned students - simple approach
   const fetchAssignedStudents = async () => {
-    if (!profile || profile.role !== 'faculty') return;
+    console.log('fetchAssignedStudents called, profile:', profile);
+    
+    if (!profile || profile.role !== 'faculty') {
+      console.log('Cannot fetch students - no profile or not faculty');
+      return;
+    }
 
     try {
       // Just fetch all students for now - simple
@@ -86,6 +103,7 @@ const CourseAssignment: React.FC = () => {
       }
 
       console.log('Fetched students:', studentsData);
+      console.log('Number of students:', studentsData?.length || 0);
       setAssignedStudents(studentsData || []);
 
     } catch (err) {
@@ -112,12 +130,13 @@ const CourseAssignment: React.FC = () => {
 
       if (selectedStudent === 'all') {
         // Assign all assigned students to the course
-        const allStudentIds = assignedStudents.map(s => s.id);
+        const allStudentIds = assignedStudents.map(s => s.id.toString());
         updatedStudentIds = [...new Set([...updatedStudentIds, ...allStudentIds])];
       } else {
         // Assign single student
-        if (!updatedStudentIds.includes(selectedStudent)) {
-          updatedStudentIds.push(selectedStudent);
+        const studentId = selectedStudent.toString();
+        if (!updatedStudentIds.includes(studentId)) {
+          updatedStudentIds.push(studentId);
         }
       }
 
@@ -194,9 +213,10 @@ const CourseAssignment: React.FC = () => {
 
   // Load data on component mount
   useEffect(() => {
+    console.log('CourseAssignment useEffect called, profile:', profile);
     fetchCourses();
     fetchAssignedStudents();
-  }, []);
+  }, [profile]);
 
   // Refresh courses when a new one is created
 
@@ -230,7 +250,7 @@ const CourseAssignment: React.FC = () => {
                   ) : (
                     courses.map(course => (
                       <SelectItem key={course.id} value={course.id}>
-                        {course.name} ({course.course_code}) {course.profiles && `- ${course.profiles.full_name}`}
+                        {course.name} ({course.course_code})
                       </SelectItem>
                     ))
                   )}
@@ -285,11 +305,6 @@ const CourseAssignment: React.FC = () => {
                         <div className="flex-1">
                           <h4 className="font-semibold text-lg">{course.name}</h4>
                           <p className="text-sm text-muted-foreground">{course.course_code}</p>
-                          {course.profiles && (
-                            <p className="text-xs text-blue-600 mb-1">
-                              Faculty: {course.profiles.full_name}
-                            </p>
-                          )}
                           {course.description && (
                             <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
                               {course.description}
@@ -320,7 +335,9 @@ const CourseAssignment: React.FC = () => {
                         {course.assigned_student_ids && course.assigned_student_ids.length > 0 ? (
                           <div className="space-y-1">
                             {course.assigned_student_ids.map((studentId) => {
-                              const student = assignedStudents.find(s => s.id === studentId);
+                              console.log('Looking for student ID:', studentId, 'in students:', assignedStudents.map(s => s.id));
+                              const student = assignedStudents.find(s => s.id.toString() === studentId.toString());
+                              console.log('Found student:', student);
                               return student ? (
                                 <div key={studentId} className="flex items-center justify-between bg-gray-50 rounded px-2 py-1">
                                   <span className="text-sm">{student.full_name}</span>

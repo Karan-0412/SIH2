@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MonitoringSection from './faculty/MonitoringSection';
 import StudentManagement from './faculty/StudentManagement';
 import CourseAssignment from './faculty/CourseAssignment';
+import { IssueCredentialModal } from '../verifiableCredentials/IssueCredentialModal';
+import { FacultyCredentials } from '../verifiableCredentials/FacultyCredentials';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
@@ -466,13 +468,14 @@ const FacultyDashboard = () => {
 
       {/* Main Content */}
       <Tabs defaultValue="pending" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-7">
           <TabsTrigger value="pending">Pending Reviews ({pendingCertificates.length})</TabsTrigger>
           <TabsTrigger value="processed">Processed</TabsTrigger>
           <TabsTrigger value="students">Students</TabsTrigger>
           <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
           <TabsTrigger value="management">Management</TabsTrigger>
           <TabsTrigger value="courses">Courses</TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
         </TabsList>
         
         <TabsContent value="pending" className="space-y-4">
@@ -736,6 +739,10 @@ const FacultyDashboard = () => {
           
           {/* Course Assignment Section */}
           <CourseAssignment />
+        </TabsContent>
+        
+        <TabsContent value="credentials" className="space-y-4">
+          <FacultyCredentials />
         </TabsContent>
       </Tabs>
     </div>
