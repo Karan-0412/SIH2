@@ -233,7 +233,23 @@ export const useStudent = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      setPortfolio(data || []);
+      
+      // Map database columns to interface
+      const mappedData = (data || []).map((item: any) => ({
+        id: item.id,
+        student_id: item.student_id,
+        title: item.title,
+        description: item.description,
+        category: item.portfolio_type, // Map portfolio_type to category
+        image_url: null, // Not available in current schema
+        external_url: item.file_url, // Map file_url to external_url
+        visibility: item.is_public ? 'public' : 'private', // Map is_public to visibility
+        featured: false, // Not available in current schema
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+      }));
+      
+      setPortfolio(mappedData);
     } catch (error) {
       console.error('Error fetching portfolio:', error);
     }
@@ -353,16 +369,33 @@ export const useStudent = () => {
     if (!profile) return;
     
     try {
+      console.log('Adding portfolio item with data:', {
+        ...itemData,
+        student_id: profile.id,
+      });
+      
+      // Map the data to match the actual database schema
+      const portfolioData = {
+        student_id: profile.id,
+        title: itemData.title,
+        description: itemData.description,
+        portfolio_type: itemData.category, // Map category to portfolio_type
+        file_url: itemData.external_url, // Use external_url as file_url
+        is_public: itemData.visibility === 'public', // Map visibility to is_public
+      };
+
       const { data, error } = await supabase
         .from('student_portfolio')
-        .insert({
-          ...itemData,
-          student_id: profile.id,
-        })
+        .insert(portfolioData)
         .select()
         .single();
       
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error details:', error);
+        throw error;
+      }
+      
+      console.log('Successfully inserted portfolio item:', data);
       
       // Add activity
       await addActivity('portfolio_update', 'Portfolio Updated', `Added ${itemData.category}: ${itemData.title}`);
@@ -378,9 +411,10 @@ export const useStudent = () => {
       console.error('Error adding portfolio item:', error);
       toast({
         title: 'Error',
-        description: 'Failed to add portfolio item',
+        description: `Failed to add portfolio item: ${error.message || 'Unknown error'}`,
         variant: 'destructive',
       });
+      throw error; // Re-throw to stop execution
     }
   };
 
@@ -389,9 +423,17 @@ export const useStudent = () => {
     if (!profile) return;
     
     try {
+      // Map updates to database schema
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.description !== undefined) dbUpdates.description = updates.description;
+      if (updates.category) dbUpdates.portfolio_type = updates.category;
+      if (updates.external_url !== undefined) dbUpdates.file_url = updates.external_url;
+      if (updates.visibility) dbUpdates.is_public = updates.visibility === 'public';
+      
       const { data, error } = await supabase
         .from('student_portfolio')
-        .update(updates)
+        .update(dbUpdates)
         .eq('id', itemId)
         .eq('student_id', profile.id)
         .select()
@@ -411,6 +453,38 @@ export const useStudent = () => {
       toast({
         title: 'Error',
         description: 'Failed to update portfolio item',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Delete portfolio item
+  const deletePortfolioItem = async (itemId: string) => {
+    if (!profile) return;
+    
+    try {
+      const { error } = await supabase
+        .from('student_portfolio')
+        .delete()
+        .eq('id', itemId)
+        .eq('student_id', profile.id);
+      
+      if (error) throw error;
+      
+      // Add activity
+      await addActivity('portfolio_update', 'Portfolio Updated', 'Removed portfolio item');
+      
+      toast({
+        title: 'Success',
+        description: 'Portfolio item deleted successfully!',
+      });
+      
+      fetchPortfolio();
+    } catch (error) {
+      console.error('Error deleting portfolio item:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete portfolio item',
         variant: 'destructive',
       });
     }
@@ -605,6 +679,7 @@ export const useStudent = () => {
     updateGoal,
     addPortfolioItem,
     updatePortfolioItem,
+    deletePortfolioItem,
     sendConnectionRequest,
     acceptConnection,
     updateRecommendationStatus,
