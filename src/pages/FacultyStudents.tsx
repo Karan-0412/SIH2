@@ -40,18 +40,40 @@ const FacultyStudents: React.FC = () => {
 
     setLoading(true);
     try {
-      // Get faculty info
+      // Get faculty info by email (simpler approach)
+      console.log('Looking up faculty by email:', profile.email);
       const { data: facultyData, error: facultyError } = await supabase
         .from('faculty')
         .select('*')
-        .eq('user_id', profile.user_id)
+        .eq('email', profile.email)
         .single();
+
+      if (facultyError && facultyError.code === 'PGRST116') {
+        // No faculty record found, show helpful message
+        console.log('No faculty record found for user');
+        toast({
+          title: 'Faculty Record Not Found',
+          description: 'No faculty record found for your account. Please contact administrator to set up your faculty profile.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
       if (facultyError) {
         console.error('Faculty error:', facultyError);
         toast({
           title: 'Error',
-          description: 'Failed to load faculty information',
+          description: 'Failed to load faculty information. Please ensure you are registered as faculty.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!facultyData) {
+        console.error('No faculty record found for user');
+        toast({
+          title: 'Faculty Not Found',
+          description: 'No faculty record found for your account. Please contact administrator.',
           variant: 'destructive',
         });
         return;
@@ -59,16 +81,18 @@ const FacultyStudents: React.FC = () => {
 
       setFaculty(facultyData);
 
-      // Get assigned students
-      const { data: studentsData, error: studentsError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('assigned_faculty_code', facultyData.faculty_code)
-        .eq('role', 'student')
-        .order('full_name');
+      // Get assigned students through the student_mentor_assignments table
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('student_mentor_assignments')
+        .select(`
+          *,
+          student:profiles!student_mentor_assignments_student_id_fkey(*)
+        `)
+        .eq('mentor_id', facultyData.id)
+        .order('created_at', { ascending: false });
 
-      if (studentsError) {
-        console.error('Students error:', studentsError);
+      if (assignmentsError) {
+        console.error('Assignments error:', assignmentsError);
         toast({
           title: 'Error',
           description: 'Failed to load assigned students',
@@ -77,7 +101,10 @@ const FacultyStudents: React.FC = () => {
         return;
       }
 
-      setStudents(studentsData || []);
+      // Extract students from assignments
+      const studentsData = assignmentsData?.map(assignment => assignment.student).filter(Boolean) || [];
+
+      setStudents(studentsData);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({

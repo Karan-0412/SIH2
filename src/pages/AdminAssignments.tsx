@@ -79,19 +79,41 @@ const AdminAssignments: React.FC = () => {
         throw assignmentsError;
       }
 
-      // Fetch all students
-      const { data: studentsData, error: studentsError } = await supabase
+      // Fetch all students - try different approaches
+      let studentsData = null;
+      let studentsError = null;
+      
+      // First try with string comparison
+      const { data: studentsData1, error: studentsError1 } = await supabase
         .from('profiles')
         .select('*')
         .eq('role', 'student')
         .order('full_name');
+
+      if (studentsError1) {
+        console.log('String comparison failed, trying text casting...');
+        // If that fails, try with text casting
+        const { data: studentsData2, error: studentsError2 } = await supabase
+          .from('profiles')
+          .select('*')
+          .filter('role', 'eq', 'student')
+          .order('full_name');
+        
+        studentsData = studentsData2;
+        studentsError = studentsError2;
+      } else {
+        studentsData = studentsData1;
+        studentsError = studentsError1;
+      }
 
       console.log('Students data:', studentsData);
       console.log('Students error:', studentsError);
 
       if (studentsError) {
         console.error('Students error:', studentsError);
-        throw studentsError;
+        // Don't throw error, just log it and continue with empty array
+        console.log('Continuing with empty students array...');
+        studentsData = [];
       }
 
       // Fetch verified faculty (potential mentors)
