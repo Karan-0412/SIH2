@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,10 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Download, AlertTriangle, BarChart3, PieChart, LineChart } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import { fetchLeetCodeData, fetchCodeforcesData, fetchCodewarsData, fetchPlaceholderData, fetchGFGData, fetchCodeChefData, fetchHackerEarthData, fetchHackerRankData } from '@/services/platforms';
-import { useFaculty } from '@/hooks/useFaculty';
-import { useProfile } from '@/hooks/useProfile';
 import {
   BarChart as RBarChart,
   Bar,
@@ -51,10 +48,6 @@ interface Row {
 }
 
 const MonitoringSection: React.FC = () => {
-  const { profile } = useProfile();
-  const { toast } = useToast();
-  const { monitoringData, addMonitoringData, loading: facultyLoading } = useFaculty();
-  
   const [selected, setSelected] = useState<string[]>(['leetcode']);
   const [rows, setRows] = useState<Row[]>([{ platform: 'leetcode', studentId: '', gender: 'male', section: '', klass: '' }]);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
@@ -67,9 +60,11 @@ const MonitoringSection: React.FC = () => {
   const [range, setRange] = useState<'7d' | '30d' | '90d'>('7d');
   const [metricFilter, setMetricFilter] = useState<'solved' | 'contests' | 'rating'>('solved');
 
-  // ⬇️ NEW: metrics + loading state
+  // ⬇️ NEW: metrics + loading state + error handling
   const [metrics, setMetrics] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
 
   const handleTogglePlatform = (key: string, checked: boolean) => {
     setSelected((prev) => (checked ? [...new Set([...prev, key])] : prev.filter((p) => p !== key)));
@@ -78,19 +73,24 @@ const MonitoringSection: React.FC = () => {
 
   const addRow = () => setRows((r) => [...r, { platform: selected[0] || 'leetcode', studentId: '', gender: 'male', section: '', klass: '' }]);
 
-  // ⬇️ NEW: fetch metrics from APIs and save to database
+  // ⬇️ ENHANCED: fetch metrics from APIs with better error handling
   const fetchMetrics = async () => {
     setLoading(true);
+    setError(null);
+    
+    const validRows = rows.filter(r => r.studentId.trim() && selected.includes(r.platform));
+    
+    if (validRows.length === 0) {
+      setError("Please add at least one student ID and select a platform");
+      setLoading(false);
+      return;
+    }
+
     try {
-      const proxyBase = (import.meta as any)?.env?.VITE_PLATFORM_API_BASE || '';
-      if (!proxyBase) {
-        toast({ title: 'Platform proxy not configured', description: 'Set VITE_PLATFORM_API_BASE in .env and restart the dev server.', variant: 'destructive' });
-      }
-      const results = await Promise.all(
-        rows
-          .filter(r => r.studentId.trim() && selected.includes(r.platform))
-          .map(async (r) => {
-            let data;
+      const results = await Promise.allSettled(
+        validRows.map(async (r) => {
+          let data;
+          try {
             if (r.platform === "leetcode") {
               data = await fetchLeetCodeData(r.studentId);
             } else if (r.platform === "codeforces") {
@@ -109,74 +109,181 @@ const MonitoringSection: React.FC = () => {
               data = await fetchPlaceholderData();
             }
 
-            const result = {
+            // Validate the data
+            const validation = validateStudentData(data, r.platform, r.studentId);
+            if (validation.errors.length > 0) {
+              console.error(`Validation errors for ${r.studentId} on ${r.platform}:`, validation.errors);
+            }
+            if (validation.warnings.length > 0) {
+              console.warn(`Validation warnings for ${r.studentId} on ${r.platform}:`, validation.warnings);
+            }
+
+            return {
               platform: r.platform,
               student: r.studentId,
               gender: r.gender,
               section: r.section || "",
               klass: r.klass || "",
               ...data,
+              success: true,
+              validationErrors: validation.errors,
+              validationWarnings: validation.warnings,
             };
-
-            // Save to database if we have valid data
-            if (data && (data.solved || data.contests || data.rating)) {
-              // Find student profile by student_id or email
-              const studentProfile = monitoringData.find(m => 
-                m.student.student_id === r.studentId || 
-                m.student.email === r.studentId
-              )?.student;
-
-              if (studentProfile) {
-                await addMonitoringData({
-                  student_id: studentProfile.id,
-                  platform: r.platform,
-                  platform_handle: r.studentId,
-                  solved_count: data.solved || 0,
-                  contest_count: data.contests || 0,
-                  rating: data.rating || 0,
-                });
-              }
-            }
-
-            return result;
-          })
+          } catch (platformError) {
+            console.error(`Error fetching ${r.platform} data for ${r.studentId}:`, platformError);
+            return {
+              platform: r.platform,
+              student: r.studentId,
+              gender: r.gender,
+              section: r.section || "",
+              klass: r.klass || "",
+              solved: 0,
+              contests: 0,
+              rating: 0,
+              hours: 0,
+              courses: 0,
+              success: false,
+              error: platformError instanceof Error ? platformError.message : 'Unknown error'
+            };
+          }
+        })
       );
-      setMetrics(results);
+
+      const successfulResults = results
+        .filter((result): result is PromiseFulfilledResult<any> => result.status === 'fulfilled')
+        .map(result => result.value);
+
+      const failedResults = results
+        .filter((result): result is PromiseRejectedResult => result.status === 'rejected')
+        .map(result => result.reason);
+
+      setMetrics(successfulResults);
+      setLastSync(new Date());
+
+      if (failedResults.length > 0) {
+        setError(`${failedResults.length} out of ${validRows.length} API calls failed. Check console for details.`);
+      }
+
+      // Show success message with validation info
+      const successMessage = getSuccessMessage(successfulResults.length, validRows.length);
+      console.log(successMessage);
+      
+      // Show validation warnings if any
+      const allValidationErrors = successfulResults
+        .filter(r => r.validationErrors && r.validationErrors.length > 0)
+        .flatMap(r => r.validationErrors);
+      
+      const allValidationWarnings = successfulResults
+        .filter(r => r.validationWarnings && r.validationWarnings.length > 0)
+        .flatMap(r => r.validationWarnings);
+      
+      if (allValidationErrors.length > 0) {
+        console.error('Data validation errors:', allValidationErrors);
+      }
+      
+      if (allValidationWarnings.length > 0) {
+        console.warn('Data validation warnings:', allValidationWarnings);
+      }
     } catch (err) {
       console.error("Error fetching metrics:", err);
-      toast({ title: 'Fetch error', description: (err as any)?.message || 'Failed to fetch metrics', variant: 'destructive' });
+      setError(err instanceof Error ? err.message : "Failed to fetch data from platforms");
     } finally {
       setLoading(false);
     }
   };
 
-  // Load existing monitoring data from database
-  useEffect(() => {
-    if (monitoringData.length > 0) {
-      const dbMetrics = monitoringData.map(m => ({
-        platform: m.platform,
-        student: m.student.student_id || m.student.email,
-        gender: 'male', // Default since we don't store gender in monitoring
-        section: m.student.department || '',
-        klass: '',
-        solved: m.solved_count,
-        contests: m.contest_count,
-        rating: m.rating,
-        hours: 0, // Not stored in DB
-        courses: 0, // Not stored in DB
-      }));
-      setMetrics(dbMetrics);
-    }
-  }, [monitoringData]);
-
-  // ⬇️ UPDATED: submitIds triggers real fetch
+  // ⬇️ UPDATED: submitIds triggers real fetch with auto-refresh
   const submitIds = () => {
     fetchMetrics();
   };
 
+  // Auto-refresh functionality
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(300000); // 5 minutes default
+
+  React.useEffect(() => {
+    if (autoRefresh && metrics.length > 0) {
+      const interval = setInterval(() => {
+        fetchMetrics();
+      }, refreshInterval);
+      return () => clearInterval(interval);
+    }
+  }, [autoRefresh, refreshInterval, metrics.length]);
+
+  const toggleAutoRefresh = () => {
+    setAutoRefresh(!autoRefresh);
+  };
+
+  // Enhanced data validation function with platform-specific rules
+  const validateStudentData = (data: any, platform: string, studentId: string) => {
+    const errors: string[] = [];
+    const warnings: string[] = [];
+    
+    // Basic validations
+    if (data.solved < 0) errors.push(`Invalid solved count for ${studentId} on ${platform}`);
+    if (data.contests < 0) errors.push(`Invalid contest count for ${studentId} on ${platform}`);
+    if (data.rating < 0) errors.push(`Invalid rating for ${studentId} on ${platform}`);
+    if (data.hours < 0) errors.push(`Invalid hours for ${studentId} on ${platform}`);
+    
+    // Platform-specific validations
+    switch (platform) {
+      case 'leetcode':
+        if (data.solved > 3000) warnings.push(`Unusually high solved count for ${studentId} on LeetCode: ${data.solved}`);
+        if (data.rating > 3000) warnings.push(`Unusually high rating for ${studentId} on LeetCode: ${data.rating}`);
+        if (data.easySolved && data.mediumSolved && data.hardSolved) {
+          const total = data.easySolved + data.mediumSolved + data.hardSolved;
+          if (Math.abs(total - data.solved) > 10) {
+            warnings.push(`Solved count mismatch for ${studentId} on LeetCode`);
+          }
+        }
+        break;
+        
+      case 'codeforces':
+        if (data.rating > 4000) warnings.push(`Unusually high rating for ${studentId} on Codeforces: ${data.rating}`);
+        if (data.maxRating && data.rating > data.maxRating) {
+          warnings.push(`Current rating higher than max rating for ${studentId} on Codeforces`);
+        }
+        break;
+        
+      case 'codewars':
+        if (data.honor > 100000) warnings.push(`Unusually high honor for ${studentId} on Codewars: ${data.honor}`);
+        if (data.rank < 0) warnings.push(`Invalid rank for ${studentId} on Codewars: ${data.rank}`);
+        break;
+        
+      case 'gfg':
+        if (data.codingScore > 10000) warnings.push(`Unusually high coding score for ${studentId} on GFG: ${data.codingScore}`);
+        break;
+        
+      case 'hackerrank':
+        if (data.level > 50) warnings.push(`Unusually high level for ${studentId} on HackerRank: ${data.level}`);
+        break;
+        
+      case 'hackerearth':
+        if (data.accuracy > 100) warnings.push(`Invalid accuracy for ${studentId} on HackerEarth: ${data.accuracy}`);
+        break;
+        
+      case 'codechef':
+        if (data.rating > 5000) warnings.push(`Unusually high rating for ${studentId} on CodeChef: ${data.rating}`);
+        break;
+    }
+    
+    return { errors, warnings };
+  };
+
+  // Enhanced success feedback
+  const getSuccessMessage = (successfulCount: number, totalCount: number) => {
+    if (successfulCount === totalCount) {
+      return `Successfully fetched data for all ${successfulCount} students`;
+    } else if (successfulCount > 0) {
+      return `Successfully fetched data for ${successfulCount} out of ${totalCount} students`;
+    } else {
+      return 'No data could be fetched from any platform';
+    }
+  };
+
   const studentsList = useMemo(() => Array.from(new Set(rows.map((r) => r.studentId).filter(Boolean))), [rows]);
 
-  // Filtering applied to metrics (instead of mock data)
+  // Filtering applied to real API data
   const filteredMetrics = useMemo(() => {
     const platforms = filterPlatform === 'all' ? selected : [filterPlatform];
     const base = metrics
@@ -186,19 +293,18 @@ const MonitoringSection: React.FC = () => {
       .filter((r) => (classFilter ? (r.klass || '').toLowerCase().includes(classFilter.toLowerCase()) : true))
       .filter((r) => (filterStudent === 'all' ? true : r.student === filterStudent));
 
-    // Use real API values directly
     const items = base.map((r) => ({
       platform: r.platform,
-      student: (r as any).student || (r as any).studentId,
-      uid: (r as any).student || (r as any).studentId,
+      student: r.studentId,
+      uid: r.studentId,
       gender: r.gender,
       section: r.section || '',
       klass: r.klass || '',
-      solved: Number((r as any).solved) || 0,
-      contests: Number((r as any).contests) || 0,
-      rating: Number((r as any).rating) || 0,
-      hours: Number((r as any).hours) || 0,
-      courses: Number((r as any).courses) || 0,
+      solved: r.solved || 0,
+      contests: r.contests || 0,
+      rating: r.rating || 0,
+      hours: r.hours || 0,
+      courses: r.courses || 0,
     }));
 
     const sorted = items.sort((a, b) => {
@@ -210,8 +316,8 @@ const MonitoringSection: React.FC = () => {
     const topN = topFilter === 'top10' ? 10 : topFilter === 'top25' ? 25 : topFilter === 'top50' ? 50 : Math.max(1, topCustom);
     const sliced = sorted.slice(0, topN);
 
-    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', uid: 'demo', gender: 'male', section: '', klass: '', solved: 12, contests:0, rating:0.0, hours: 6, courses: 1 }];
-  }, [rows, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom]);
+    return sliced.length ? sliced : [{ platform: 'leetcode', student: 'demo', uid: 'demo', gender: 'male', section: '', klass: '', solved: 0, contests: 0, rating: 0, hours: 0, courses: 0 }];
+  }, [metrics, selected, filterPlatform, filterStudent, genderFilter, sectionFilter, classFilter, topFilter, topCustom, metricFilter]);
 
   const totals = useMemo(() => ({
     students: new Set(filteredMetrics.map((m) => m.student)).size,
@@ -219,15 +325,98 @@ const MonitoringSection: React.FC = () => {
     top: filteredMetrics.slice().sort((a, b) => b.solved - a.solved)[0],
   }), [filteredMetrics]);
 
-  const barData = useMemo(() => filteredMetrics.map((m) => ({ name: m.student, solved: m.solved })), [filteredMetrics]);
-  const lineData = useMemo(() => filteredMetrics.map((m, idx) => ({ day: idx + 1, hours: m.hours })), [filteredMetrics]);
-  const pieData = useMemo(() => {
-    const byPlatform: Record<string, number> = {};
-    filteredMetrics.forEach((m) => { byPlatform[m.platform] = (byPlatform[m.platform] || 0) + m.solved; });
-    return Object.entries(byPlatform).map(([name, value]) => ({ name, value }));
+  // Enhanced chart data with real platform statistics
+  const barData = useMemo(() => {
+    if (metricFilter === 'solved') {
+      return filteredMetrics.map((m) => ({ 
+        name: m.student, 
+        value: m.solved,
+        platform: m.platform,
+        rating: m.rating 
+      }));
+    } else if (metricFilter === 'contests') {
+      return filteredMetrics.map((m) => ({ 
+        name: m.student, 
+        value: m.contests,
+        platform: m.platform,
+        rating: m.rating 
+      }));
+    } else {
+      return filteredMetrics.map((m) => ({ 
+        name: m.student, 
+        value: m.rating,
+        platform: m.platform,
+        solved: m.solved 
+      }));
+    }
+  }, [filteredMetrics, metricFilter]);
+
+  const lineData = useMemo(() => {
+    // Create a timeline showing cumulative progress
+    const sortedBySolved = [...filteredMetrics].sort((a, b) => a.solved - b.solved);
+    return sortedBySolved.map((m, idx) => ({ 
+      student: m.student, 
+      solved: m.solved,
+      contests: m.contests,
+      rating: m.rating,
+      hours: m.hours,
+      platform: m.platform
+    }));
   }, [filteredMetrics]);
 
+  const pieData = useMemo(() => {
+    const byPlatform: Record<string, { solved: number; contests: number; rating: number; students: number }> = {};
+    filteredMetrics.forEach((m) => { 
+      if (!byPlatform[m.platform]) {
+        byPlatform[m.platform] = { solved: 0, contests: 0, rating: 0, students: 0 };
+      }
+      byPlatform[m.platform].solved += m.solved;
+      byPlatform[m.platform].contests += m.contests;
+      byPlatform[m.platform].rating += m.rating;
+      byPlatform[m.platform].students += 1;
+    });
+    
+    if (metricFilter === 'solved') {
+      return Object.entries(byPlatform).map(([name, data]) => ({ 
+        name, 
+        value: data.solved,
+        students: data.students,
+        avgRating: data.rating / data.students 
+      }));
+    } else if (metricFilter === 'contests') {
+      return Object.entries(byPlatform).map(([name, data]) => ({ 
+        name, 
+        value: data.contests,
+        students: data.students,
+        avgRating: data.rating / data.students 
+      }));
+    } else {
+      return Object.entries(byPlatform).map(([name, data]) => ({ 
+        name, 
+        value: data.rating / data.students, // Average rating
+        students: data.students,
+        totalSolved: data.solved 
+      }));
+    }
+  }, [filteredMetrics, metricFilter]);
+
 const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444', '#14B8A6'];
+
+// Platform color mapping - Purple theme with similar colors
+const PLATFORM_COLORS: Record<string, string> = {
+  'leetcode': '#7C3AED', // Purple (original)
+  'codeforces': '#8B5CF6', // Light purple
+  'codewars': '#A855F7', // Medium purple
+  'gfg': '#9333EA', // Deep purple
+  'hackerrank': '#C084FC', // Light purple
+  'hackerearth': '#6D28D9', // Dark purple
+  'codechef': '#581C87' // Very dark purple
+};
+
+// Function to get color for platform
+const getPlatformColor = (platform: string): string => {
+  return PLATFORM_COLORS[platform] || COLORS[0];
+};
 
   const exportCSV = () => {
     // include uid and key metric fields
@@ -462,7 +651,7 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           <RPieChart>
             <Pie data={data} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40}>
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell key={`cell-${index}`} fill={getPlatformColor(entry.name)} />
               ))}
             </Pie>
           </RPieChart>
@@ -485,15 +674,26 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
     }
 
     if (g.type === 'histogram') {
-      // bin solved into ranges
-      const bins: Record<string, number> = {};
+      // bin solved into ranges by platform
+      const bins: Record<string, Record<string, number>> = {};
+      const platforms = [...new Set(metrics.map(m => m.platform))];
+      
       metrics.forEach((m) => {
         const v = m.solved || 0;
         const bin = Math.floor(v / 10) * 10;
         const key = `${bin}-${bin + 9}`;
-        bins[key] = (bins[key] || 0) + 1;
+        
+        if (!bins[key]) {
+          bins[key] = {};
+        }
+        bins[key][m.platform] = (bins[key][m.platform] || 0) + 1;
       });
-      const data = Object.entries(bins).map(([k, v]) => ({ range: k, count: v }));
+      
+      const data = Object.entries(bins).map(([range, platformCounts]) => ({
+        range,
+        ...platformCounts
+      }));
+      
       return (
         <ResponsiveContainer width="100%" height={220}>
           <RBarChart data={data} margin={{ left: 8, right: 8 }}>
@@ -501,7 +701,15 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
             <XAxis dataKey="range" />
             <YAxis />
             <ChartTooltip />
-            <Bar dataKey="count" fill="#7C3AED" radius={[6,6,0,0]} />
+            {platforms.map((platform, index) => (
+              <Bar 
+                key={platform} 
+                dataKey={platform} 
+                stackId="a"
+                fill={getPlatformColor(platform)} 
+                radius={index === platforms.length - 1 ? [6,6,0,0] : [0,0,0,0]} 
+              />
+            ))}
           </RBarChart>
         </ResponsiveContainer>
       );
@@ -591,7 +799,11 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           <XAxis dataKey="name" />
           <YAxis />
           <ChartTooltip />
-          <Bar dataKey={g.metric === 'rating' ? 'rating' : 'solved'} fill="#7C3AED" radius={[6,6,0,0]} />
+          <Bar dataKey={g.metric === 'rating' ? 'rating' : 'solved'} radius={[6,6,0,0]}>
+            {barData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={getPlatformColor(entry.platform)} />
+            ))}
+          </Bar>
         </RBarChart>
       </ResponsiveContainer>
     );
@@ -606,6 +818,94 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
           <AlertTitle>Low activity</AlertTitle>
           <AlertDescription>No activity detected for the selected filters.</AlertDescription>
         </Alert>
+      )}
+
+      {/* Error Alert */}
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Loading Alert */}
+      {loading && (
+        <Alert>
+          <div className="flex items-center gap-2">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+            <AlertTitle>Fetching data from platforms...</AlertTitle>
+          </div>
+          <AlertDescription>Please wait while we retrieve the latest statistics from the selected platforms.</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Success Alert */}
+      {!loading && !error && metrics.length > 0 && lastSync && (
+        <Alert className="border-green-200 bg-green-50">
+          <div className="flex items-center gap-2">
+            <div className="h-4 w-4 rounded-full bg-green-500"></div>
+            <AlertTitle>Data synced successfully</AlertTitle>
+          </div>
+          <AlertDescription>
+            Last updated: {lastSync.toLocaleString()}. Showing data for {metrics.length} students.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Platform Statistics Summary */}
+      {!loading && !error && metrics.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">Platform Statistics Summary</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {Object.entries(
+                metrics.reduce((acc, m) => {
+                  if (!acc[m.platform]) {
+                    acc[m.platform] = { students: 0, totalSolved: 0, totalContests: 0, avgRating: 0, totalHours: 0 };
+                  }
+                  acc[m.platform].students += 1;
+                  acc[m.platform].totalSolved += m.solved || 0;
+                  acc[m.platform].totalContests += m.contests || 0;
+                  acc[m.platform].totalHours += m.hours || 0;
+                  acc[m.platform].avgRating += m.rating || 0;
+                  return acc;
+                }, {} as Record<string, { students: number; totalSolved: number; totalContests: number; avgRating: number; totalHours: number }>)
+              ).map(([platform, stats]) => {
+                const typedStats = stats as { students: number; totalSolved: number; totalContests: number; avgRating: number; totalHours: number };
+                return (
+                  <div key={platform} className="p-4 border rounded-lg bg-gray-50">
+                    <h3 className="font-semibold text-sm text-gray-700 mb-2 capitalize">{platform}</h3>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span>Students:</span>
+                        <span className="font-medium">{typedStats.students}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Solved:</span>
+                        <span className="font-medium">{typedStats.totalSolved}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Contests:</span>
+                        <span className="font-medium">{typedStats.totalContests}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Avg Rating:</span>
+                        <span className="font-medium">{(typedStats.avgRating / typedStats.students).toFixed(1)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Total Hours:</span>
+                        <span className="font-medium">{typedStats.totalHours}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Platform Selection */}
@@ -825,8 +1125,51 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
             )}
           </div>
 
-          <div className="mt-4 flex justify-end">
-            <Button onClick={submitIds}>Submit</Button>
+          <div className="mt-4 flex justify-between items-center">
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={autoRefresh}
+                  onChange={toggleAutoRefresh}
+                  className="rounded"
+                />
+                <span className="text-sm">Auto-refresh</span>
+              </label>
+              {autoRefresh && (
+                <select
+                  value={refreshInterval}
+                  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+                  className="text-sm border rounded px-2 py-1"
+                >
+                  <option value={60000}>1 minute</option>
+                  <option value={300000}>5 minutes</option>
+                  <option value={600000}>10 minutes</option>
+                  <option value={1800000}>30 minutes</option>
+                </select>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              {lastSync && (
+                <span className="text-sm text-gray-500">
+                  Last sync: {lastSync.toLocaleTimeString()}
+                </span>
+              )}
+              <Button 
+                onClick={submitIds} 
+                disabled={loading}
+                className="min-w-[100px]"
+              >
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Fetching...
+                  </>
+                ) : (
+                  'Fetch Data'
+                )}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -860,7 +1203,11 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
                   <XAxis dataKey="name" />
                   <YAxis />
                   <ChartTooltip />
-                  <Bar dataKey="solved" fill="#7C3AED" radius={[6,6,0,0]} />
+                  <Bar dataKey="value" radius={[6,6,0,0]}>
+                    {barData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={getPlatformColor(entry.platform)} />
+                    ))}
+                  </Bar>
                 </RBarChart>
               </ResponsiveContainer>
             </div>
@@ -884,7 +1231,7 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
                   <XAxis dataKey="day" />
                   <YAxis />
                   <ChartTooltip />
-                  <Line type="monotone" dataKey="hours" stroke="#10B981" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey={metricFilter === 'solved' ? 'solved' : metricFilter === 'contests' ? 'contests' : 'rating'} stroke="#10B981" strokeWidth={2} dot={false} />
                 </RLineChart>
               </ResponsiveContainer>
             </div>
@@ -906,7 +1253,7 @@ const COLORS = ['#7C3AED', '#10B981', '#F59E0B', '#60A5FA', '#F472B6', '#EF4444'
                 <RPieChart>
                   <Pie data={pieData} dataKey="value" nameKey="name" outerRadius={80} innerRadius={40}>
                     {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={getPlatformColor(entry.name)} />
                     ))}
                   </Pie>
                   <ChartTooltip />

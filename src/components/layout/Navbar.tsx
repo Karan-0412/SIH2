@@ -114,7 +114,7 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            {profile?.role === 'student' && <NotificationsDropdown />}
+            {(profile?.role === 'student' || profile?.role === 'faculty') && <NotificationsDropdown />}
             {profile && (
               <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700 transition-colors">
                 <User className="h-4 w-4" />

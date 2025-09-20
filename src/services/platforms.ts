@@ -4,6 +4,8 @@ export interface PlatformData {
   courses: number;
   contests?: number;
   rating?: number;
+  // Additional platform-specific data
+  [key: string]: any;
 }
 
 // Env-configurable proxy base for platforms that require server-side fetching
@@ -16,11 +18,54 @@ const HACKERRANK_KEY: string | undefined = (import.meta as any)?.env?.VITE_HACKE
 const HACKEREARTH_KEY: string | undefined = (import.meta as any)?.env?.VITE_HACKEREARTH_API_KEY;
 const CODECHEF_KEY: string | undefined = (import.meta as any)?.env?.VITE_CODECHEF_API_KEY;
 
+// Simple CORS bypass services
+const CORS_BYPASS_SERVICES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://cors-anywhere.herokuapp.com/',
+  'https://api.codetabs.com/v1/proxy?quest=',
+  'https://thingproxy.freeboard.io/fetch/'
+];
+
 function buildHeaders(extra?: Record<string, string>) {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (API_KEY) headers['x-api-key'] = API_KEY;
   if (extra) Object.assign(headers, extra);
   return headers;
+}
+
+// Simple and effective CORS bypass function
+async function scrapeProfile(url: string): Promise<string | null> {
+  const proxies = [
+    'https://api.allorigins.win/raw?url=',
+    'https://cors-anywhere.herokuapp.com/',
+    'https://api.codetabs.com/v1/proxy?quest=',
+    'https://thingproxy.freeboard.io/fetch/'
+  ];
+
+  for (const proxy of proxies) {
+    try {
+      console.log(`Trying proxy: ${proxy}`);
+      const response = await fetch(`${proxy}${encodeURIComponent(url)}`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+      });
+      
+      if (response.ok) {
+        const html = await response.text();
+        if (html && html.length > 100) {
+          console.log(`Successfully scraped with ${proxy} - HTML length: ${html.length}`);
+          return html;
+        }
+      }
+    } catch (error) {
+      console.log(`Proxy ${proxy} failed:`, error.message);
+      continue;
+    }
+  }
+  
+  console.log('All CORS bypass methods failed');
+  return null;
 }
 
 async function fetchFromProxy<T>(path: string, keyName?: 'gfg'|'hackerrank'|'hackerearth'|'codechef'): Promise<T> {
@@ -45,33 +90,104 @@ async function fetchFromProxy<T>(path: string, keyName?: 'gfg'|'hackerrank'|'hac
   return res.json();
 }
 
+// Simple platform-specific data fetching
+async function fetchPlatformData(url: string, platform: string): Promise<string | null> {
+  console.log(`Fetching ${platform} data from: ${url}`);
+  
+  // Try scraping with simple approach
+  const html = await scrapeProfile(url);
+  if (html) {
+    console.log(`Successfully fetched ${platform} data`);
+    return html;
+  }
+  
+  console.log(`Failed to fetch ${platform} data`);
+  return null;
+}
+
 /**
- * ✅ LeetCode via stats API (no GraphQL, no CORS issues)
- * Example: https://leetcode-stats-api.herokuapp.com/leetcode
+ * ✅ LeetCode - GraphQL/ Unofficial API Alternative
+ * Uses multiple unofficial APIs for better reliability
  */
 export async function fetchLeetCodeData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`https://leetcode-stats-api.herokuapp.com/${studentId}`);
-    if (!res.ok) {
-      console.error('LeetCode API responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
+    // Try multiple unofficial APIs for better reliability
+    const apis = [
+      `https://leetcode-stats-api.herokuapp.com/${studentId}`,
+      `https://leetcode-api.vercel.app/${studentId}`,
+      `https://leetcode-api.cyclic.app/${studentId}`
+    ];
+
+    for (const apiUrl of apis) {
+      try {
+        const res = await fetch(apiUrl);
+        if (res.ok) {
     const json = await res.json();
 
-    if (json.status === "error") {
-      return { solved: 0, hours: 0, courses: 0 };
-    }
+          if (json.status === "error" || json.status === "failed") {
+            continue; // Try next API
+          }
 
-    const solved = json.totalSolved || 0;
-    const contests = json.totalContests || 0;
-    const rating = json.contestRating || 0;
+          const solved = json.totalSolved || json.solved || 0;
+          const contests = json.totalContests || json.contests || 0;
+          const rating = json.contestRating || json.rating || 0;
+          const easySolved = json.easySolved || 0;
+          const mediumSolved = json.mediumSolved || 0;
+          const hardSolved = json.hardSolved || 0;
+          
+          // Calculate estimated hours based on problem difficulty
+          const estimatedHours = Math.floor(
+            (easySolved * 0.5) + (mediumSolved * 1.5) + (hardSolved * 3)
+          );
+
     return { 
       solved, 
-      hours: Math.floor(solved / 10), 
+            hours: Math.max(estimatedHours, Math.floor(solved / 10)), 
       courses: 0,
       contests,
-      rating
-    };
+            rating,
+            // Additional LeetCode-specific data
+            easySolved,
+            mediumSolved,
+            hardSolved,
+            acceptanceRate: json.acceptanceRate || 0,
+            ranking: json.ranking || 0,
+            platform: 'leetcode'
+          };
+        }
+      } catch (apiError) {
+        console.log(`LeetCode API ${apiUrl} failed, trying next...`);
+        continue;
+      }
+    }
+
+    // If all APIs fail, try scraping as last resort
+    try {
+      const html = await scrapeProfile(`https://leetcode.com/${studentId}/`);
+      if (html) {
+        
+        // Parse HTML to extract data (basic scraping)
+        const solvedMatch = html.match(/Solved[^>]*>(\d+)/i);
+        const ratingMatch = html.match(/Contest Rating[^>]*>(\d+)/i);
+        
+        const solved = solvedMatch ? parseInt(solvedMatch[1]) : 0;
+        const rating = ratingMatch ? parseInt(ratingMatch[1]) : 0;
+        
+        return {
+          solved,
+          hours: Math.floor(solved * 1.0), // Average 1 hour per problem
+          courses: 0,
+          contests: 0,
+          rating,
+          platform: 'leetcode'
+        };
+      }
+    } catch (scrapingError) {
+      console.log('LeetCode scraping also failed');
+    }
+
+    console.warn(`All LeetCode APIs failed for user ${studentId}`);
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   } catch (err) {
     console.error('Network error fetching LeetCode data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
@@ -79,45 +195,71 @@ export async function fetchLeetCodeData(studentId: string): Promise<PlatformData
 }
 
 /**
- * ✅ Codeforces API (counts unique solved problems)
- * Example: https://codeforces.com/api/user.status?handle=tourist
+ * ✅ Enhanced Codeforces API integration with comprehensive data
+ * Fetches user status, info, and contest participation
  */
 export async function fetchCodeforcesData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`https://codeforces.com/api/user.status?handle=${studentId}`);
-    if (!res.ok) {
-      console.error('Codeforces API responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
-    const json = await res.json();
+    // Fetch user submissions and info in parallel
+    const [submissionsRes, userRes] = await Promise.all([
+      fetch(`https://codeforces.com/api/user.status?handle=${studentId}`),
+      fetch(`https://codeforces.com/api/user.info?handles=${studentId}`)
+    ]);
 
-    if (json.status !== "OK") {
+    if (!submissionsRes.ok) {
+      console.error('Codeforces submissions API responded with', submissionsRes.status);
       return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
     }
 
-    // count unique accepted problems
+    const submissionsJson = await submissionsRes.json();
+    if (submissionsJson.status !== "OK") {
+      console.warn(`Codeforces user ${studentId} not found or private profile`);
+      return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
+    }
+
+    // Count unique accepted problems
     const solved = new Set(
-      json.result
+      submissionsJson.result
         .filter((s: any) => s.verdict === "OK")
         .map((s: any) => s.problem.name)
     ).size;
 
-    // Get user info for rating
-    const userRes = await fetch(`https://codeforces.com/api/user.info?handles=${studentId}`);
+    // Count contests participated
+    const contestsParticipated = new Set(
+      submissionsJson.result
+        .filter((s: any) => s.verdict === "OK" && s.contestId)
+        .map((s: any) => s.contestId)
+    ).size;
+
+    // Get user info for rating and additional data
     let rating = 0;
+    let maxRating = 0;
+    let rank = '';
     if (userRes.ok) {
       const userJson = await userRes.json();
       if (userJson.status === "OK" && userJson.result?.[0]) {
-        rating = userJson.result[0].rating || 0;
+        const userInfo = userJson.result[0];
+        rating = userInfo.rating || 0;
+        maxRating = userInfo.maxRating || 0;
+        rank = userInfo.rank || '';
       }
     }
 
+    // Calculate estimated hours based on problem difficulty
+    const solvedProblems = submissionsJson.result.filter((s: any) => s.verdict === "OK");
+    const estimatedHours = Math.floor(solvedProblems.length * 0.5); // Average 30 min per problem
+
     return { 
       solved, 
-      hours: Math.floor(solved / 5), 
+      hours: Math.max(estimatedHours, Math.floor(solved / 5)), 
       courses: 0,
-      contests: 0,
-      rating
+      contests: contestsParticipated,
+      rating,
+      // Additional Codeforces-specific data
+      maxRating,
+      rank,
+      totalSubmissions: submissionsJson.result.length,
+      acceptedSubmissions: solvedProblems.length
     };
   } catch (err) {
     console.error('Network error fetching Codeforces data for', studentId, err);
@@ -126,30 +268,48 @@ export async function fetchCodeforcesData(studentId: string): Promise<PlatformDa
 }
 
 /**
- * ✅ Codewars API
- * Example: https://www.codewars.com/api/v1/users/someusername
+ * ✅ Enhanced Codewars API integration with comprehensive data
+ * Fetches detailed user statistics and achievements
  */
 export async function fetchCodewarsData(studentId: string): Promise<PlatformData> {
   try {
     const res = await fetch(`https://www.codewars.com/api/v1/users/${studentId}`);
     if (!res.ok) {
       console.error('Codewars API responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
+      return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
     }
     const json = await res.json();
 
     if (json.success === false || json.name === undefined) {
+      console.warn(`Codewars user ${studentId} not found`);
       return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
     }
 
     const solved = json.codeChallenges?.totalCompleted || 0;
     const honor = json.honor || 0;
+    const rank = json.ranks?.overall?.rank || 0;
+    const score = json.ranks?.overall?.score || 0;
+    const languages = Object.keys(json.ranks?.languages || {});
+    const totalCompleted = json.codeChallenges?.totalCompleted || 0;
+    const totalAuthored = json.codeChallenges?.totalAuthored || 0;
+    
+    // Calculate estimated hours based on kata difficulty and completion
+    const estimatedHours = Math.floor(solved * 1.5); // Average 1.5 hours per kata
+
     return { 
       solved, 
-      hours: Math.floor(solved / 8), 
+      hours: Math.max(estimatedHours, Math.floor(solved / 8)), 
       courses: 0,
       contests: 0,
-      rating: Math.floor(honor / 100) // Convert honor to a rating-like number
+      rating: Math.floor(honor / 100), // Convert honor to a rating-like number
+      // Additional Codewars-specific data
+      honor,
+      rank,
+      score,
+      languages: languages.length,
+      totalAuthored,
+      totalCompleted,
+      leaderboardPosition: json.leaderboardPosition || 0
     };
   } catch (err) {
     console.error('Network error fetching Codewars data for', studentId, err);
@@ -157,43 +317,533 @@ export async function fetchCodewarsData(studentId: string): Promise<PlatformData
   }
 }
 
-// GFG / HackerRank / HackerEarth / CodeChef -> use proxy (Edge Function / API Gateway / server)
+/**
+ * ✅ GFG (GeeksforGeeks) - Enhanced Scraping Strategy
+ * Since GFG has no official API, we use improved scraping with multiple patterns
+ */
 export async function fetchGFGData(studentId: string): Promise<PlatformData> {
   try {
-    const data = await fetchFromProxy<PlatformData>(`/gfg/${encodeURIComponent(studentId)}`, 'gfg');
-    return normalizePlatformData(data);
+    console.log(`Fetching GFG data for user: ${studentId}`);
+    
+    // Try scraping with multiple URL patterns
+    const urls = [
+      `https://www.geeksforgeeks.org/user/${studentId}/`,
+      `https://www.geeksforgeeks.org/user/${studentId}`
+    ];
+
+    for (const url of urls) {
+      try {
+        const html = await fetchPlatformData(url, 'gfg');
+        if (html) {
+          console.log(`Successfully scraped GFG profile from ${url}`);
+          
+          // Enhanced parsing with multiple patterns
+          const patterns = {
+            solved: [
+              /Problems Solved[^>]*>(\d+)/i,
+              /problems solved[^>]*>(\d+)/i,
+              /solved.*?(\d+)/i,
+              /"problems_solved":\s*(\d+)/i,
+              /problems.*?(\d+)/i
+            ],
+            codingScore: [
+              /Overall Coding Score[^>]*>(\d+)/i,
+              /coding score[^>]*>(\d+)/i,
+              /"coding_score":\s*(\d+)/i,
+              /score.*?(\d+)/i
+            ],
+            institute: [
+              /Institute[^>]*>([^<]+)/i,
+              /institution[^>]*>([^<]+)/i,
+              /college[^>]*>([^<]+)/i,
+              /"institute":\s*"([^"]+)"/i
+            ]
+          };
+
+          let solved = 0;
+          let codingScore = 0;
+          let institute = '';
+
+          // Try all patterns for each field
+          for (const pattern of patterns.solved) {
+            const match = html.match(pattern);
+            if (match) {
+              solved = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.codingScore) {
+            const match = html.match(pattern);
+            if (match) {
+              codingScore = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.institute) {
+            const match = html.match(pattern);
+            if (match) {
+              institute = match[1].trim();
+              break;
+            }
+          }
+
+          console.log(`GFG data extracted - Solved: ${solved}, Score: ${codingScore}, Institute: ${institute}`);
+          
+          if (solved > 0) { // Only return if we got valid data
+            return {
+              solved,
+              hours: Math.floor(solved * 0.75), // Average 45 min per problem
+              courses: 0,
+              contests: 0, // GFG doesn't have clear contest data
+              rating: Math.floor(codingScore / 100), // Convert score to rating
+              // Additional GFG-specific data
+              institute,
+              codingScore,
+              platform: 'gfg'
+            };
+          }
+        }
+      } catch (scrapingError) {
+        console.log(`GFG scraping failed for ${url}:`, scrapingError);
+        continue;
+      }
+    }
+
+    // No data available
+    console.log(`No data available for GFG user: ${studentId}`);
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   } catch (err) {
-    console.error('Error via proxy GFG for', studentId, err);
+    console.error('Error fetching GFG data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
+/**
+ * ✅ HackerRank - Enhanced Scraping Strategy
+ * Since HackerRank has no public API, we use improved scraping with multiple patterns
+ */
 export async function fetchHackerRankData(studentId: string): Promise<PlatformData> {
   try {
-    const data = await fetchFromProxy<PlatformData>(`/hackerrank/${encodeURIComponent(studentId)}`, 'hackerrank');
-    return normalizePlatformData(data);
+    console.log(`Fetching HackerRank data for user: ${studentId}`);
+    
+    // Try scraping with multiple URL patterns
+    const urls = [
+      `https://www.hackerrank.com/${studentId}`,
+      `https://www.hackerrank.com/${studentId}/`,
+      `https://hackerrank.com/${studentId}`,
+      `https://hackerrank.com/${studentId}/`
+    ];
+
+    for (const url of urls) {
+      try {
+        const html = await fetchPlatformData(url, 'hackerrank');
+        if (html) {
+          console.log(`Successfully scraped HackerRank profile from ${url}`);
+          
+          // Enhanced parsing with multiple patterns
+          const patterns = {
+            solved: [
+              /Challenges Solved[^>]*>(\d+)/i,
+              /challenges solved[^>]*>(\d+)/i,
+              /solved.*?(\d+)/i,
+              /"challenges_solved":\s*(\d+)/i,
+              /problems.*?(\d+)/i,
+              /total.*?(\d+)/i
+            ],
+            level: [
+              /Level[^>]*>(\d+)/i,
+              /level[^>]*>(\d+)/i,
+              /"level":\s*(\d+)/i,
+              /rank.*?(\d+)/i
+            ],
+            country: [
+              /Country[^>]*>([^<]+)/i,
+              /country[^>]*>([^<]+)/i,
+              /location[^>]*>([^<]+)/i,
+              /"country":\s*"([^"]+)"/i
+            ],
+            badges: [
+              /badges[^>]*>(\d+)/i,
+              /certificates[^>]*>(\d+)/i,
+              /"badges":\s*(\d+)/i
+            ]
+          };
+
+          let solved = 0;
+          let level = 0;
+          let country = '';
+          let badges = 0;
+
+          // Try all patterns for each field
+          for (const pattern of patterns.solved) {
+            const match = html.match(pattern);
+            if (match) {
+              solved = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.level) {
+            const match = html.match(pattern);
+            if (match) {
+              level = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.country) {
+            const match = html.match(pattern);
+            if (match) {
+              country = match[1].trim();
+              break;
+            }
+          }
+
+          for (const pattern of patterns.badges) {
+            const match = html.match(pattern);
+            if (match) {
+              badges = parseInt(match[1]);
+              break;
+            }
+          }
+
+          console.log(`HackerRank data extracted - Solved: ${solved}, Level: ${level}, Country: ${country}, Badges: ${badges}`);
+          
+          if (solved > 0) { // Only return if we got valid data
+            return {
+              solved,
+              hours: Math.floor(solved * 1.2), // Average 1.2 hours per challenge
+              courses: 0,
+              contests: 0, // HackerRank doesn't have clear contest data
+              rating: level * 100, // Convert level to rating
+              // Additional HackerRank-specific data
+              country,
+              level,
+              badges,
+              platform: 'hackerrank'
+            };
+          }
+        }
+      } catch (scrapingError) {
+        console.log(`HackerRank scraping failed for ${url}:`, scrapingError);
+        continue;
+      }
+    }
+
+    // No data available
+    console.log(`No data available for HackerRank user: ${studentId}`);
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   } catch (err) {
-    console.error('Error via proxy HackerRank for', studentId, err);
+    console.error('Error fetching HackerRank data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
+/**
+ * ✅ HackerEarth - Enhanced Scraping Strategy
+ * Uses limited official API with improved scraping fallback
+ */
 export async function fetchHackerEarthData(studentId: string): Promise<PlatformData> {
   try {
-    const data = await fetchFromProxy<PlatformData>(`/hackerearth/${encodeURIComponent(studentId)}`, 'hackerearth');
-    return normalizePlatformData(data);
+    console.log(`Fetching HackerEarth data for user: ${studentId}`);
+    
+    // Try limited official API first
+    try {
+      const res = await fetch(`https://www.hackerearth.com/api/users/${studentId}/`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+        }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        const solved = json.problems_solved || 0;
+        const contests = json.contests_participated || 0;
+        const rating = json.rating || 0;
+        
+        console.log(`HackerEarth API data - Solved: ${solved}, Contests: ${contests}, Rating: ${rating}`);
+        
+        if (solved > 0) { // Only return if we got valid data
+          return {
+            solved,
+            hours: Math.floor(solved * 1.0), // Average 1 hour per problem
+            courses: 0,
+            contests,
+            rating,
+            // Additional HackerEarth-specific data
+            country: json.country || '',
+            city: json.city || '',
+            totalSubmissions: json.total_submissions || 0,
+            accuracy: json.accuracy || 0,
+            platform: 'hackerearth'
+          };
+        }
+      }
+    } catch (apiError) {
+      console.log('HackerEarth official API not available, trying scraping...');
+    }
+
+    // Enhanced scraping with multiple URL patterns
+    const urls = [
+      `https://www.hackerearth.com/@${studentId}`,
+      `https://www.hackerearth.com/@${studentId}/`,
+      `https://hackerearth.com/@${studentId}`,
+      `https://hackerearth.com/@${studentId}/`
+    ];
+
+    for (const url of urls) {
+      try {
+        const html = await fetchPlatformData(url, 'hackerearth');
+        if (html) {
+          console.log(`Successfully scraped HackerEarth profile from ${url}`);
+          
+          // Enhanced parsing with multiple patterns
+          const patterns = {
+            solved: [
+              /Problems Solved[^>]*>(\d+)/i,
+              /problems solved[^>]*>(\d+)/i,
+              /solved.*?(\d+)/i,
+              /"problems_solved":\s*(\d+)/i,
+              /total.*?(\d+)/i
+            ],
+            rating: [
+              /Rating[^>]*>(\d+)/i,
+              /rating[^>]*>(\d+)/i,
+              /"rating":\s*(\d+)/i,
+              /score.*?(\d+)/i
+            ],
+            country: [
+              /Country[^>]*>([^<]+)/i,
+              /country[^>]*>([^<]+)/i,
+              /location[^>]*>([^<]+)/i,
+              /"country":\s*"([^"]+)"/i
+            ],
+            contests: [
+              /Contests[^>]*>(\d+)/i,
+              /contests[^>]*>(\d+)/i,
+              /"contests_participated":\s*(\d+)/i,
+              /participated.*?(\d+)/i
+            ]
+          };
+
+          let solved = 0;
+          let rating = 0;
+          let country = '';
+          let contests = 0;
+
+          // Try all patterns for each field
+          for (const pattern of patterns.solved) {
+            const match = html.match(pattern);
+            if (match) {
+              solved = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.rating) {
+            const match = html.match(pattern);
+            if (match) {
+              rating = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.country) {
+            const match = html.match(pattern);
+            if (match) {
+              country = match[1].trim();
+              break;
+            }
+          }
+
+          for (const pattern of patterns.contests) {
+            const match = html.match(pattern);
+            if (match) {
+              contests = parseInt(match[1]);
+              break;
+            }
+          }
+
+          console.log(`HackerEarth data extracted - Solved: ${solved}, Rating: ${rating}, Country: ${country}, Contests: ${contests}`);
+          
+          if (solved > 0) { // Only return if we got valid data
+            return {
+              solved,
+              hours: Math.floor(solved * 1.0), // Average 1 hour per problem
+              courses: 0,
+              contests,
+              rating,
+              // Additional HackerEarth-specific data
+              country,
+              platform: 'hackerearth'
+            };
+          }
+        }
+      } catch (scrapingError) {
+        console.log(`HackerEarth scraping failed for ${url}:`, scrapingError);
+        continue;
+      }
+    }
+
+    // No data available
+    console.log(`No data available for HackerEarth user: ${studentId}`);
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   } catch (err) {
-    console.error('Error via proxy HackerEarth for', studentId, err);
+    console.error('Error fetching HackerEarth data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
+/**
+ * ✅ CodeChef - Enhanced Scraping Strategy
+ * Since CodeChef has no reliable public API, we use improved scraping with multiple patterns
+ */
 export async function fetchCodeChefData(studentId: string): Promise<PlatformData> {
   try {
-    const data = await fetchFromProxy<PlatformData>(`/codechef/${encodeURIComponent(studentId)}`, 'codechef');
-    return normalizePlatformData(data);
+    console.log(`Fetching CodeChef data for user: ${studentId}`);
+    
+    // Try scraping with multiple URL patterns
+    const urls = [
+      `https://www.codechef.com/users/${studentId}`,
+      `https://www.codechef.com/users/${studentId}/`,
+      `https://codechef.com/users/${studentId}`,
+      `https://codechef.com/users/${studentId}/`
+    ];
+
+    for (const url of urls) {
+      try {
+        const html = await fetchPlatformData(url, 'codechef');
+        if (html) {
+          console.log(`Successfully scraped CodeChef profile from ${url}`);
+          
+          // Enhanced parsing with multiple patterns
+          const patterns = {
+            solved: [
+              /Problems Solved[^>]*>(\d+)/i,
+              /problems solved[^>]*>(\d+)/i,
+              /solved.*?(\d+)/i,
+              /"problems_solved":\s*(\d+)/i,
+              /total.*?(\d+)/i,
+              /practice.*?(\d+)/i
+            ],
+            rating: [
+              /Rating[^>]*>(\d+)/i,
+              /rating[^>]*>(\d+)/i,
+              /"rating":\s*(\d+)/i,
+              /current.*?(\d+)/i,
+              /overall.*?(\d+)/i
+            ],
+            country: [
+              /Country[^>]*>([^<]+)/i,
+              /country[^>]*>([^<]+)/i,
+              /location[^>]*>([^<]+)/i,
+              /"country":\s*"([^"]+)"/i
+            ],
+            institution: [
+              /Institution[^>]*>([^<]+)/i,
+              /institution[^>]*>([^<]+)/i,
+              /college[^>]*>([^<]+)/i,
+              /university[^>]*>([^<]+)/i,
+              /"institution":\s*"([^"]+)"/i
+            ],
+            division: [
+              /Division[^>]*>([^<]+)/i,
+              /division[^>]*>([^<]+)/i,
+              /"division":\s*"([^"]+)"/i
+            ],
+            contests: [
+              /Contests[^>]*>(\d+)/i,
+              /contests[^>]*>(\d+)/i,
+              /"contests_participated":\s*(\d+)/i,
+              /participated.*?(\d+)/i
+            ]
+          };
+
+          let solved = 0;
+          let rating = 0;
+          let country = '';
+          let institution = '';
+          let division = '';
+          let contests = 0;
+
+          // Try all patterns for each field
+          for (const pattern of patterns.solved) {
+            const match = html.match(pattern);
+            if (match) {
+              solved = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.rating) {
+            const match = html.match(pattern);
+            if (match) {
+              rating = parseInt(match[1]);
+              break;
+            }
+          }
+
+          for (const pattern of patterns.country) {
+            const match = html.match(pattern);
+            if (match) {
+              country = match[1].trim();
+              break;
+            }
+          }
+
+          for (const pattern of patterns.institution) {
+            const match = html.match(pattern);
+            if (match) {
+              institution = match[1].trim();
+              break;
+            }
+          }
+
+          for (const pattern of patterns.division) {
+            const match = html.match(pattern);
+            if (match) {
+              division = match[1].trim();
+              break;
+            }
+          }
+
+          for (const pattern of patterns.contests) {
+            const match = html.match(pattern);
+            if (match) {
+              contests = parseInt(match[1]);
+              break;
+            }
+          }
+
+          console.log(`CodeChef data extracted - Solved: ${solved}, Rating: ${rating}, Country: ${country}, Institution: ${institution}, Division: ${division}, Contests: ${contests}`);
+          
+          if (solved > 0) { // Only return if we got valid data
+            return {
+              solved,
+              hours: Math.floor(solved * 0.8), // Average 48 min per problem
+              courses: 0,
+              contests,
+              rating,
+              // Additional CodeChef-specific data
+              country,
+              institution,
+              division,
+              platform: 'codechef'
+            };
+          }
+        }
+      } catch (scrapingError) {
+        console.log(`CodeChef scraping failed for ${url}:`, scrapingError);
+        continue;
+      }
+    }
+
+    // No data available
+    console.log(`No data available for CodeChef user: ${studentId}`);
+    return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   } catch (err) {
-    console.error('Error via proxy CodeChef for', studentId, err);
+    console.error('Error fetching CodeChef data for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
@@ -207,6 +857,7 @@ function normalizePlatformData(d: any): PlatformData {
     rating: Number(d?.rating) || 0,
   };
 }
+
 
 // placeholder
 export async function fetchPlaceholderData(): Promise<PlatformData> {
