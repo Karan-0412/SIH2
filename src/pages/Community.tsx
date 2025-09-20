@@ -114,7 +114,8 @@ export default function CommunityPage() {
   };
 
   const visiblePosts = useMemo(() => {
-    let base = posts.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
+    const safePosts = posts || [];
+    let base = safePosts.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
     if (selectedGroup) base = base.filter(p => (p.group_id || 'g-general') === selectedGroup);
     if (query) base = base.filter(p => p.content.toLowerCase().includes(query.toLowerCase()));
     if (trendingFilter !== 'All') base = base.filter(p => p.category === trendingFilter);
@@ -395,7 +396,7 @@ export default function CommunityPage() {
                   <Users className="w-4 h-4 mr-2" />
                   All Posts
                 </Button>
-                {groups.map(g => (
+                {(groups || []).map(g => (
                   <div key={g.id} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
                     <Button
                       variant={selectedGroup === g.id ? "default" : "ghost"}
@@ -499,7 +500,7 @@ export default function CommunityPage() {
                         className="border-2 rounded-lg px-3 py-2 focus:border-black"
                       >
                         <option value="">General</option>
-                        {groups.map(g => <option value={g.id} key={g.id}>{g.name}</option>)}
+                        {(groups || []).map(g => <option value={g.id} key={g.id}>{g.name}</option>)}
                       </select>
                     </div>
                     <Button 
@@ -517,7 +518,7 @@ export default function CommunityPage() {
           </Card>
 
           <div className="space-y-4">
-            {visiblePosts.map(post => (
+            {(visiblePosts || []).map(post => (
               <Card key={post.id} className={`shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${post.is_blocked ? 'opacity-60' : ''}`}>
                 <CardContent className="p-6">
                   <header className="flex items-start gap-4 mb-4">
@@ -624,7 +625,7 @@ export default function CommunityPage() {
                         Comments ({post.comments?.length || 0})
                       </h4>
                       <div className="space-y-4">
-                        {post.comments.map(c => (
+                        {(post.comments || []).map(c => (
                           <div key={c.id} className="flex gap-3 p-4 bg-gray-50 rounded-lg">
                             <Avatar className="w-8 h-8">
                               <AvatarImage src={getAvatarFor(c.author_id) || c.author_avatar || '/placeholder.svg'} alt={c.author_name} />
@@ -725,7 +726,7 @@ export default function CommunityPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {groups.filter(g => !g.is_member).slice(0, 4).map(g => (
+                  {(groups || []).filter(g => !g.is_member).slice(0, 4).map(g => (
                     <div key={g.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold">
