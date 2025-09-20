@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { FileText, Download, Settings2, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useStudent } from "@/hooks/useStudent";
+import { supabase } from "@/integrations/supabase/client";
 
 // Templates
 import MinimalTemplate, { ResumeData } from "@/components/ResumeTemplates/MinimalTemplate";
@@ -28,68 +30,141 @@ const ResumeGenerator: React.FC = () => {
   const ref = useRef<HTMLDivElement>(null);
   const { signOut } = useAuth();
   const { profile } = useProfile();
+  const { portfolio, achievements, progress } = useStudent();
 
   const [selectedTemplate, setSelectedTemplate] = useState<"modern" | "minimal">("modern");
   const [isEditable, setIsEditable] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
   const [showNotificationsDropdown, setShowNotificationsDropdown] = useState(false);
-      const navigate = useNavigate();
+  const [certificates, setCertificates] = useState<any[]>([]);
+  const navigate = useNavigate();
   
+  // Fetch certificates
+  useEffect(() => {
+    const fetchCertificates = async () => {
+      if (!profile) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('certificates')
+          .select('*')
+          .eq('student_id', profile.id)
+          .eq('status', 'approved')
+          .order('uploaded_at', { ascending: false });
+        
+        if (error) throw error;
+        setCertificates(data || []);
+      } catch (error) {
+        console.error('Error fetching certificates:', error);
+      }
+    };
+    
+    fetchCertificates();
+  }, [profile]);
 
+  // Initialize resume data with real student information
   const [resumeData, setResumeData] = useState<ResumeData>({
-    name: "John Doe",
-    email: "john@example.com",
-    phone: "+91 98765 43210",
-    overview:
-      "Aspiring software engineer with strong skills in React, TypeScript, and full-stack development. Passionate about building scalable applications and learning new technologies.",
+    name: profile?.full_name || "Student Name",
+    email: profile?.email || "student@example.com",
+    phone: profile?.phone || "+91 98765 43210",
+    overview: profile?.bio || "Aspiring professional with strong academic background and practical experience in various projects and achievements.",
     education: [
       {
-        degree: "B.Tech in Computer Science",
-        institution: "XYZ University",
-        year: "2020-2024",
-      },
-      {
-        degree: "Higher Secondary (PCM)",
-        institution: "ABC Senior Secondary School",
-        year: "2018-2020",
+        degree: profile?.department || "B.Tech in Computer Science",
+        institution: profile?.college || "University Name",
+        year: profile?.graduation_year ? `${profile.graduation_year - 4}-${profile.graduation_year}` : "2020-2024",
       },
     ],
-    experience: [
-      {
-        role: "Frontend Developer Intern",
-        company: "ABC Corp",
-        duration: "May 2023 - July 2023",
-        details: [
-          "Developed React dashboards with reusable components",
-          "Improved UI performance by 20%",
-          "Collaborated with backend team to integrate APIs",
-        ],
-      },
-    ],
-    projects: [
-      {
-        name: "AI Resume Generator",
-        description: "Developed an AI-powered resume builder using React + OpenAI.",
-        details: [
-          "Built live template previews with React and TailwindCSS",
-          "Integrated PDF export functionality",
-          "Implemented editable resume fields with state management",
-        ],
-      },
-      {
-        name: "Smart Student Hub",
-        description: "Created a hub for managing academics, certificates, and placements.",
-        details: [
-          "Designed a certificate upload/analytics system",
-          "Implemented GPA/SGPA visualizations using charts",
-          "Added profile management and resume generation features",
-        ],
-      },
-    ],
-    skills: ["React", "TypeScript", "TailwindCSS", "Node.js", "Supabase", "Google Maps API"],
-    certificates: ["React Basics", "AWS Cloud Practitioner", "Machine Learning with Python"],
+    experience: [], // Will be populated from portfolio if any
+    projects: [], // Will be populated from portfolio
+    skills: [], // Will be populated from achievements and projects
+    certificates: [], // Will be populated from real certificates
   });
+
+  // Update resume data when profile or portfolio changes
+  useEffect(() => {
+    if (profile) {
+      setResumeData(prev => ({
+        ...prev,
+        name: profile.full_name || prev.name,
+        email: profile.email || prev.email,
+        phone: profile.phone || prev.phone,
+        overview: profile.bio || prev.overview,
+        education: [{
+          degree: profile.department || "B.Tech in Computer Science",
+          institution: profile.college || "University Name",
+          year: profile.graduation_year ? `${profile.graduation_year - 4}-${profile.graduation_year}` : "2020-2024",
+        }],
+      }));
+    }
+  }, [profile]);
+
+  // Update projects from portfolio
+  useEffect(() => {
+    if (portfolio.length > 0) {
+      const portfolioProjects = portfolio.map(project => ({
+        name: project.title,
+        description: project.description || "A project showcasing technical skills and creativity.",
+        details: [
+          `Category: ${project.category}`,
+          project.external_url ? `Live Demo: ${project.external_url}` : "Project details available upon request",
+        ],
+      }));
+
+      setResumeData(prev => ({
+        ...prev,
+        projects: portfolioProjects,
+      }));
+    }
+  }, [portfolio]);
+
+  // Update certificates from real data
+  useEffect(() => {
+    if (certificates.length > 0) {
+      const certificateTitles = certificates.map(cert => cert.title);
+      setResumeData(prev => ({
+        ...prev,
+        certificates: certificateTitles,
+      }));
+    }
+  }, [certificates]);
+
+  // Update skills from achievements and projects
+  useEffect(() => {
+    const skills = new Set<string>();
+    
+    // Add skills from achievements
+    achievements.forEach(achievement => {
+      if (achievement.title.toLowerCase().includes('react')) skills.add('React');
+      if (achievement.title.toLowerCase().includes('javascript')) skills.add('JavaScript');
+      if (achievement.title.toLowerCase().includes('python')) skills.add('Python');
+      if (achievement.title.toLowerCase().includes('java')) skills.add('Java');
+      if (achievement.title.toLowerCase().includes('aws')) skills.add('AWS');
+      if (achievement.title.toLowerCase().includes('machine learning')) skills.add('Machine Learning');
+    });
+
+    // Add skills from projects
+    portfolio.forEach(project => {
+      if (project.description?.toLowerCase().includes('react')) skills.add('React');
+      if (project.description?.toLowerCase().includes('typescript')) skills.add('TypeScript');
+      if (project.description?.toLowerCase().includes('node')) skills.add('Node.js');
+      if (project.description?.toLowerCase().includes('python')) skills.add('Python');
+      if (project.description?.toLowerCase().includes('javascript')) skills.add('JavaScript');
+    });
+
+    // Add default skills if none found
+    if (skills.size === 0) {
+      skills.add('Problem Solving');
+      skills.add('Team Collaboration');
+      skills.add('Project Management');
+    }
+
+    setResumeData(prev => ({
+      ...prev,
+      skills: Array.from(skills),
+    }));
+  }, [achievements, portfolio]);
 
   useEffect(() => {
     if (isDarkMode) {

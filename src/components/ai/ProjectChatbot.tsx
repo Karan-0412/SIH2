@@ -180,7 +180,7 @@ Keep responses concise, helpful, and focused on the platform features.`;
   if (!isOpen) return null;
 
   return (
-    <div className={`fixed bottom-4 right-4 z-50 ${isMinimized ? 'w-80' : 'w-96'} transition-all duration-300`}>
+    <div className={`fixed bottom-4 right-4 z-[60] ${isMinimized ? 'w-80' : 'w-96'} transition-all duration-300`}>
       <Card className="shadow-2xl border-2">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">

@@ -234,22 +234,7 @@ export const useStudent = () => {
       
       if (error) throw error;
       
-      // Map database columns to interface
-      const mappedData = (data || []).map((item: any) => ({
-        id: item.id,
-        student_id: item.student_id,
-        title: item.title,
-        description: item.description,
-        category: item.portfolio_type, // Map portfolio_type to category
-        image_url: null, // Not available in current schema
-        external_url: item.file_url, // Map file_url to external_url
-        visibility: item.is_public ? 'public' : 'private', // Map is_public to visibility
-        featured: false, // Not available in current schema
-        created_at: item.created_at,
-        updated_at: item.updated_at,
-      }));
-      
-      setPortfolio(mappedData);
+      setPortfolio(data || []);
     } catch (error) {
       console.error('Error fetching portfolio:', error);
     }
@@ -374,19 +359,12 @@ export const useStudent = () => {
         student_id: profile.id,
       });
       
-      // Map the data to match the actual database schema
-      const portfolioData = {
-        student_id: profile.id,
-        title: itemData.title,
-        description: itemData.description,
-        portfolio_type: itemData.category, // Map category to portfolio_type
-        file_url: itemData.external_url, // Use external_url as file_url
-        is_public: itemData.visibility === 'public', // Map visibility to is_public
-      };
-
       const { data, error } = await supabase
         .from('student_portfolio')
-        .insert(portfolioData)
+        .insert({
+          ...itemData,
+          student_id: profile.id,
+        })
         .select()
         .single();
       
@@ -423,17 +401,9 @@ export const useStudent = () => {
     if (!profile) return;
     
     try {
-      // Map updates to database schema
-      const dbUpdates: any = {};
-      if (updates.title) dbUpdates.title = updates.title;
-      if (updates.description !== undefined) dbUpdates.description = updates.description;
-      if (updates.category) dbUpdates.portfolio_type = updates.category;
-      if (updates.external_url !== undefined) dbUpdates.file_url = updates.external_url;
-      if (updates.visibility) dbUpdates.is_public = updates.visibility === 'public';
-      
       const { data, error } = await supabase
         .from('student_portfolio')
-        .update(dbUpdates)
+        .update(updates)
         .eq('id', itemId)
         .eq('student_id', profile.id)
         .select()

@@ -23,7 +23,7 @@ const ChatbotToggle: React.FC = () => {
       {/* Chatbot Toggle Button */}
       <Button
         onClick={toggleChatbot}
-        className="fixed bottom-4 right-4 z-40 h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-blue-500 hover:bg-blue-600"
+        className="fixed bottom-4 right-4 z-[60] h-12 w-12 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 bg-blue-500 hover:bg-blue-600"
         size="icon"
       >
         {isOpen ? (

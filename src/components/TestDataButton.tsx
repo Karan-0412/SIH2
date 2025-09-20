@@ -73,7 +73,7 @@ const TestDataButton = () => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-4 right-20 z-40">
       <Card className="w-80 shadow-lg border-2">
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-3">

@@ -3,6 +3,7 @@ import { useProfile } from '@/hooks/useProfile';
 import { useStudent } from '@/hooks/useStudent';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Upload } from 'lucide-react';
 import ProfileSection from './student/ProfileSection';
 import CertificatesSection from './student/CertificatesSection';
@@ -18,7 +19,8 @@ import SocialActivityFeed from './student/SocialActivityFeed';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TrendingUp } from 'lucide-react';
+import { TrendingUp, FolderOpen, Github, ExternalLink, FileText, Award } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 interface Certificate {
   id: string;
@@ -160,11 +162,12 @@ const StudentDashboard = () => {
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
           <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
+          <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
 
@@ -203,6 +206,123 @@ const StudentDashboard = () => {
         {/* Achievements Tab */}
         <TabsContent value="achievements" className="space-y-6">
           <AcademicAchievementDashboard loading={studentLoading} />
+        </TabsContent>
+
+        {/* Portfolio Tab */}
+        <TabsContent value="portfolio" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Projects Section */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderOpen className="h-5 w-5" />
+                    My Projects
+                  </CardTitle>
+                  <Link to="/my-projects">
+                    <Button variant="outline" size="sm">
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Manage
+                    </Button>
+                  </Link>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {portfolio.length === 0 ? (
+                  <div className="text-center py-8">
+                    <FolderOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600 mb-4">No projects yet</p>
+                    <Link to="/my-projects">
+                      <Button>Add Your First Project</Button>
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {portfolio.slice(0, 3).map((project) => (
+                      <div key={project.id} className="flex items-center justify-between p-3 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <FolderOpen className="h-4 w-4 text-blue-600" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{project.title}</p>
+                            <p className="text-sm text-gray-600">{project.category}</p>
+                          </div>
+                        </div>
+                        {project.external_url && (
+                          <Button variant="ghost" size="sm" asChild>
+                            <a href={project.external_url} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                      </div>
+                    ))}
+                    {portfolio.length > 3 && (
+                      <div className="text-center pt-2">
+                        <Link to="/my-projects">
+                          <Button variant="outline" size="sm">
+                            View All {portfolio.length} Projects
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* GitHub Integration */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Github className="h-5 w-5" />
+                  GitHub Projects
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-8">
+                  <Github className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 mb-4">Connect your GitHub to showcase your repositories</p>
+                  <Link to="/my-projects">
+                    <Button>
+                      <Github className="h-4 w-4 mr-2" />
+                      Import from GitHub
+                    </Button>
+                  </Link>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Quick Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Link to="/my-projects">
+                  <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
+                    <FolderOpen className="h-6 w-6" />
+                    <span>Manage Projects</span>
+                  </Button>
+                </Link>
+                <Link to="/resume-generator">
+                  <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
+                    <FileText className="h-6 w-6" />
+                    <span>Generate Resume</span>
+                  </Button>
+                </Link>
+                <Link to="/academic-achievements">
+                  <Button variant="outline" className="w-full h-20 flex flex-col items-center justify-center gap-2">
+                    <Award className="h-6 w-6" />
+                    <span>View Achievements</span>
+                  </Button>
+                </Link>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* Activity Tab */}

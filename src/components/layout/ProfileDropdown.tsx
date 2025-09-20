@@ -20,6 +20,7 @@ import {
   UserCircle,
   Shield,
   Bell,
+  User2,
 } from 'lucide-react';
 
 const ProfileDropdown = () => {
@@ -46,6 +47,27 @@ const ProfileDropdown = () => {
   };
 
   if (!profile) return null;
+
+  // Fallback for when Avatar component might not work
+  const renderProfileIcon = () => {
+    const avatarUrl = getAvatarUrl() || '';
+    
+    if (avatarUrl) {
+      return (
+        <img 
+          src={avatarUrl} 
+          alt={profile.full_name || 'User'}
+          className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-200 hover:ring-primary/30 transition-all"
+        />
+      );
+    }
+    
+    return (
+      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold text-sm ring-2 ring-gray-200 hover:ring-primary/30 transition-all">
+        {getInitials()}
+      </div>
+    );
+  };
 
   // Get avatar from localStorage overrides or use default
   const getAvatarUrl = () => {
@@ -74,17 +96,9 @@ const ProfileDropdown = () => {
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100 transition-colors"
+          className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100 transition-colors focus:ring-2 focus:ring-primary/20"
         >
-          <Avatar className="h-10 w-10">
-            <AvatarImage 
-              src={getAvatarUrl()} 
-              alt={profile.full_name || 'User'} 
-            />
-            <AvatarFallback className="bg-primary/10 text-primary font-semibold">
-              {getInitials()}
-            </AvatarFallback>
-          </Avatar>
+          {renderProfileIcon()}
         </Button>
       </DropdownMenuTrigger>
       
