@@ -1,0 +1,481 @@
+import { supabase } from '@/integrations/supabase/client';
+
+export interface CommunityPost {
+  id: string;
+  author_id: string;
+  content: string;
+  category: 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General';
+  group_id: string | null;
+  is_blocked: boolean;
+  reports_count: number;
+  created_at: string;
+  updated_at: string;
+  author_name?: string;
+  author_avatar?: string;
+  upvotes?: number;
+  downvotes?: number;
+  bookmarks?: number;
+  user_has_upvoted?: boolean;
+  user_has_downvoted?: boolean;
+  user_has_bookmarked?: boolean;
+  comments?: CommunityComment[];
+}
+
+export interface CommunityComment {
+  id: string;
+  post_id: string;
+  author_id: string;
+  content: string;
+  is_blocked: boolean;
+  reports_count: number;
+  created_at: string;
+  updated_at: string;
+  author_name?: string;
+  author_avatar?: string;
+  upvotes?: number;
+  downvotes?: number;
+  user_has_upvoted?: boolean;
+  user_has_downvoted?: boolean;
+}
+
+export interface CommunityGroup {
+  id: string;
+  name: string;
+  description: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  member_count?: number;
+  is_member?: boolean;
+  is_admin?: boolean;
+}
+
+export interface PostInteraction {
+  id: string;
+  post_id: string;
+  user_id: string;
+  interaction_type: 'upvote' | 'downvote' | 'bookmark';
+  created_at: string;
+}
+
+export interface CommentInteraction {
+  id: string;
+  comment_id: string;
+  user_id: string;
+  interaction_type: 'upvote' | 'downvote';
+  created_at: string;
+}
+
+export class CommunityService {
+  // Posts
+  static async getPosts(groupId?: string, category?: string, limit = 50, offset = 0): Promise<CommunityPost[]> {
+    let query = supabase
+      .from('community_posts')
+      .select(`
+        *,
+        profiles!community_posts_author_id_fkey(full_name, avatar_url)
+      `)
+      .eq('is_blocked', false)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (groupId) {
+      query = query.eq('group_id', groupId);
+    }
+
+    if (category && category !== 'All') {
+      query = query.eq('category', category);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching posts:', error);
+      throw error;
+    }
+
+    // Transform the data to include author info
+    return data?.map(post => ({
+      ...post,
+      author_name: post.profiles?.full_name || 'Anonymous',
+      author_avatar: post.profiles?.avatar_url || '',
+    })) || [];
+  }
+
+  static async createPost(
+    authorId: string,
+    content: string,
+    category: 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General',
+    groupId?: string
+  ): Promise<CommunityPost> {
+    const { data, error } = await supabase
+      .from('community_posts')
+      .insert({
+        author_id: authorId,
+        content,
+        category,
+        group_id: groupId || 'g-general',
+      })
+      .select(`
+        *,
+        profiles!community_posts_author_id_fkey(full_name, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating post:', error);
+      throw error;
+    }
+
+    return {
+      ...data,
+      author_name: data.profiles?.full_name || 'Anonymous',
+      author_avatar: data.profiles?.avatar_url || '',
+    };
+  }
+
+  static async updatePost(postId: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('community_posts')
+      .update({ content })
+      .eq('id', postId);
+
+    if (error) {
+      console.error('Error updating post:', error);
+      throw error;
+    }
+  }
+
+  static async deletePost(postId: string): Promise<void> {
+    const { error } = await supabase
+      .from('community_posts')
+      .delete()
+      .eq('id', postId);
+
+    if (error) {
+      console.error('Error deleting post:', error);
+      throw error;
+    }
+  }
+
+  // Comments
+  static async getComments(postId: string): Promise<CommunityComment[]> {
+    const { data, error } = await supabase
+      .from('post_comments')
+      .select(`
+        *,
+        profiles!post_comments_author_id_fkey(full_name, avatar_url)
+      `)
+      .eq('post_id', postId)
+      .eq('is_blocked', false)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching comments:', error);
+      throw error;
+    }
+
+    return data?.map(comment => ({
+      ...comment,
+      author_name: comment.profiles?.full_name || 'Anonymous',
+      author_avatar: comment.profiles?.avatar_url || '',
+    })) || [];
+  }
+
+  static async createComment(postId: string, authorId: string, content: string): Promise<CommunityComment> {
+    const { data, error } = await supabase
+      .from('post_comments')
+      .insert({
+        post_id: postId,
+        author_id: authorId,
+        content,
+      })
+      .select(`
+        *,
+        profiles!post_comments_author_id_fkey(full_name, avatar_url)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating comment:', error);
+      throw error;
+    }
+
+    return {
+      ...data,
+      author_name: data.profiles?.full_name || 'Anonymous',
+      author_avatar: data.profiles?.avatar_url || '',
+    };
+  }
+
+  static async deleteComment(commentId: string): Promise<void> {
+    const { error } = await supabase
+      .from('post_comments')
+      .delete()
+      .eq('id', commentId);
+
+    if (error) {
+      console.error('Error deleting comment:', error);
+      throw error;
+    }
+  }
+
+  // Groups
+  static async getGroups(userId?: string): Promise<CommunityGroup[]> {
+    let query = supabase
+      .from('community_groups')
+      .select(`
+        *,
+        group_memberships!group_memberships_group_id_fkey(user_id, role)
+      `);
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Error fetching groups:', error);
+      throw error;
+    }
+
+    return data?.map(group => {
+      const memberships = group.group_memberships || [];
+      const memberCount = memberships.length;
+      const userMembership = memberships.find((m: any) => m.user_id === userId);
+      
+      return {
+        ...group,
+        member_count: memberCount,
+        is_member: !!userMembership,
+        is_admin: userMembership?.role === 'admin',
+      };
+    }) || [];
+  }
+
+  static async createGroup(name: string, description: string, createdBy: string): Promise<CommunityGroup> {
+    const { data, error } = await supabase
+      .from('community_groups')
+      .insert({
+        name,
+        description,
+        created_by: createdBy,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Error creating group:', error);
+      throw error;
+    }
+
+    // Add creator as admin
+    await supabase
+      .from('group_memberships')
+      .insert({
+        group_id: data.id,
+        user_id: createdBy,
+        role: 'admin',
+      });
+
+    return {
+      ...data,
+      member_count: 1,
+      is_member: true,
+      is_admin: true,
+    };
+  }
+
+  static async joinGroup(groupId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('group_memberships')
+      .insert({
+        group_id: groupId,
+        user_id: userId,
+        role: 'member',
+      });
+
+    if (error) {
+      console.error('Error joining group:', error);
+      throw error;
+    }
+  }
+
+  static async leaveGroup(groupId: string, userId: string): Promise<void> {
+    const { error } = await supabase
+      .from('group_memberships')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Error leaving group:', error);
+      throw error;
+    }
+  }
+
+  // Interactions
+  static async togglePostInteraction(
+    postId: string,
+    userId: string,
+    interactionType: 'upvote' | 'downvote' | 'bookmark'
+  ): Promise<void> {
+    // First, check if interaction exists
+    const { data: existing } = await supabase
+      .from('post_interactions')
+      .select('id')
+      .eq('post_id', postId)
+      .eq('user_id', userId)
+      .eq('interaction_type', interactionType)
+      .single();
+
+    if (existing) {
+      // Remove existing interaction
+      await supabase
+        .from('post_interactions')
+        .delete()
+        .eq('id', existing.id);
+    } else {
+      // Remove opposite interactions first
+      if (interactionType === 'upvote') {
+        await supabase
+          .from('post_interactions')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', userId)
+          .eq('interaction_type', 'downvote');
+      } else if (interactionType === 'downvote') {
+        await supabase
+          .from('post_interactions')
+          .delete()
+          .eq('post_id', postId)
+          .eq('user_id', userId)
+          .eq('interaction_type', 'upvote');
+      }
+
+      // Add new interaction
+      await supabase
+        .from('post_interactions')
+        .insert({
+          post_id: postId,
+          user_id: userId,
+          interaction_type: interactionType,
+        });
+    }
+  }
+
+  static async toggleCommentInteraction(
+    commentId: string,
+    userId: string,
+    interactionType: 'upvote' | 'downvote'
+  ): Promise<void> {
+    // First, check if interaction exists
+    const { data: existing } = await supabase
+      .from('comment_interactions')
+      .select('id')
+      .eq('comment_id', commentId)
+      .eq('user_id', userId)
+      .eq('interaction_type', interactionType)
+      .single();
+
+    if (existing) {
+      // Remove existing interaction
+      await supabase
+        .from('comment_interactions')
+        .delete()
+        .eq('id', existing.id);
+    } else {
+      // Remove opposite interactions first
+      const oppositeType = interactionType === 'upvote' ? 'downvote' : 'upvote';
+      await supabase
+        .from('comment_interactions')
+        .delete()
+        .eq('comment_id', commentId)
+        .eq('user_id', userId)
+        .eq('interaction_type', oppositeType);
+
+      // Add new interaction
+      await supabase
+        .from('comment_interactions')
+        .insert({
+          comment_id: commentId,
+          user_id: userId,
+          interaction_type: interactionType,
+        });
+    }
+  }
+
+  // Get interaction counts and user status
+  static async getPostInteractions(postId: string, userId?: string) {
+    const { data: interactions, error } = await supabase
+      .from('post_interactions')
+      .select('interaction_type, user_id')
+      .eq('post_id', postId);
+
+    if (error) {
+      console.error('Error fetching post interactions:', error);
+      return { upvotes: 0, downvotes: 0, bookmarks: 0, user_has_upvoted: false, user_has_downvoted: false, user_has_bookmarked: false };
+    }
+
+    const upvotes = interactions?.filter(i => i.interaction_type === 'upvote').length || 0;
+    const downvotes = interactions?.filter(i => i.interaction_type === 'downvote').length || 0;
+    const bookmarks = interactions?.filter(i => i.interaction_type === 'bookmark').length || 0;
+
+    const user_has_upvoted = userId ? interactions?.some(i => i.user_id === userId && i.interaction_type === 'upvote') : false;
+    const user_has_downvoted = userId ? interactions?.some(i => i.user_id === userId && i.interaction_type === 'downvote') : false;
+    const user_has_bookmarked = userId ? interactions?.some(i => i.user_id === userId && i.interaction_type === 'bookmark') : false;
+
+    return {
+      upvotes,
+      downvotes,
+      bookmarks,
+      user_has_upvoted,
+      user_has_downvoted,
+      user_has_bookmarked,
+    };
+  }
+
+  static async getCommentInteractions(commentId: string, userId?: string) {
+    const { data: interactions, error } = await supabase
+      .from('comment_interactions')
+      .select('interaction_type, user_id')
+      .eq('comment_id', commentId);
+
+    if (error) {
+      console.error('Error fetching comment interactions:', error);
+      return { upvotes: 0, downvotes: 0, user_has_upvoted: false, user_has_downvoted: false };
+    }
+
+    const upvotes = interactions?.filter(i => i.interaction_type === 'upvote').length || 0;
+    const downvotes = interactions?.filter(i => i.interaction_type === 'downvote').length || 0;
+
+    const user_has_upvoted = userId ? interactions?.some(i => i.user_id === userId && i.interaction_type === 'upvote') : false;
+    const user_has_downvoted = userId ? interactions?.some(i => i.user_id === userId && i.interaction_type === 'downvote') : false;
+
+    return {
+      upvotes,
+      downvotes,
+      user_has_upvoted,
+      user_has_downvoted,
+    };
+  }
+
+  // Real-time subscriptions
+  static subscribeToPosts(callback: (payload: any) => void) {
+    return supabase
+      .channel('community_posts')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'community_posts' }, callback)
+      .subscribe();
+  }
+
+  static subscribeToComments(callback: (payload: any) => void) {
+    return supabase
+      .channel('post_comments')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_comments' }, callback)
+      .subscribe();
+  }
+
+  static subscribeToInteractions(callback: (payload: any) => void) {
+    return supabase
+      .channel('post_interactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'post_interactions' }, callback)
+      .subscribe();
+  }
+}

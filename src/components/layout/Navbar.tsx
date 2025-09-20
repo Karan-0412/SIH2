@@ -14,19 +14,32 @@ const Navbar = () => {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
   const baseItems = [
+    { label: 'Home', to: '/home' },
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },
     { label: 'Schedule', to: '/schedule' },
     { label: 'Events', to: '/events' },
   ];
+
+  const adminItems = [
+    { label: 'Admin Dashboard', to: '/admin' },
+    { label: 'Faculty Management', to: '/admin/faculty' },
+    { label: 'Mentor Assignments', to: '/admin/assignments' },
+    { label: 'Debug', to: '/admin/debug' },
+  ];
+
   const items = React.useMemo(() => {
+    if (profile?.role === 'admin') {
+      return adminItems;
+    }
     if (profile?.role === 'student') {
       return baseItems; // student sees Community, not Faculty Community
     }
-    // faculty: hide student Community, add Faculty Community
+    // faculty: hide student Community, add Faculty Community and My Students
     const list = baseItems.filter(i=> i.label !== 'Community');
     list.splice(2, 0, { label: 'Faculty Community', to: '/faculty/community' });
+    list.splice(3, 0, { label: 'My Students', to: '/faculty/students' });
     return list;
   }, [profile]);
 

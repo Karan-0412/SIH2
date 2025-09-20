@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/layout/Navbar';
 import StudentDashboard from '@/components/dashboard/StudentDashboard';
@@ -10,6 +10,14 @@ import FacultyDashboard from '@/components/dashboard/FacultyDashboard';
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const navigate = useNavigate();
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (profile && profile.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [profile, navigate]);
 
   if (authLoading || profileLoading) {
     return (
@@ -95,6 +103,8 @@ const Index = () => {
     );
   }
 
+  // If user is admin, they will be redirected by useEffect above
+  // This component will only render for student and faculty users
   return (
     <div className="min-h-screen bg-gray-100">
       <main className="animate-in fade-in-50 slide-in-from-bottom-2 duration-300">
