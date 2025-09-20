@@ -6,6 +6,45 @@ export interface PlatformData {
   rating?: number;
 }
 
+// Env-configurable proxy base for platforms that require server-side fetching
+const PLATFORM_API_BASE: string = (import.meta as any)?.env?.VITE_PLATFORM_API_BASE || '';
+
+// Optional API keys (if your proxy expects them)
+const API_KEY: string | undefined = (import.meta as any)?.env?.VITE_PLATFORM_API_KEY;
+const GFG_KEY: string | undefined = (import.meta as any)?.env?.VITE_GFG_API_KEY;
+const HACKERRANK_KEY: string | undefined = (import.meta as any)?.env?.VITE_HACKERRANK_API_KEY;
+const HACKEREARTH_KEY: string | undefined = (import.meta as any)?.env?.VITE_HACKEREARTH_API_KEY;
+const CODECHEF_KEY: string | undefined = (import.meta as any)?.env?.VITE_CODECHEF_API_KEY;
+
+function buildHeaders(extra?: Record<string, string>) {
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (API_KEY) headers['x-api-key'] = API_KEY;
+  if (extra) Object.assign(headers, extra);
+  return headers;
+}
+
+async function fetchFromProxy<T>(path: string, keyName?: 'gfg'|'hackerrank'|'hackerearth'|'codechef'): Promise<T> {
+  if (!PLATFORM_API_BASE) {
+    // No proxy configured
+    throw new Error('Platform proxy base is not configured (VITE_PLATFORM_API_BASE).');
+  }
+  const keyHeader: Record<string, string> = {};
+  if (keyName === 'gfg' && GFG_KEY) keyHeader['x-gfg-key'] = GFG_KEY;
+  if (keyName === 'hackerrank' && HACKERRANK_KEY) keyHeader['x-hackerrank-key'] = HACKERRANK_KEY;
+  if (keyName === 'hackerearth' && HACKEREARTH_KEY) keyHeader['x-hackerearth-key'] = HACKEREARTH_KEY;
+  if (keyName === 'codechef' && CODECHEF_KEY) keyHeader['x-codechef-key'] = CODECHEF_KEY;
+
+  const res = await fetch(`${PLATFORM_API_BASE}${path}`, {
+    headers: buildHeaders(keyHeader),
+    method: 'GET',
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(`Proxy ${path} responded ${res.status} ${text}`);
+  }
+  return res.json();
+}
+
 /**
  * ✅ LeetCode via stats API (no GraphQL, no CORS issues)
  * Example: https://leetcode-stats-api.herokuapp.com/leetcode
@@ -118,64 +157,55 @@ export async function fetchCodewarsData(studentId: string): Promise<PlatformData
   }
 }
 
-/**
- * Placeholder if no platform selected
- */
-// 🚨 For GFG / HackerRank / HackerEarth / CodeChef -> proxy through backend
+// GFG / HackerRank / HackerEarth / CodeChef -> use proxy (Edge Function / API Gateway / server)
 export async function fetchGFGData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`http://localhost:4000/api/gfg/${studentId}`);
-    if (!res.ok) {
-      console.error('GFG proxy responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
-    return res.json();
+    const data = await fetchFromProxy<PlatformData>(`/gfg/${encodeURIComponent(studentId)}`, 'gfg');
+    return normalizePlatformData(data);
   } catch (err) {
-    console.error('Network error fetching GFG data for', studentId, err);
+    console.error('Error via proxy GFG for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
 export async function fetchHackerRankData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`http://localhost:4000/api/hackerrank/${studentId}`);
-    if (!res.ok) {
-      console.error('HackerRank proxy responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
-    return res.json();
+    const data = await fetchFromProxy<PlatformData>(`/hackerrank/${encodeURIComponent(studentId)}`, 'hackerrank');
+    return normalizePlatformData(data);
   } catch (err) {
-    console.error('Network error fetching HackerRank data for', studentId, err);
+    console.error('Error via proxy HackerRank for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
 export async function fetchHackerEarthData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`http://localhost:4000/api/hackerearth/${studentId}`);
-    if (!res.ok) {
-      console.error('HackerEarth proxy responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
-    return res.json();
+    const data = await fetchFromProxy<PlatformData>(`/hackerearth/${encodeURIComponent(studentId)}`, 'hackerearth');
+    return normalizePlatformData(data);
   } catch (err) {
-    console.error('Network error fetching HackerEarth data for', studentId, err);
+    console.error('Error via proxy HackerEarth for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
 }
 
 export async function fetchCodeChefData(studentId: string): Promise<PlatformData> {
   try {
-    const res = await fetch(`http://localhost:4000/api/codechef/${studentId}`);
-    if (!res.ok) {
-      console.error('CodeChef proxy responded with', res.status);
-      return { solved: 0, hours: 0, courses: 0 };
-    }
-    return res.json();
+    const data = await fetchFromProxy<PlatformData>(`/codechef/${encodeURIComponent(studentId)}`, 'codechef');
+    return normalizePlatformData(data);
   } catch (err) {
-    console.error('Network error fetching CodeChef data for', studentId, err);
+    console.error('Error via proxy CodeChef for', studentId, err);
     return { solved: 0, hours: 0, courses: 0, contests: 0, rating: 0 };
   }
+}
+
+function normalizePlatformData(d: any): PlatformData {
+  return {
+    solved: Number(d?.solved) || 0,
+    hours: Number(d?.hours) || 0,
+    courses: Number(d?.courses) || 0,
+    contests: Number(d?.contests) || 0,
+    rating: Number(d?.rating) || 0,
+  };
 }
 
 // placeholder

@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -8,7 +8,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { Download, AlertTriangle, BarChart3, PieChart, LineChart } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { fetchLeetCodeData, fetchCodeforcesData, fetchCodewarsData, fetchPlaceholderData, fetchGFGData, fetchCodeChefData, fetchHackerEarthData, fetchHackerRankData } from '@/services/platforms';
+import { useFaculty } from '@/hooks/useFaculty';
+import { useProfile } from '@/hooks/useProfile';
 import {
   BarChart as RBarChart,
   Bar,
@@ -48,6 +51,10 @@ interface Row {
 }
 
 const MonitoringSection: React.FC = () => {
+  const { profile } = useProfile();
+  const { toast } = useToast();
+  const { monitoringData, addMonitoringData, loading: facultyLoading } = useFaculty();
+  
   const [selected, setSelected] = useState<string[]>(['leetcode']);
   const [rows, setRows] = useState<Row[]>([{ platform: 'leetcode', studentId: '', gender: 'male', section: '', klass: '' }]);
   const [filterPlatform, setFilterPlatform] = useState<string>('all');
@@ -71,36 +78,38 @@ const MonitoringSection: React.FC = () => {
 
   const addRow = () => setRows((r) => [...r, { platform: selected[0] || 'leetcode', studentId: '', gender: 'male', section: '', klass: '' }]);
 
-  // ⬇️ NEW: fetch metrics from APIs
+  // ⬇️ NEW: fetch metrics from APIs and save to database
   const fetchMetrics = async () => {
     setLoading(true);
     try {
+      const proxyBase = (import.meta as any)?.env?.VITE_PLATFORM_API_BASE || '';
+      if (!proxyBase) {
+        toast({ title: 'Platform proxy not configured', description: 'Set VITE_PLATFORM_API_BASE in .env and restart the dev server.', variant: 'destructive' });
+      }
       const results = await Promise.all(
         rows
           .filter(r => r.studentId.trim() && selected.includes(r.platform))
           .map(async (r) => {
             let data;
-if (r.platform === "leetcode") {
-  data = await fetchLeetCodeData(r.studentId);
-} else if (r.platform === "codeforces") {
-  data = await fetchCodeforcesData(r.studentId);
-} else if (r.platform === "codewars") {
-  data = await fetchCodewarsData(r.studentId);
-} else if (r.platform === "gfg") {
-  data = await fetchGFGData(r.studentId);
-} else if (r.platform === "hackerrank") {
-  data = await fetchHackerRankData(r.studentId);
-} else if (r.platform === "hackerearth") {
-  data = await fetchHackerEarthData(r.studentId);
-} else if (r.platform === "codechef") {
-  data = await fetchCodeChefData(r.studentId);
-} else {
-  data = await fetchPlaceholderData();
-}
+            if (r.platform === "leetcode") {
+              data = await fetchLeetCodeData(r.studentId);
+            } else if (r.platform === "codeforces") {
+              data = await fetchCodeforcesData(r.studentId);
+            } else if (r.platform === "codewars") {
+              data = await fetchCodewarsData(r.studentId);
+            } else if (r.platform === "gfg") {
+              data = await fetchGFGData(r.studentId);
+            } else if (r.platform === "hackerrank") {
+              data = await fetchHackerRankData(r.studentId);
+            } else if (r.platform === "hackerearth") {
+              data = await fetchHackerEarthData(r.studentId);
+            } else if (r.platform === "codechef") {
+              data = await fetchCodeChefData(r.studentId);
+            } else {
+              data = await fetchPlaceholderData();
+            }
 
-
-
-            return {
+            const result = {
               platform: r.platform,
               student: r.studentId,
               gender: r.gender,
@@ -108,15 +117,57 @@ if (r.platform === "leetcode") {
               klass: r.klass || "",
               ...data,
             };
+
+            // Save to database if we have valid data
+            if (data && (data.solved || data.contests || data.rating)) {
+              // Find student profile by student_id or email
+              const studentProfile = monitoringData.find(m => 
+                m.student.student_id === r.studentId || 
+                m.student.email === r.studentId
+              )?.student;
+
+              if (studentProfile) {
+                await addMonitoringData({
+                  student_id: studentProfile.id,
+                  platform: r.platform,
+                  platform_handle: r.studentId,
+                  solved_count: data.solved || 0,
+                  contest_count: data.contests || 0,
+                  rating: data.rating || 0,
+                });
+              }
+            }
+
+            return result;
           })
       );
       setMetrics(results);
     } catch (err) {
       console.error("Error fetching metrics:", err);
+      toast({ title: 'Fetch error', description: (err as any)?.message || 'Failed to fetch metrics', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
   };
+
+  // Load existing monitoring data from database
+  useEffect(() => {
+    if (monitoringData.length > 0) {
+      const dbMetrics = monitoringData.map(m => ({
+        platform: m.platform,
+        student: m.student.student_id || m.student.email,
+        gender: 'male', // Default since we don't store gender in monitoring
+        section: m.student.department || '',
+        klass: '',
+        solved: m.solved_count,
+        contests: m.contest_count,
+        rating: m.rating,
+        hours: 0, // Not stored in DB
+        courses: 0, // Not stored in DB
+      }));
+      setMetrics(dbMetrics);
+    }
+  }, [monitoringData]);
 
   // ⬇️ UPDATED: submitIds triggers real fetch
   const submitIds = () => {
@@ -135,24 +186,20 @@ if (r.platform === "leetcode") {
       .filter((r) => (classFilter ? (r.klass || '').toLowerCase().includes(classFilter.toLowerCase()) : true))
       .filter((r) => (filterStudent === 'all' ? true : r.student === filterStudent));
 
-    const items = base.map((r, idx) => {
-      const solved = ((idx + 1) * 7) % 53 + 5; // deterministic mock
-      const contests = ((idx + 2) * 3) % 20; // number of contests given/participated
-      const rating = Number((( (idx * 13) % 500 ) / 100).toFixed(2)); // mock rating 0.00 - 5.00
-      return ({
-        platform: r.platform,
-        student: r.studentId,
-        uid: r.studentId,
-        gender: r.gender,
-        section: r.section || '',
-        klass: r.klass || '',
-        solved,
-        contests,
-        rating,
-        hours: (idx % 5) + 2,
-        courses: (idx % 3),
-      });
-    });
+    // Use real API values directly
+    const items = base.map((r) => ({
+      platform: r.platform,
+      student: (r as any).student || (r as any).studentId,
+      uid: (r as any).student || (r as any).studentId,
+      gender: r.gender,
+      section: r.section || '',
+      klass: r.klass || '',
+      solved: Number((r as any).solved) || 0,
+      contests: Number((r as any).contests) || 0,
+      rating: Number((r as any).rating) || 0,
+      hours: Number((r as any).hours) || 0,
+      courses: Number((r as any).courses) || 0,
+    }));
 
     const sorted = items.sort((a, b) => {
       if (metricFilter === 'solved') return b.solved - a.solved;

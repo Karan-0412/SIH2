@@ -9,6 +9,7 @@ import AuthPage from "./components/auth/AuthPage";
 import FacultyStudent from "./pages/FacultyStudent";
 import EventsPage from "./pages/Events";
 import EventDetail from "./pages/EventDetail";
+import EventRegistration from "./pages/EventRegistration";
 import Profile from "./pages/Profile";
 import Leaderboard from "./pages/Leaderboard";
 import AppLayout from "./components/layout/AppLayout";
@@ -43,6 +44,7 @@ const App = () => (
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/event-registration/:id" element={<EventRegistration />} />
             <Route path="/faculty/students/:id" element={<FacultyStudent />} />
             <Route path="/courses" element={<CoursesPage />} />
             <Route path="/schedule" element={<FacultySchedule />} />

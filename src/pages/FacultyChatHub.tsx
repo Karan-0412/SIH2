@@ -34,6 +34,7 @@ const FacultyChatHub: React.FC = () => {
   const [newMsg, setNewMsg] = useState('');
   const [search, setSearch] = useState('');
   const [showListMobile, setShowListMobile] = useState(true);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   const chatRef = useRef<HTMLDivElement | null>(null);
 
@@ -84,9 +85,113 @@ const FacultyChatHub: React.FC = () => {
         .or(`and(sender_id.eq.${myId},receiver_id.eq.${activePeerId}),and(sender_id.eq.${activePeerId},receiver_id.eq.${myId})`)
         .order('created_at', { ascending: true });
       setMessages((data as MessageRow[]) || []);
+      
+      // Mark messages as read when opening the chat
+      const unreadIds = (data || []).filter(m => m.receiver_id === myId && !m.read_at).map(m => m.id);
+      if (unreadIds.length > 0) {
+        await supabase.from('messages').update({ read_at: new Date().toISOString() }).in('id', unreadIds);
+        // Update unread counts
+        setUnreadCounts(prev => ({
+          ...prev,
+          [activePeerId]: 0
+        }));
+      }
+      
       setTimeout(()=> chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior:'smooth' }), 30);
     })();
   },[myId, activePeerId]);
+
+  // Real-time subscription for messages
+  useEffect(() => {
+    if (!myId) return;
+
+    const channel = supabase
+      .channel('messages')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages',
+          filter: `or(sender_id.eq.${myId},receiver_id.eq.${myId})`
+        }, 
+        (payload) => {
+          console.log('Real-time message received:', payload);
+          const newMessage = payload.new as MessageRow;
+          
+          // If this is the active conversation, add to messages
+          if (activePeerId && (newMessage.sender_id === activePeerId || newMessage.receiver_id === activePeerId)) {
+            setMessages(prev => [...prev, newMessage]);
+            setTimeout(() => chatRef.current?.scrollTo({ top: chatRef.current.scrollHeight, behavior: 'smooth' }), 30);
+            
+            // Mark as read if we're the receiver
+            if (newMessage.receiver_id === myId) {
+              supabase.from('messages').update({ read_at: new Date().toISOString() }).eq('id', newMessage.id);
+            }
+          }
+          
+          // Update unread counts
+          if (newMessage.receiver_id === myId) {
+            const senderId = newMessage.sender_id;
+            setUnreadCounts(prev => ({
+              ...prev,
+              [senderId]: (prev[senderId] || 0) + 1
+            }));
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Real-time subscription status:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [myId, activePeerId]);
+
+  // Fallback polling mechanism (every 3 seconds)
+  useEffect(() => {
+    if (!myId || !activePeerId) return;
+
+    const pollMessages = async () => {
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('*')
+          .or(`and(sender_id.eq.${myId},receiver_id.eq.${activePeerId}),and(sender_id.eq.${activePeerId},receiver_id.eq.${myId})`)
+          .order('created_at', { ascending: true });
+        
+        if (data) {
+          setMessages(data as MessageRow[]);
+        }
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    };
+
+    // Poll every 3 seconds as fallback
+    const interval = setInterval(pollMessages, 3000);
+    
+    return () => clearInterval(interval);
+  }, [myId, activePeerId]);
+
+  // Load unread counts for all conversations
+  useEffect(() => {
+    if (!myId) return;
+    
+    (async () => {
+      const { data } = await supabase
+        .from('messages')
+        .select('sender_id, receiver_id, read_at')
+        .eq('receiver_id', myId)
+        .is('read_at', null);
+      
+      const counts: Record<string, number> = {};
+      (data || []).forEach(msg => {
+        counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+      });
+      setUnreadCounts(counts);
+    })();
+  }, [myId]);
 
   const peers = useMemo(()=> {
     const byId = new Map(faculties.map(f=> [f.id, f]));
@@ -139,17 +244,27 @@ const FacultyChatHub: React.FC = () => {
             </CardHeader>
             <CardContent className="flex-1 overflow-auto p-0">
               <div className="divide-y">
-                {filteredPeers.map(p=> (
-                  <button key={p.id} className={`w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-[#131a3b] ${activePeerId===p.id? 'bg-gray-50 dark:bg-[#131a3b]':''}`} onClick={()=>{ setActivePeerId(p.id); mobileToChat(); }}>
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9"><AvatarImage src={p.avatar_url||'/placeholder.svg'} alt={p.full_name}/><AvatarFallback>{p.full_name.slice(0,1)}</AvatarFallback></Avatar>
-                      <div className="min-w-0 flex-1">
-                        <div className="font-medium truncate">{p.full_name}</div>
-                        <div className="text-xs text-muted-foreground truncate">{p.department || '—'}</div>
+                {filteredPeers.map(p=> {
+                  const unreadCount = unreadCounts[p.id] || 0;
+                  return (
+                    <button key={p.id} className={`w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-[#131a3b] ${activePeerId===p.id? 'bg-gray-50 dark:bg-[#131a3b]':''}`} onClick={()=>{ setActivePeerId(p.id); mobileToChat(); }}>
+                      <div className="flex items-center gap-3">
+                        <div className="relative">
+                          <Avatar className="h-9 w-9"><AvatarImage src={p.avatar_url||'/placeholder.svg'} alt={p.full_name}/><AvatarFallback>{p.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                          {unreadCount > 0 && (
+                            <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                              {unreadCount > 99 ? '99+' : unreadCount}
+                            </div>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate">{p.full_name}</div>
+                          <div className="text-xs text-muted-foreground truncate">{p.department || '—'}</div>
+                        </div>
                       </div>
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
                 {!filteredPeers.length && <div className="p-4 text-sm text-muted-foreground">No contacts.</div>}
               </div>
             </CardContent>

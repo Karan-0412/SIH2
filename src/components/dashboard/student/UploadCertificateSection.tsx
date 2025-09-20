@@ -31,24 +31,13 @@ const UploadCertificateSection: React.FC<UploadCertificateSectionProps> = ({ onU
 
     setUploading(true);
     try {
-      // Upload file to storage
       const fileExt = file.name.split('.').pop();
-      const fileName = `${profile.user_id}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('certificates')
-        .upload(fileName, file);
+      const path = `${profile.user_id}/${Date.now()}.${fileExt}`;
+      const { error: uploadError } = await supabase.storage.from('certificates').upload(path, file);
+      if (uploadError) throw uploadError;
+      const { data: publicData } = supabase.storage.from('certificates').getPublicUrl(path);
+      const publicUrl = publicData.publicUrl;
 
-      if (uploadError) {
-        throw uploadError;
-      }
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('certificates')
-        .getPublicUrl(fileName);
-
-      // Insert certificate record
       const { error: insertError } = await supabase
         .from('certificates')
         .insert({
@@ -58,11 +47,9 @@ const UploadCertificateSection: React.FC<UploadCertificateSectionProps> = ({ onU
           category,
           file_url: publicUrl,
           file_name: file.name,
+          status: 'pending',
         });
-
-      if (insertError) {
-        throw insertError;
-      }
+      if (insertError) throw insertError;
 
       toast({
         title: 'Success',

@@ -38,13 +38,9 @@ const NotificationsDropdown = () => {
         .eq('user_id', profile.id)
         .order('created_at', { ascending: false })
         .limit(20);
-
-      if (error) {
-        console.error('Error fetching notifications:', error);
-      } else {
-        setNotifications(data || []);
-        setUnreadCount(data?.filter(n => !n.read_at).length || 0);
-      }
+      if (error) throw error;
+      setNotifications((data as any) || []);
+      setUnreadCount((data || []).filter((n: any) => !n.read_at).length);
     } catch (error) {
       console.error('Error fetching notifications:', error);
     }
@@ -56,15 +52,9 @@ const NotificationsDropdown = () => {
         .from('notifications')
         .update({ read_at: new Date().toISOString() })
         .eq('id', notificationId);
-
-      if (!error) {
-        setNotifications(prev =>
-          prev.map(n =>
-            n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, read_at: new Date().toISOString() } : n));
+      setUnreadCount(prev => Math.max(0, prev - 1));
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -79,13 +69,9 @@ const NotificationsDropdown = () => {
         .from('notifications')
         .update({ read_at: new Date().toISOString() })
         .in('id', unreadIds);
-
-      if (!error) {
-        setNotifications(prev =>
-          prev.map(n => ({ ...n, read_at: new Date().toISOString() }))
-        );
-        setUnreadCount(0);
-      }
+      if (error) throw error;
+      setNotifications(prev => prev.map(n => ({ ...n, read_at: new Date().toISOString() })));
+      setUnreadCount(0);
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }

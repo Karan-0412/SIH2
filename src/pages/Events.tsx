@@ -11,12 +11,13 @@ import { Badge } from '@/components/ui/badge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useEvents } from '@/hooks/useEvents';
 import { useProfile } from '@/hooks/useProfile';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, CalendarClock, MapPin, User2, Flame, Sparkles, MoreVertical } from 'lucide-react';
 
 export default function EventsPage() {
   const { events, addEvent, updateEvent, removeEvent } = useEvents();
   const { profile } = useProfile();
+  const navigate = useNavigate();
 
   const isFaculty = profile?.role === 'faculty';
   const [open, setOpen] = useState(false);
@@ -29,6 +30,7 @@ export default function EventsPage() {
     venue: '',
     organizer: '',
     bannerUrl: '',
+    qrCodeUrl: '',
     durationHours: 2,
   });
 
@@ -37,11 +39,16 @@ export default function EventsPage() {
   const [cat, setCat] = useState<'all' | 'academic' | 'co_curricular' | 'outside_university'>('all');
 
   const filtered = useMemo(() => {
-    return events.filter((e) => {
+    console.log('Events loaded:', events.length);
+    console.log('Search query:', q);
+    console.log('Category filter:', cat);
+    const result = events.filter((e) => {
       const nameOk = !q || e.title.toLowerCase().includes(q.toLowerCase());
       const catOk = cat === 'all' || e.category === cat;
       return nameOk && catOk;
     });
+    console.log('Filtered events:', result.length);
+    return result;
   }, [events, q, cat]);
 
   const featured = filtered.slice(0, Math.min(6, filtered.length));
@@ -57,6 +64,7 @@ export default function EventsPage() {
     venue: '',
     organizer: '',
     bannerUrl: '',
+    qrCodeUrl: '',
     durationHours: 2,
   });
 
@@ -71,6 +79,7 @@ export default function EventsPage() {
       venue: ev.venue,
       organizer: ev.organizer,
       bannerUrl: ev.bannerUrl,
+      qrCodeUrl: ev.qrCodeUrl || '',
       durationHours: ev.durationHours ?? 2,
     });
     setEditOpen(true);
@@ -88,7 +97,7 @@ export default function EventsPage() {
     if (!form.title || !form.shortDescription || !form.description || !form.date || !form.venue || !form.organizer) return;
     const id = addEvent({ ...form });
     setOpen(false);
-    setForm({ title: '', shortDescription: '', description: '', category: 'academic', date: '', venue: '', organizer: '', bannerUrl: '', durationHours: 2 });
+    setForm({ title: '', shortDescription: '', description: '', category: 'academic', date: '', venue: '', organizer: '', bannerUrl: '', qrCodeUrl: '', durationHours: 2 });
     window.location.href = `/events/${id}`;
   };
 
@@ -118,7 +127,7 @@ export default function EventsPage() {
   const EventCard = (ev: any) => {
     const { id, bannerUrl, title, shortDescription, date, venue, organizer } = ev;
     return (
-      <Card className="group overflow-hidden border border-gray-200/70 hover:border-gray-300 transition-all duration-300 hover:shadow-xl rounded-2xl bg-white">
+      <Card className="group overflow-hidden border border-gray-200/70 hover:border-gray-300 transition-all duration-300 hover:shadow-xl rounded-2xl bg-white cursor-pointer" onClick={() => navigate(`/event-registration/${id}`)}>
         <div className="relative h-40 w-full overflow-hidden">
           <img src={bannerUrl || '/placeholder.svg'} alt={title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
         </div>
@@ -131,7 +140,12 @@ export default function EventsPage() {
             {isFaculty && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     <MoreVertical className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -152,9 +166,15 @@ export default function EventsPage() {
             <div className="flex items-center gap-2"><User2 className="h-4 w-4" /> {organizer}</div>
           </div>
           <div className="flex items-center justify-between pt-2">
-            <Link to={`/events/${id}`} className="w-full">
-              <Button className="w-full transition-all duration-300 hover:-translate-y-0.5">Register Now</Button>
-            </Link>
+            <Button 
+              className="w-full transition-all duration-300 hover:-translate-y-0.5"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/event-registration/${id}`);
+              }}
+            >
+              Register Now
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -236,6 +256,25 @@ export default function EventsPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="qrCode">QR Code Image</Label>
+                    <input
+                      id="qrCode"
+                      type="file"
+                      accept="image/*"
+                      onChange={(e)=>{
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        const r = new FileReader();
+                        r.onload = () => setForm(v=>({...v, qrCodeUrl: String(r.result)}));
+                        r.readAsDataURL(f);
+                      }}
+                      className="block w-full text-sm"
+                    />
+                    {form.qrCodeUrl && (
+                      <img src={form.qrCodeUrl} alt="QR Code Preview" className="mt-2 h-24 w-24 object-cover rounded-md border" />
+                    )}
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="duration">Duration (hours)</Label>
                     <Input id="duration" type="number" min={0.5} step={0.5} value={form.durationHours} onChange={(e)=>setForm(v=>({...v, durationHours: Number(e.target.value)}))} />
                   </div>
@@ -302,16 +341,25 @@ export default function EventsPage() {
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl font-semibold tracking-tight">Explore Events</h2>
-              <p className="text-muted-foreground">Browse by category</p>
+              <p className="text-muted-foreground">Browse by category ({events.length} total events, {filtered.length} filtered)</p>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-amber-600">
               <Sparkles className="h-4 w-4" /> Luxury-curated experience
             </div>
           </div>
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {filtered.map((ev) => (
-              <EventCard key={ev.id} {...ev} />
-            ))}
+            {filtered.length > 0 ? (
+              filtered.map((ev) => (
+                <EventCard key={ev.id} {...ev} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-12">
+                <p className="text-lg text-gray-500">No events found</p>
+                <p className="text-sm text-gray-400 mt-2">
+                  {events.length === 0 ? 'No events available' : 'Try adjusting your search or filters'}
+                </p>
+              </div>
+            )}
           </div>
         </section>
 
@@ -379,6 +427,25 @@ export default function EventsPage() {
                       <img src={editForm.bannerUrl} alt="Preview" className="mt-2 h-24 w-full object-cover rounded-md border" />
                     )}
                   </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="eqrCode">QR Code Image</Label>
+                  <input
+                    id="eqrCode"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e)=>{
+                      const f = e.target.files?.[0];
+                      if (!f) return;
+                      const r = new FileReader();
+                      r.onload = () => setEditForm(v=>({...v, qrCodeUrl: String(r.result)}));
+                      r.readAsDataURL(f);
+                    }}
+                    className="block w-full text-sm"
+                  />
+                  {editForm.qrCodeUrl && (
+                    <img src={editForm.qrCodeUrl} alt="QR Code Preview" className="mt-2 h-24 w-24 object-cover rounded-md border" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="edur">Duration (hours)</Label>

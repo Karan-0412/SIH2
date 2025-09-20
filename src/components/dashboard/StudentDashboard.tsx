@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useProfile } from '@/hooks/useProfile';
+import { useStudent } from '@/hooks/useStudent';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
@@ -8,8 +9,13 @@ import CertificatesSection from './student/CertificatesSection';
 import RecommendationsSection from './student/RecommendationsSection';
 import UploadCertificateSection from './student/UploadCertificateSection';
 import NotificationsDropdown from './student/NotificationsDropdown';
+import StudentProgressCard from './student/StudentProgressCard';
+import StudentAchievementsCard from './student/StudentAchievementsCard';
+import StudentGoalsCard from './student/StudentGoalsCard';
+import StudentActivityFeed from './student/StudentActivityFeed';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -28,6 +34,17 @@ interface Certificate {
 
 const StudentDashboard = () => {
   const { profile } = useProfile();
+  const { 
+    progress, 
+    achievements, 
+    activities, 
+    goals, 
+    connections, 
+    portfolio, 
+    recommendations, 
+    milestones, 
+    loading: studentLoading 
+  } = useStudent();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
@@ -50,12 +67,8 @@ const StudentDashboard = () => {
         .select('*')
         .eq('student_id', profile.id)
         .order('uploaded_at', { ascending: false });
-
-      if (error) {
-        console.error('Error fetching certificates:', error);
-      } else {
-        setCertificates(data || []);
-      }
+      if (error) throw error;
+      setCertificates((data as any) || []);
     } catch (error) {
       console.error('Error fetching certificates:', error);
     } finally {
@@ -127,7 +140,7 @@ const StudentDashboard = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Student Dashboard</h1>
           <div className="inline-flex items-center gap-3 bg-white rounded-full px-3 py-1 shadow-sm">
             <span className="text-gray-600 text-sm">Welcome back, {profile?.full_name}!</span>
           </div>
@@ -143,183 +156,60 @@ const StudentDashboard = () => {
         </div>
       </div>
 
-      {/* Row 1: 3 equal cards (12-col grid) */}
-      <div className="grid grid-cols-12 gap-4 items-stretch">
-        {/* Activity (col-span-4) */}
-        <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold text-gray-900">Activity</h3>
-              <span className="text-xs px-3 py-1 rounded-full border bg-gray-50 text-gray-700">Last 7 days</span>
-            </div>
-            <div className="mt-3">
-              <div className="text-3xl font-bold text-gray-900 leading-none"><CountUp to={weekTotal} /> <span className="text-base font-medium text-gray-500">activities</span></div>
-            </div>
-            <div className="relative mt-4 h-40">
-              <div className="absolute left-0 right-0 border-t border-dashed border-gray-300" style={{ bottom: `${(avgCount / (maxCount || 1)) * 100}%` }} />
-              <div className="absolute left-0 -translate-y-1/2 px-2 py-0.5 rounded-full bg-black text-white text-[10px]" style={{ bottom: `${(avgCount / (maxCount || 1)) * 100}%` }}>{avgCount.toFixed(1)}</div>
-              <div className="absolute inset-0 flex items-end gap-3">
-                {last7.map((d) => {
-                  const h = (d.count / (maxCount || 1)) * 100;
-                  const isMax = d.count === maxCount && maxCount > 0;
-                  return (
-                    <div key={d.day} className="flex-1 flex flex-col items-center">
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div className={`w-6 rounded-t transition-all duration-700 hover:shadow-md ${isMax ? 'bg-[#7C3AED]' : 'bg-[#E9D5FF] hover:bg-[#C4B5FD]'}`} style={{ height: `${h}%` }} />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <div className="text-xs">
-                            <div className="font-medium">{d.day}</div>
-                            <div className="text-gray-600">{d.count} activities</div>
-                          </div>
-                        </TooltipContent>
-                      </Tooltip>
-                      <span className="mt-2 text-xs text-gray-500">{d.day}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+      {/* Main Dashboard Tabs */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="grid w-full grid-cols-5">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="progress">Progress</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
+          <TabsTrigger value="achievements">Achievements</TabsTrigger>
+          <TabsTrigger value="activity">Activity</TabsTrigger>
+        </TabsList>
+
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StudentProgressCard progress={progress} loading={studentLoading} />
+            <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
           </div>
-        </div>
-
-        {/* Progress Statistics (col-span-4) */}
-        <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
-            <h3 className="font-semibold text-gray-900 mb-3">Progress statistics</h3>
-
-            <div className="text-4xl font-bold text-gray-900 leading-tight"><CountUp to={pct(approved + pending)} />%</div>
-            <div className="text-sm text-gray-500">Total activity</div>
-
-            {/* Segmented progress bar */}
-            <div className="mt-4 h-2 w-full rounded-full bg-gray-200 overflow-hidden">
-              <div className="h-full bg-[#7C3AED]" style={{ width: `${pct(approved)}%`, transition: 'width 700ms ease' }} />
-              <div className="h-full bg-[#10B981]" style={{ width: `${pct(pending)}%`, transition: 'width 700ms ease 120ms' }} />
-              <div className="h-full bg-[#F59E0B]" style={{ width: `${pct(rejected)}%`, transition: 'width 700ms ease 240ms' }} />
-            </div>
-            <div className="mt-2 flex justify-between text-xs text-gray-500">
-              <span>{pct(approved)}%</span>
-              <span>{pct(pending)}%</span>
-              <span>{pct(rejected)}%</span>
-            </div>
-
-            {/* Stats row */}
-            <div className="mt-6 grid grid-cols-3 gap-4">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#EDE9FE] text-[#6D28D9]">
-                  {/* In progress icon */}
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor"><circle cx="12" cy="12" r="10" opacity=".15"/><path d="M12 7v5l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none"/></svg>
-                </span>
-                <div>
-                  <div className="text-xl font-semibold"><CountUp to={pending} /></div>
-                  <div className="text-xs text-gray-500">In progress</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#ECFDF5] text-[#059669]">
-                  {/* Completed icon */}
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-                <div>
-                  <div className="text-xl font-semibold"><CountUp to={approved} /></div>
-                  <div className="text-xs text-gray-500">Completed</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#FFF7ED] text-[#D97706]">
-                  {/* Upcoming icon */}
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 8v4l3 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-                <div>
-                  <div className="text-xl font-semibold"><CountUp to={rejected} /></div>
-                  <div className="text-xs text-gray-500">Upcoming</div>
-                </div>
-              </div>
-            </div>
-
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StudentGoalsCard goals={goals} loading={studentLoading} />
+            <StudentActivityFeed activities={activities} loading={studentLoading} />
           </div>
-        </div>
+        </TabsContent>
 
-        {/* Course Highlight (col-span-4) */}
-        <div className="col-span-12 md:col-span-4">
-          <div className="h-full rounded-2xl bg-white p-8 shadow-sm min-h-[240px]">
-            <div className="flex items-center gap-2 mb-2 text-xs">
-              <span className="px-2 py-0.5 rounded-full bg-green-100 text-green-700">Group course</span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Advanced</span>
-            </div>
-            <h3 className="text-lg font-semibold">English punctuation made easy</h3>
-            <p className="text-sm text-gray-500 mt-1">Punctuation — learn the basics without the pain. People will never laugh at your punctuation again.</p>
-            <div className="mt-4 flex items-center justify-between">
-              <div className="flex -space-x-2">
-                {['A','B','C','D'].map((a,i)=> (
-                  <div key={i} className="h-7 w-7 rounded-full bg-gray-200 flex items-center justify-center text-xs border border-white">{a}</div>
-                ))}
-              </div>
-              <div className="flex-1 mx-4">
-                <div className="text-xs text-gray-500 mb-1">Course progress</div>
-                <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                  <div className="h-full bg-[#F59E0B]" style={{ width: '75%' }} />
-                </div>
-              </div>
-            </div>
-            <Button className="w-full mt-5 bg-black hover:bg-black/80 text-white">Continue learning</Button>
+        {/* Progress Tab */}
+        <TabsContent value="progress" className="space-y-6">
+          <StudentProgressCard progress={progress} loading={studentLoading} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+            <StudentActivityFeed activities={activities} loading={studentLoading} />
           </div>
+        </TabsContent>
+
+        {/* Goals Tab */}
+        <TabsContent value="goals" className="space-y-6">
+          <StudentGoalsCard goals={goals} loading={studentLoading} />
+        </TabsContent>
+
+        {/* Achievements Tab */}
+        <TabsContent value="achievements" className="space-y-6">
+          <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+        </TabsContent>
+
+        {/* Activity Tab */}
+        <TabsContent value="activity" className="space-y-6">
+          <StudentActivityFeed activities={activities} loading={studentLoading} />
+        </TabsContent>
+      </Tabs>
+
+      {/* Upload Panel */}
+      {showUploadPanel && (
+        <div className="mt-6">
+          <UploadCertificateSection onUploadComplete={handleUploadComplete} />
         </div>
-      </div>
-
-      {/* Row 2: Left (stacked) 4 cols, Right (timeline) 8 cols */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Left stacked (col-span-4) */}
-        <div className="col-span-12 md:col-span-4 space-y-6">
-          {/* By platform */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm">
-            <h3 className="font-semibold text-gray-900 mb-4">By platform</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-center gap-3">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#7C3AED]" />
-                <span className="text-gray-700">Academic</span>
-                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='academic').length} h</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="inline-block h-2 w-2 rounded-full bg-[#10B981]" />
-                <span className="text-gray-700">Co-Curricular</span>
-                <span className="ml-auto text-gray-500">{certificates.filter(c=>c.category==='co_curricular').length} h</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Optional upload panel */}
-          {showUploadPanel && (
-            <UploadCertificateSection onUploadComplete={handleUploadComplete} />
-          )}
-        </div>
-
-        {/* Right timeline (col-span-8) */}
-        <div className="col-span-12 md:col-span-8 space-y-6">
-          {/* Recommendations for you - horizontal like schedule */}
-          <div className="rounded-2xl bg-white p-6 shadow-sm min-h-[320px]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-gray-900">Recommendations for you</h3>
-              <div className="flex items-center gap-2 text-sm text-gray-500">
-                <button className="px-3 py-1 rounded-full bg-gray-100">Today</button>
-              </div>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory">
-              {[{time:'10:30 — 12:00',title:'Machine Learning Basics',tag:'Beginner',accent:'plain',mentor:'Kristin Watson'},{time:'13:00 — 14:00',title:'English punctuation made easy',tag:'Advanced',accent:'purple',mentor:'Cody Fisher',now:true},{time:'16:00 — 17:00',title:'Data Visualization Essentials',tag:'Beginner',accent:'plain',mentor:'Jacob Jones'},{time:'19:00 — 20:00',title:'Public Speaking Workshop',tag:'Intermediate',accent:'plain',mentor:'Jane Cooper'}].map((c,i)=> (
-                <div key={i} className={`relative min-w-[240px] md:min-w-[260px] min-h-[220px] snap-start rounded-2xl p-4 shadow-sm border ${c.accent==='purple' ? 'bg-[#7C3AED] text-white' : 'bg-white'}`}>
-                  <div className={`text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>{c.time}</div>
-                  <div className="mt-1 font-semibold leading-snug">{c.title}</div>
-                  <div className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-xs ${c.accent==='purple' ? 'bg-white/20' : 'bg-gray-100 text-gray-700'}`}>{c.tag}</div>
-                  <div className={`mt-4 text-xs ${c.accent==='purple' ? 'text-white/80' : 'text-gray-500'}`}>Mentor — {c.mentor}</div>
-                  {c.now && <span className="absolute top-2 right-2 text-xs bg-orange-500 text-white rounded-full px-2 py-0.5">New</span>}
-                </div>
-              ))}
-            </div>
-          </div>
-
-        </div>
-      </div>
+      )}
 
       {/* Popups */}
       <Dialog open={profileOpen} onOpenChange={setProfileOpen}>

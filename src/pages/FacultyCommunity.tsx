@@ -59,6 +59,7 @@ export default function FacultyCommunity(){
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [newMsg, setNewMsg] = useState('');
   const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
 
   const chatRef = useRef<HTMLDivElement | null>(null);
 
@@ -103,10 +104,14 @@ export default function FacultyCommunity(){
         if(error){ console.error('Load conv error', error); }
         const peers = new Set<string>();
         let unread = 0;
+        const counts: Record<string, number> = {};
         (data||[]).forEach((m:any)=>{
           const other = m.sender_id === myId ? m.receiver_id : m.sender_id;
           peers.add(other);
-          if(!m.read_at && m.receiver_id === myId) unread++;
+          if(!m.read_at && m.receiver_id === myId) {
+            unread++;
+            counts[m.sender_id] = (counts[m.sender_id] || 0) + 1;
+          }
         });
         const convs = Array.from(peers);
         // demo fallback if no conversations from DB
@@ -117,9 +122,78 @@ export default function FacultyCommunity(){
           setConversations(convs);
         }
         setUnreadCount(unread);
+        setUnreadCounts(counts);
       }catch(err){ console.error('Load conv err', err); setConversations(MOCK_FACULTIES.slice(0,3).map(f=>f.id)); }
     })();
   },[myId]);
+
+  // Real-time subscription for messages
+  useEffect(() => {
+    if (!myId) return;
+
+    const channel = supabase
+      .channel('faculty_messages')
+      .on('postgres_changes', 
+        { 
+          event: 'INSERT', 
+          schema: 'public', 
+          table: 'messages',
+          filter: `or(sender_id.eq.${myId},receiver_id.eq.${myId})`
+        }, 
+        (payload) => {
+          console.log('Real-time message received in community:', payload);
+          const newMessage = payload.new as MessageRow;
+          
+          // Update unread counts
+          if (newMessage.receiver_id === myId) {
+            const senderId = newMessage.sender_id;
+            setUnreadCounts(prev => ({
+              ...prev,
+              [senderId]: (prev[senderId] || 0) + 1
+            }));
+            setUnreadCount(prev => prev + 1);
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('Real-time subscription status in community:', status);
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [myId]);
+
+  // Fallback polling for unread counts (every 5 seconds)
+  useEffect(() => {
+    if (!myId) return;
+
+    const pollUnreadCounts = async () => {
+      try {
+        const { data } = await supabase
+          .from('messages')
+          .select('sender_id, receiver_id, read_at')
+          .eq('receiver_id', myId)
+          .is('read_at', null);
+        
+        const counts: Record<string, number> = {};
+        let totalUnread = 0;
+        (data || []).forEach(msg => {
+          counts[msg.sender_id] = (counts[msg.sender_id] || 0) + 1;
+          totalUnread++;
+        });
+        setUnreadCounts(counts);
+        setUnreadCount(totalUnread);
+      } catch (error) {
+        console.error('Polling unread counts error:', error);
+      }
+    };
+
+    // Poll every 5 seconds as fallback
+    const interval = setInterval(pollUnreadCounts, 5000);
+    
+    return () => clearInterval(interval);
+  }, [myId]);
 
   // Load messages for active peer
   useEffect(()=>{
@@ -247,61 +321,63 @@ export default function FacultyCommunity(){
         {/* Directory */}
         <section className="col-span-12">
           <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader>
               <CardTitle>Faculty Directory</CardTitle>
-              <div className="hidden md:flex items-center gap-2">
-                <Button size="icon" variant="outline" onClick={()=>{ const el=document.getElementById('faculty-track'); if(el) el.scrollBy({ left:-400, behavior:'smooth' }); }} aria-label="Scroll left"><ChevronLeft className="h-4 w-4"/></Button>
-                <Button size="icon" variant="outline" onClick={()=>{ const el=document.getElementById('faculty-track'); if(el) el.scrollBy({ left:400, behavior:'smooth' }); }} aria-label="Scroll right"><ChevronRight className="h-4 w-4"/></Button>
-              </div>
             </CardHeader>
             <CardContent>
-              {/* Desktop: horizontal carousel */}
-              <div id="faculty-track" className="hidden md:flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2">
-                {filteredFaculties.map(f=> (
-                  <div key={f.id} className="min-w-[320px] max-w-[320px] snap-start border rounded-xl p-4 bg-white dark:bg-[#0f1530] hover:shadow-lg transition relative group">
-                    <div className="flex items-start gap-3">
-                      <div className="relative">
-                        <Avatar className="h-12 w-12"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
-                        <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full ring-2 ring-white ${isOnline(f)?'bg-green-500':'bg-gray-300'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">{f.full_name}</div>
-                        <div className="text-xs text-muted-foreground truncate">{f.department || '—'}{(f.subjects||[]).length? ' • ' + (f.subjects||[]).slice(0,2).join(', '): ''}</div>
-                        <div className="mt-1 text-[11px] text-muted-foreground truncate">{f.sections?.join(', ')}</div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
+              {/* Faculty Grid - All screen sizes */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {filteredFaculties.map(f=> {
+                  const unreadCount = unreadCounts[f.id] || 0;
+                  return (
+                    <div key={f.id} className="border rounded-xl p-4 bg-white dark:bg-[#0f1530] hover:shadow-lg transition relative group">
+                      <div className="flex flex-col items-center text-center space-y-3">
+                        <div className="relative">
+                          <Avatar className="h-16 w-16"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback className="text-lg">{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                          <span className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-white ${isOnline(f)?'bg-green-500':'bg-gray-300'}`} />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="font-semibold text-sm">{f.full_name}</div>
+                          <div className="text-xs text-muted-foreground">{f.department || '—'}</div>
+                          {(f.subjects||[]).length > 0 && (
+                            <div className="text-[11px] text-muted-foreground">{f.subjects.slice(0,2).join(', ')}</div>
+                          )}
+                          {(f.sections||[]).length > 0 && (
+                            <div className="text-[11px] text-muted-foreground">{f.sections.join(', ')}</div>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={(e)=>{ e.stopPropagation(); onMessage(f.id); }} 
+                            className="relative"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-1"/>
+                            Chat
+                            {unreadCount > 0 && (
+                              <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
+                                {unreadCount > 99 ? '99+' : unreadCount}
+                              </div>
+                            )}
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={(e)=>{ e.stopPropagation(); setSelectedFaculty(f); setProfileOpen(true); }}
+                          >
+                            View
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                    {/* Hover overlay */}
-                    <div className="pointer-events-none absolute inset-0 bg-black/0 group-hover:bg-black/40 transition rounded-xl flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <button onClick={(e)=>{ e.stopPropagation(); setSelectedFaculty(f); setProfileOpen(true); }} className="pointer-events-auto bg-white text-sm font-medium px-3 py-1.5 rounded-full shadow">View Profile</button>
-                    </div>
+                  );
+                })}
+                {!filteredFaculties.length && (
+                  <div className="col-span-full text-center py-8 text-sm text-muted-foreground">
+                    No faculty found.
                   </div>
-                ))}
-                {!filteredFaculties.length && <div className="text-sm text-muted-foreground">No faculty found.</div>}
-              </div>
-              {/* Mobile: stacked list */}
-              <div className="md:hidden grid grid-cols-1 gap-3">
-                {filteredFaculties.map(f=> (
-                  <div key={f.id} className="border rounded-md p-3 bg-white dark:bg-[#0f1530] hover:shadow transition relative">
-                    <div className="flex items-center gap-3">
-                      <div className="relative">
-                        <Avatar className="h-10 w-10"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback>{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
-                        <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full ring-2 ring-white ${isOnline(f)?'bg-green-500':'bg-gray-300'}`} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-semibold truncate">{f.full_name}</div>
-                        <div className="text-xs text-muted-foreground truncate">{f.department || '—'}{(f.subjects||[]).length? ' • ' + (f.subjects||[]).slice(0,2).join(', '): ''}</div>
-                        <div className="mt-1 text-[11px] text-muted-foreground truncate">{f.sections?.join(', ')}</div>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button size="icon" variant="ghost" onClick={()=>onMessage(f.id)} aria-label="Chat"><MessageCircle className="h-4 w-4"/></Button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                {!filteredFaculties.length && <div className="text-sm text-muted-foreground">No faculty found.</div>}
+                )}
               </div>
             </CardContent>
           </Card>
