@@ -74,6 +74,78 @@ export type Database = {
           },
         ]
       }
+      faculty: {
+        Row: {
+          id: string
+          name: string
+          email: string
+          department: string
+          designation: string
+          is_verified: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          email: string
+          department: string
+          designation: string
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          email?: string
+          department?: string
+          designation?: string
+          is_verified?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      student_mentor_assignments: {
+        Row: {
+          id: string
+          student_id: string
+          mentor_id: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          mentor_id: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          mentor_id?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_mentor_assignments_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_mentor_assignments_mentor_id_fkey"
+            columns: ["mentor_id"]
+            isOneToOne: false
+            referencedRelation: "faculty"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           content: string
@@ -215,7 +287,7 @@ export type Database = {
       certificate_category: "academic" | "co_curricular"
       certificate_status: "pending" | "approved" | "rejected"
       faculty_level: "basic" | "senior" | "admin"
-      user_role: "student" | "faculty"
+      user_role: "student" | "faculty" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -346,7 +418,7 @@ export const Constants = {
       certificate_category: ["academic", "co_curricular"],
       certificate_status: ["pending", "approved", "rejected"],
       faculty_level: ["basic", "senior", "admin"],
-      user_role: ["student", "faculty"],
+      user_role: ["student", "faculty", "admin"],
     },
   },
 } as const

@@ -22,6 +22,12 @@ import FacultyCommunity from "./pages/FacultyCommunity";
 import FacultyChatHub from "./pages/FacultyChatHub";
 import FacultyRoute from "./components/routing/FacultyRoute";
 import IntegrationsAnalytics from "./pages/IntegrationsAnalytics";
+import AdminRoute from "./components/routing/AdminRoute";
+import AdminLayout from "./components/admin/AdminLayout";
+import AdminDashboard from "./pages/AdminDashboard";
+import AdminFaculty from "./pages/AdminFaculty";
+import AdminAssignments from "./pages/AdminAssignments";
+import AdminDebug from "./pages/AdminDebug";
 
 const queryClient = new QueryClient();
 
@@ -45,11 +51,20 @@ const App = () => (
             <Route path="/integrations" element={<StudentRoute><IntegrationsAnalytics /></StudentRoute>} />
             <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
             <Route path="/faculty/chat" element={<FacultyRoute><FacultyChatHub /></FacultyRoute>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
+
+          {/* Admin Routes */}
+          <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+            <Route index element={<AdminDashboard />} />
+            <Route path="faculty" element={<AdminFaculty />} />
+            <Route path="assignments" element={<AdminAssignments />} />
+          </Route>
+
+          {/* Debug Route */}
+          <Route path="/admin-debug" element={<AdminDebug />} />
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
