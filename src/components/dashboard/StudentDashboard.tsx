@@ -13,6 +13,9 @@ import StudentProgressCard from './student/StudentProgressCard';
 import StudentAchievementsCard from './student/StudentAchievementsCard';
 import StudentGoalsCard from './student/StudentGoalsCard';
 import StudentActivityFeed from './student/StudentActivityFeed';
+import EnhancedAchievementDashboard from './student/EnhancedAchievementDashboard';
+import QuickUpload from './student/QuickUpload';
+import SocialActivityFeed from './student/SocialActivityFeed';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -168,15 +171,50 @@ const StudentDashboard = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Enhanced Achievement Dashboard */}
+          <EnhancedAchievementDashboard 
+            achievements={achievements} 
+            progress={progress} 
+            loading={studentLoading} 
+          />
+          
+          {/* Quick Upload Section */}
+          <QuickUpload 
+            onUploadStart={(type) => console.log('Upload started:', type)}
+            onUploadComplete={handleUploadComplete}
+          />
+          
+          {/* Progress and Goals */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StudentProgressCard progress={progress} loading={studentLoading} />
-            <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+            <StudentGoalsCard goals={goals} loading={studentLoading} />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudentGoalsCard goals={goals} loading={studentLoading} />
-            <StudentActivityFeed activities={activities} loading={studentLoading} />
-          </div>
+          {/* Social Activity Feed */}
+          <SocialActivityFeed 
+            activities={activities.map(activity => ({
+              id: activity.id,
+              user: {
+                id: profile?.id || '',
+                name: profile?.full_name || 'You',
+                avatar: '',
+                level: Math.floor((achievements.reduce((sum, a) => sum + a.points, 0) / 100) + 1)
+              },
+              type: activity.activity_type === 'certificate_upload' ? 'certificate' : 
+                    activity.activity_type === 'course_complete' ? 'course' :
+                    activity.activity_type === 'achievement_earned' ? 'achievement' :
+                    activity.activity_type === 'goal_achieved' ? 'goal' : 'achievement',
+              title: activity.title,
+              description: activity.description || '',
+              points: 25, // Default points for activities
+              timestamp: activity.created_at,
+              likes: Math.floor(Math.random() * 10),
+              comments: Math.floor(Math.random() * 5),
+              isLiked: false,
+              category: 'general'
+            }))}
+            loading={studentLoading}
+          />
         </TabsContent>
 
         {/* Progress Tab */}
@@ -195,12 +233,39 @@ const StudentDashboard = () => {
 
         {/* Achievements Tab */}
         <TabsContent value="achievements" className="space-y-6">
-          <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+          <EnhancedAchievementDashboard 
+            achievements={achievements} 
+            progress={progress} 
+            loading={studentLoading} 
+          />
         </TabsContent>
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
-          <StudentActivityFeed activities={activities} loading={studentLoading} />
+          <SocialActivityFeed 
+            activities={activities.map(activity => ({
+              id: activity.id,
+              user: {
+                id: profile?.id || '',
+                name: profile?.full_name || 'You',
+                avatar: '',
+                level: Math.floor((achievements.reduce((sum, a) => sum + a.points, 0) / 100) + 1)
+              },
+              type: activity.activity_type === 'certificate_upload' ? 'certificate' : 
+                    activity.activity_type === 'course_complete' ? 'course' :
+                    activity.activity_type === 'achievement_earned' ? 'achievement' :
+                    activity.activity_type === 'goal_achieved' ? 'goal' : 'achievement',
+              title: activity.title,
+              description: activity.description || '',
+              points: 25,
+              timestamp: activity.created_at,
+              likes: Math.floor(Math.random() * 10),
+              comments: Math.floor(Math.random() * 5),
+              isLiked: false,
+              category: 'general'
+            }))}
+            loading={studentLoading}
+          />
         </TabsContent>
       </Tabs>
 

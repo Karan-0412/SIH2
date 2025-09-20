@@ -39,6 +39,7 @@ import MyActivitiesPage from "./pages/MyActivitesPage";
 import CertificateManagement from "./pages/CertificateManagement";
 import Home from "./pages/Home";
 import { BlockchainProvider } from "./contexts/BlockchainContext";
+import ChatbotToggle from "./components/ai/ChatbotToggle";
 
 const App = () => {
   const queryClient = new QueryClient({
@@ -96,12 +97,13 @@ const App = () => {
                 <Route path="faculty" element={<AdminFaculty />} />
                 <Route path="assignments" element={<AdminAssignments />} />
                 <Route path="debug" element={<AdminDebug />} />
-              </Route>
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </BlockchainProvider>
-    </QueryClientProvider>
+          </Route>
+        </Routes>
+      </BrowserRouter>
+      <ChatbotToggle />
+    </TooltipProvider>
+  </BlockchainProvider>
+</QueryClientProvider>
   );
 };
 
