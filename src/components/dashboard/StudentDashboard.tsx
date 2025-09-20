@@ -12,7 +12,9 @@ import NotificationsDropdown from './student/NotificationsDropdown';
 import StudentProgressCard from './student/StudentProgressCard';
 import StudentAchievementsCard from './student/StudentAchievementsCard';
 import StudentGoalsCard from './student/StudentGoalsCard';
-import StudentActivityFeed from './student/StudentActivityFeed';
+import AcademicAchievementDashboard from './student/AcademicAchievementDashboard';
+import QuickUpload from './student/QuickUpload';
+import SocialActivityFeed from './student/SocialActivityFeed';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -168,24 +170,29 @@ const StudentDashboard = () => {
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-6">
+          {/* Academic Achievement Dashboard */}
+          <AcademicAchievementDashboard loading={studentLoading} />
+          
+          {/* Quick Upload Section */}
+          <QuickUpload 
+            onUploadStart={(type) => console.log('Upload started:', type)}
+            onUploadComplete={handleUploadComplete}
+          />
+          
+          {/* Progress and Goals */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <StudentProgressCard progress={progress} loading={studentLoading} />
-            <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+            <StudentGoalsCard goals={goals} loading={studentLoading} />
           </div>
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudentGoalsCard goals={goals} loading={studentLoading} />
-            <StudentActivityFeed activities={activities} loading={studentLoading} />
-          </div>
+          {/* Social Activity Feed */}
+          <SocialActivityFeed loading={studentLoading} />
         </TabsContent>
 
         {/* Progress Tab */}
         <TabsContent value="progress" className="space-y-6">
           <StudentProgressCard progress={progress} loading={studentLoading} />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
-            <StudentActivityFeed activities={activities} loading={studentLoading} />
-          </div>
+          <SocialActivityFeed loading={studentLoading} />
         </TabsContent>
 
         {/* Goals Tab */}
@@ -195,12 +202,12 @@ const StudentDashboard = () => {
 
         {/* Achievements Tab */}
         <TabsContent value="achievements" className="space-y-6">
-          <StudentAchievementsCard achievements={achievements} loading={studentLoading} />
+          <AcademicAchievementDashboard loading={studentLoading} />
         </TabsContent>
 
         {/* Activity Tab */}
         <TabsContent value="activity" className="space-y-6">
-          <StudentActivityFeed activities={activities} loading={studentLoading} />
+          <SocialActivityFeed loading={studentLoading} />
         </TabsContent>
       </Tabs>
 
