@@ -629,6 +629,72 @@ export const useAchievements = () => {
     }
   };
 
+  // Add test achievements for testing purposes
+  const addTestAchievements = useCallback(() => {
+    const testAchievements = [
+      {
+        id: crypto.randomUUID(),
+        student_id: 'test-student-id',
+        title: 'LeetCode Master',
+        description: 'Solved 100+ problems on LeetCode',
+        achievement_type: 'coding_platform' as const,
+        category: 'LeetCode',
+        points: 100,
+        earned_at: new Date().toISOString(),
+        icon_url: null,
+        metadata: {
+          platform: 'LeetCode',
+          level: 'Expert',
+          verification_url: 'https://leetcode.com/profile/',
+          issuer: 'LeetCode',
+          criteria: 'Solved 100+ problems'
+        }
+      },
+      {
+        id: crypto.randomUUID(),
+        student_id: 'test-student-id',
+        title: 'AWS Certified',
+        description: 'AWS Cloud Practitioner Certification',
+        achievement_type: 'professional' as const,
+        category: 'AWS',
+        points: 150,
+        earned_at: new Date().toISOString(),
+        icon_url: null,
+        metadata: {
+          platform: 'AWS',
+          level: 'Professional',
+          verification_url: 'https://aws.amazon.com/certification/',
+          issuer: 'Amazon Web Services',
+          criteria: 'Passed AWS Cloud Practitioner exam'
+        }
+      },
+      {
+        id: crypto.randomUUID(),
+        student_id: 'test-student-id',
+        title: 'Full Stack Developer',
+        description: 'Completed full-stack development project',
+        achievement_type: 'milestone' as const,
+        category: 'Projects',
+        points: 200,
+        earned_at: new Date().toISOString(),
+        icon_url: null,
+        metadata: {
+          platform: 'GitHub',
+          level: 'Advanced',
+          verification_url: 'https://github.com/',
+          issuer: 'Self',
+          criteria: 'Built and deployed full-stack application'
+        }
+      }
+    ];
+
+    setAchievements(prev => [...prev, ...testAchievements]);
+    
+    // Save to localStorage
+    const updatedAchievements = [...achievements, ...testAchievements];
+    localStorage.setItem('student_achievements', JSON.stringify(updatedAchievements));
+  }, [achievements]);
+
   return {
     achievements,
     loading,
@@ -641,5 +707,6 @@ export const useAchievements = () => {
     generatePlatformAchievements,
     syncAchievementsToDatabase,
     refreshAchievements,
+    addTestAchievements,
   };
 };

@@ -4,10 +4,7 @@ import { useStudent } from '@/hooks/useStudent';
 import { useProjects } from '@/hooks/useProjects';
 import { useAchievements } from '@/hooks/useAchievements';
 import { usePlatformIntegration } from '@/hooks/usePlatformIntegration';
-<<<<<<< Updated upstream
-=======
 import { useToast } from '@/hooks/use-toast';
->>>>>>> Stashed changes
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,122 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-<<<<<<< Updated upstream
-=======
 import { Certificate } from '@/types';
->>>>>>> Stashed changes
-
-// Simple Achievement Form Component
-const AchievementForm: React.FC<{
-  achievement?: any;
-  onSave: (data: any) => void;
-  onCancel: () => void;
-}> = ({ achievement, onSave, onCancel }) => {
-  const [formData, setFormData] = useState({
-    title: achievement?.title || '',
-    description: achievement?.description || '',
-    achievement_type: achievement?.achievement_type || 'academic',
-    category: achievement?.category || '',
-    points: achievement?.points || 10,
-    metadata: {
-      platform: achievement?.metadata?.platform || '',
-      level: achievement?.metadata?.level || 'Beginner',
-      verification_url: achievement?.metadata?.verification_url || '',
-      issuer: achievement?.metadata?.issuer || '',
-      criteria: achievement?.metadata?.criteria || ''
-    }
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      ...formData,
-      earned_at: new Date().toISOString(),
-      icon_url: null
-    });
-  };
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="title">Title *</Label>
-          <Input
-            id="title"
-            value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="achievement_type">Type *</Label>
-          <Select
-            value={formData.achievement_type}
-            onValueChange={(value) => setFormData({ ...formData, achievement_type: value })}
-          >
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="coding_platform">Coding Platform</SelectItem>
-              <SelectItem value="academic">Academic</SelectItem>
-              <SelectItem value="co_curricular">Co-curricular</SelectItem>
-              <SelectItem value="professional">Professional</SelectItem>
-              <SelectItem value="soft_skills">Soft Skills</SelectItem>
-              <SelectItem value="course_completion">Course Completion</SelectItem>
-              <SelectItem value="streak">Streak</SelectItem>
-              <SelectItem value="milestone">Milestone</SelectItem>
-              <SelectItem value="participation">Participation</SelectItem>
-              <SelectItem value="excellence">Excellence</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="category">Category *</Label>
-          <Input
-            id="category"
-            value={formData.category}
-            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-            placeholder="e.g., LeetCode, Coursera, Hackathon"
-            required
-          />
-        </div>
-        <div>
-          <Label htmlFor="points">Points</Label>
-          <Input
-            id="points"
-            type="number"
-            value={formData.points}
-            onChange={(e) => setFormData({ ...formData, points: parseInt(e.target.value) || 0 })}
-            min="0"
-          />
-        </div>
-      </div>
-
-      <div>
-        <Label htmlFor="description">Description</Label>
-        <Textarea
-          id="description"
-          value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          rows={3}
-        />
-      </div>
-
-      <div className="flex justify-end space-x-2">
-        <Button type="button" variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
-        <Button type="submit">
-          {achievement ? 'Update' : 'Add'} Achievement
-        </Button>
-      </div>
-    </form>
-  );
-};
 
 // Simple Achievement Form Component
 const AchievementForm: React.FC<{
@@ -281,17 +163,11 @@ const StudentDashboard = () => {
     addAchievement, 
     updateAchievement, 
     deleteAchievement,
-<<<<<<< Updated upstream
-    generatePlatformAchievements
-  } = useAchievements();
-  const { platforms, activityStats } = usePlatformIntegration();
-=======
     generatePlatformAchievements,
     addTestAchievements
   } = useAchievements();
   const { platforms, activityStats } = usePlatformIntegration();
   const { toast } = useToast();
->>>>>>> Stashed changes
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
   const [showUploadPanel, setShowUploadPanel] = useState(false);
@@ -317,10 +193,6 @@ const StudentDashboard = () => {
         .select('*')
         .eq('student_id', profile.id)
         .order('created_at', { ascending: false });
-<<<<<<< Updated upstream
-      if (error) throw error;
-      setCertificates((data as any) || []);
-=======
       
       if (error) {
         console.error('Database error fetching certificates:', error);
@@ -329,7 +201,6 @@ const StudentDashboard = () => {
       
       console.log('Fetched certificates:', data);
       setCertificates((data as unknown as Certificate[]) || []);
->>>>>>> Stashed changes
     } catch (error) {
       console.error('Error fetching certificates:', error);
       toast({
@@ -443,8 +314,6 @@ const StudentDashboard = () => {
     }
   };
 
-<<<<<<< Updated upstream
-=======
   // Portfolio generation functions
   const generatePortfolioData = () => {
     const portfolioData = {
@@ -649,103 +518,7 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
     });
   };
 
-  // Add sample certificates for testing
-  const addSampleCertificates = async () => {
-    if (!profile) return;
 
-    const sampleCertificates = [
-      {
-        student_id: profile.id,
-        title: 'AWS Cloud Practitioner',
-        description: 'Amazon Web Services Cloud Practitioner certification',
-        category: 'academic' as const,
-        issuing_organization: 'Amazon Web Services',
-        issue_date: new Date().toISOString().split('T')[0],
-        expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        certificate_url: 'https://aws.amazon.com/certification/',
-        file_name: 'aws-cloud-practitioner.pdf',
-        file_url: 'https://example.com/certificates/aws-cloud-practitioner.pdf',
-        file_size: 1024000,
-        status: 'approved' as const,
-        remark: 'Excellent performance in cloud computing fundamentals'
-      },
-      {
-        student_id: profile.id,
-        title: 'Google Data Analytics Professional Certificate',
-        description: 'Google Career Certificate in Data Analytics',
-        category: 'academic' as const,
-        issuing_organization: 'Google',
-        issue_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        certificate_url: 'https://www.coursera.org/professional-certificates/google-data-analytics',
-        file_name: 'google-data-analytics.pdf',
-        file_url: 'https://example.com/certificates/google-data-analytics.pdf',
-        file_size: 2048000,
-        status: 'approved' as const,
-        remark: 'Comprehensive data analysis skills demonstrated'
-      },
-      {
-        student_id: profile.id,
-        title: 'Microsoft Azure Fundamentals',
-        description: 'Microsoft Azure Fundamentals certification',
-        category: 'academic' as const,
-        issuing_organization: 'Microsoft',
-        issue_date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        certificate_url: 'https://learn.microsoft.com/en-us/certifications/azure-fundamentals/',
-        file_name: 'azure-fundamentals.pdf',
-        file_url: 'https://example.com/certificates/azure-fundamentals.pdf',
-        file_size: 1536000,
-        status: 'pending' as const,
-        remark: 'Under review by faculty'
-      },
-      {
-        student_id: profile.id,
-        title: 'Hackathon Winner - TechFest 2024',
-        description: 'First place in university hackathon competition',
-        category: 'co_curricular' as const,
-        issuing_organization: 'University TechFest',
-        issue_date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        certificate_url: 'https://university.edu/techfest2024',
-        file_name: 'hackathon-winner.pdf',
-        file_url: 'https://example.com/certificates/hackathon-winner.pdf',
-        file_size: 512000,
-        status: 'approved' as const,
-        remark: 'Outstanding innovation and teamwork'
-      }
-    ];
-
-    try {
-      console.log('Adding sample certificates:', sampleCertificates);
-      const { data, error } = await supabase
-        .from('certificates')
-        .insert(sampleCertificates);
-
-      if (error) {
-        console.error('Error adding sample certificates:', error);
-        toast({
-          title: 'Error',
-          description: `Failed to add sample certificates: ${error.message}`,
-          variant: 'destructive',
-        });
-      } else {
-        console.log('Sample certificates added successfully:', data);
-        await fetchCertificates(); // Refresh the certificates list
-        toast({
-          title: 'Sample Certificates Added!',
-          description: '4 sample certificates have been added to your profile.',
-        });
-      }
-    } catch (error) {
-      console.error('Error adding sample certificates:', error);
-      toast({
-        title: 'Error',
-        description: `Failed to add sample certificates: ${error}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
->>>>>>> Stashed changes
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto p-6">
@@ -994,12 +767,19 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                 <div className="text-center py-8">
                   <Award className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <p className="text-gray-600 mb-4">No achievements yet</p>
-<<<<<<< Updated upstream
-                  <Button onClick={() => setShowAddAchievementDialog(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Your First Achievement
-                  </Button>
-=======
+                  <div className="space-y-2">
+                    <Button onClick={() => setShowAddAchievementDialog(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Your First Achievement
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={addTestAchievements}
+                    >
+                      <Trophy className="h-4 w-4 mr-2" />
+                      Add Sample Achievements (Test)
+                    </Button>
+                  </div>
                   <div className="space-y-2">
                     <Button onClick={() => setShowAddAchievementDialog(true)}>
                       <Plus className="h-4 w-4 mr-2" />
@@ -1014,7 +794,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                       Add Sample Achievements (Test)
                     </Button>
                   </div>
->>>>>>> Stashed changes
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1209,19 +988,19 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                   <div className="text-2xl font-bold text-green-600 mb-2">{certificates.length}</div>
                   <p className="text-sm text-gray-600 mb-4">Total Certificates</p>
                   <div className="space-y-2">
-<<<<<<< Updated upstream
                     <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)} className="w-full">
                       View Certificates
                     </Button>
                     <Button 
                       variant="secondary" 
-=======
-                    <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)}>
-                      View Certificates
+                      size="sm" 
+                      onClick={addSampleCertificates}
+                      className="w-full"
+                    >
+                      Add Sample Certificates (Test)
                     </Button>
                     <Button 
                       variant="outline" 
->>>>>>> Stashed changes
                       size="sm" 
                       onClick={addSampleCertificates}
                       className="w-full"
@@ -1234,25 +1013,14 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
             </Card>
           </div>
 
-<<<<<<< Updated upstream
-          {/* Portfolio Generation Section */}
-=======
           {/* Portfolio Preview Section */}
->>>>>>> Stashed changes
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-<<<<<<< Updated upstream
                 Portfolio Generation
               </CardTitle>
               <p className="text-sm text-gray-600">Generate a professional portfolio from your projects and achievements</p>
-            </CardHeader>
-            <CardContent>
-=======
-                Portfolio Preview
-              </CardTitle>
-              <p className="text-sm text-gray-600">Your complete portfolio data summary</p>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -1335,7 +1103,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
               <p className="text-sm text-gray-600">Generate a professional portfolio from your projects and achievements</p>
             </CardHeader>
             <CardContent>
->>>>>>> Stashed changes
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Link to="/my-projects">
                   <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
@@ -1351,17 +1118,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                     <span className="text-xs text-gray-500">PDF Export</span>
                   </Button>
                 </Link>
-<<<<<<< Updated upstream
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-                  <ExternalLink className="h-6 w-6" />
-                  <span className="text-sm">Portfolio Website</span>
-                  <span className="text-xs text-gray-500">Coming Soon</span>
-                </Button>
-                <Button variant="outline" className="w-full h-24 flex flex-col items-center justify-center gap-2">
-                  <Award className="h-6 w-6" />
-                  <span className="text-sm">Share Portfolio</span>
-                  <span className="text-xs text-gray-500">Public Link</span>
-=======
                 <Button 
                   variant="outline" 
                   className="w-full h-24 flex flex-col items-center justify-center gap-2"
@@ -1379,7 +1135,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                   <Award className="h-6 w-6" />
                   <span className="text-sm">Share Portfolio</span>
                   <span className="text-xs text-gray-500">Copy Summary</span>
->>>>>>> Stashed changes
                 </Button>
               </div>
             </CardContent>

@@ -12,19 +12,14 @@ import { useNavigate } from "react-router-dom";
 import { Certificate } from "@/types";
 import { supabase } from "@/integrations/supabase/client";
 
-// Sample certificates for testing (can be removed once real data is working)
-const sampleCertificates: Omit<Certificate, 'id' | 'student_id' | 'created_at' | 'updated_at'>[] = [
+// Sample certificates matching actual database schema
+const sampleCertificates = [
   {
     title: "AWS Cloud Practitioner",
     description: "Amazon Web Services Cloud Practitioner certification",
     category: "academic",
-    issuing_organization: "Amazon Web Services",
-    issue_date: new Date().toISOString().split('T')[0],
-    expiry_date: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    certificate_url: "https://aws.amazon.com/certification/",
     file_name: "aws-cloud-practitioner.pdf",
     file_url: "https://example.com/certificates/aws-cloud-practitioner.pdf",
-    file_size: 1024000,
     status: "approved",
     remark: "Excellent performance in cloud computing fundamentals"
   },
@@ -32,12 +27,8 @@ const sampleCertificates: Omit<Certificate, 'id' | 'student_id' | 'created_at' |
     title: "Google Data Analytics Professional Certificate",
     description: "Google Career Certificate in Data Analytics",
     category: "academic",
-    issuing_organization: "Google",
-    issue_date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    certificate_url: "https://www.coursera.org/professional-certificates/google-data-analytics",
     file_name: "google-data-analytics.pdf",
     file_url: "https://example.com/certificates/google-data-analytics.pdf",
-    file_size: 2048000,
     status: "approved",
     remark: "Comprehensive data analysis skills demonstrated"
   },
@@ -45,12 +36,8 @@ const sampleCertificates: Omit<Certificate, 'id' | 'student_id' | 'created_at' |
     title: "Hackathon Winner - TechFest 2024",
     description: "First place in university hackathon competition",
     category: "co_curricular",
-    issuing_organization: "University TechFest",
-    issue_date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    certificate_url: "https://university.edu/techfest2024",
     file_name: "hackathon-winner.pdf",
     file_url: "https://example.com/certificates/hackathon-winner.pdf",
-    file_size: 512000,
     status: "approved",
     remark: "Outstanding innovation and teamwork"
   }
@@ -183,30 +170,35 @@ const CertificateManagement: React.FC = () => {
     if (!profile) return;
 
     try {
-      const newCertificate = {
-        student_id: profile.id,
+      console.log('Certificate data received:', certificateData);
+      console.log('Profile ID:', profile.id);
+      
+      // Create certificate matching the actual database schema
+      const singleCertificate = {
         title: certificateData.title,
-        description: certificateData.description,
+        description: certificateData.description || null,
         category: certificateData.category,
-        issuing_organization: certificateData.issuingCompany || 'Unknown',
-        issue_date: new Date().toISOString().split('T')[0],
-        certificate_url: certificateData.certificateUrl || '',
-        file_name: certificateData.fileName || 'certificate.pdf',
-        file_url: certificateData.fileUrl || '',
-        file_size: certificateData.fileSize || 0,
-        status: 'pending' as const,
-        remark: certificateData.remark || ''
+        file_name: certificateData.file?.name || 'certificate.pdf',
+        file_url: `https://placeholder.com/certificates/${certificateData.file?.name || 'certificate.pdf'}`,
+        status: 'pending' as const, // Use 'pending' since it's the default
+        remark: certificateData.remark || null
       };
 
+      console.log('Single certificate to be inserted:', singleCertificate);
+
+      // Use the exact same method as sample certificates
       const { data, error } = await supabase
         .from('certificates')
-        .insert([newCertificate]);
+        .insert([{
+          ...singleCertificate,
+          student_id: profile.id
+        }]);
 
       if (error) {
         console.error('Error adding certificate:', error);
         toast({
           title: 'Error',
-          description: 'Failed to add certificate. Please try again.',
+          description: `Failed to add certificate: ${error.message}`,
           variant: 'destructive',
         });
       } else {

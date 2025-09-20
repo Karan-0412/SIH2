@@ -36,7 +36,8 @@ const UploadCertificateForm: React.FC<UploadCertificateFormProps> = ({
   const mainCategories = [
     'Academic',
     'Co-Curricular',
-    'Verified Professional Certificates'
+    'Professional',
+    'Achievement'
   ];
 
   // Subcategories based on main category
@@ -46,17 +47,30 @@ const UploadCertificateForm: React.FC<UploadCertificateFormProps> = ({
         return ['Professional', 'National', 'State', 'International', 'Co-Curricular', 'Volunteer / Social Work', 'Workshops / Training', 'Others'];
       case 'Co-Curricular':
         return ['National', 'State', 'International', 'Volunteer / Social Work', 'Workshops / Training', 'Others'];
-      case 'Verified Professional Certificates':
-        return []; // No subcategories for this
+      case 'Professional':
+        return ['AWS', 'Google', 'Microsoft', 'LinkedIn', 'Coursera', 'Udemy', 'Others'];
+      case 'Achievement':
+        return ['Hackathon', 'Competition', 'Award', 'Recognition', 'Others'];
       default:
         return [];
     }
   };
 
-  // Issuing companies for Verified Professional Certificates
-  const issuingCompanies = [
-    'Google', 'Microsoft', 'LinkedIn', 'AWS', 'Coursera', 'Udemy'
-  ];
+  // Map form categories to database categories
+  const mapCategoryToDatabase = (formCategory: string): string => {
+    switch (formCategory) {
+      case 'Academic':
+        return 'academic';
+      case 'Co-Curricular':
+        return 'co_curricular';
+      case 'Professional':
+        return 'professional';
+      case 'Achievement':
+        return 'achievement';
+      default:
+        return 'academic';
+    }
+  };
 
   // Reviewer assignment logic
   const getReviewers = (subcategory: string) => {
@@ -126,10 +140,10 @@ const UploadCertificateForm: React.FC<UploadCertificateFormProps> = ({
 
     if (!formData.title.trim()) newErrors.title = 'Certificate title is required';
     if (!formData.category) newErrors.category = 'Please select a category';
-    if (formData.category !== 'Verified Professional Certificates' && !formData.subcategory) {
+    if (formData.category !== 'Professional' && !formData.subcategory) {
       newErrors.subcategory = 'Please select a subcategory';
     }
-    if (formData.category === 'Verified Professional Certificates' && !formData.issuingCompany) {
+    if (formData.category === 'Professional' && !formData.issuingCompany) {
       newErrors.issuingCompany = 'Please select an issuing company';
     }
     if (formData.subcategory === 'Others' && !formData.customReviewer.trim()) {
@@ -164,6 +178,7 @@ const UploadCertificateForm: React.FC<UploadCertificateFormProps> = ({
 
     const certificateData = {
       ...formData,
+      category: mapCategoryToDatabase(formData.category),
       reviewer,
       status: 'Pending' as const,
       uploadedAt: new Date().toISOString(),
@@ -255,7 +270,7 @@ const UploadCertificateForm: React.FC<UploadCertificateFormProps> = ({
           </div>
 
           {/* Subcategory or Issuing Company */}
-          {formData.category === 'Verified Professional Certificates' ? (
+          {formData.category === 'Professional' ? (
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700">
                 Issuing Company *
