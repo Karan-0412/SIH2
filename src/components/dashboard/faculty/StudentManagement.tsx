@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { useProfile } from '@/hooks/useProfile';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, UserPlus, UserMinus, Search } from 'lucide-react';
+import { Users, UserPlus, UserMinus, Search, Award } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { IssueCredentialModal } from '../../verifiableCredentials/IssueCredentialModal';
 
 interface Student {
   id: string;
@@ -285,15 +286,36 @@ const StudentManagement: React.FC = () => {
                       <TableCell>{student.student_id || 'N/A'}</TableCell>
                       <TableCell>{student.department || 'N/A'}</TableCell>
                       <TableCell>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleStudentAction(student.id, 'unassign')}
-                          disabled={loadingStudents}
-                        >
-                          <UserMinus className="h-4 w-4 mr-1" />
-                          Unassign
-                        </Button>
+                        <div className="flex space-x-2">
+                          <IssueCredentialModal
+                            studentId={student.id}
+                            studentName={student.full_name}
+                            onCredentialIssued={(credential) => {
+                              toast({
+                                title: 'Success',
+                                description: `Credential issued to ${student.full_name}`,
+                              });
+                            }}
+                          >
+                            <Button
+                              variant="outline"
+                              size="sm"
+                            >
+                              <Award className="h-4 w-4 mr-1" />
+                              Issue Credential
+                            </Button>
+                          </IssueCredentialModal>
+                          
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleStudentAction(student.id, 'unassign')}
+                            disabled={loadingStudents}
+                          >
+                            <UserMinus className="h-4 w-4 mr-1" />
+                            Unassign
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))

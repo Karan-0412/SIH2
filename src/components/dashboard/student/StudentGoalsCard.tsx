@@ -38,28 +38,28 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
   const getPriorityColor = (priority: StudentGoal['priority']) => {
     switch (priority) {
       case 'urgent':
-        return 'bg-red-100 text-red-800 border-red-200';
+        return 'bg-red-50 text-red-600 border-red-100';
       case 'high':
-        return 'bg-orange-100 text-orange-800 border-orange-200';
+        return 'bg-orange-50 text-orange-600 border-orange-100';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        return 'bg-amber-50 text-amber-600 border-amber-100';
       case 'low':
-        return 'bg-green-100 text-green-800 border-green-200';
+        return 'bg-green-50 text-green-600 border-green-100';
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return 'bg-gray-50 text-gray-600 border-gray-100';
     }
   };
 
   const getStatusIcon = (status: StudentGoal['status']) => {
     switch (status) {
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
       case 'paused':
-        return <Pause className="h-4 w-4 text-yellow-600" />;
+        return <Pause className="h-4 w-4 text-amber-500" />;
       case 'cancelled':
-        return <X className="h-4 w-4 text-red-600" />;
+        return <X className="h-4 w-4 text-red-500" />;
       default:
-        return <Target className="h-4 w-4 text-blue-600" />;
+        return <Target className="h-4 w-4 text-sky-500" />;
     }
   };
 
@@ -253,7 +253,7 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
             {activeGoals.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Flag className="h-4 w-4 text-blue-600" />
+                  <Flag className="h-4 w-4 text-sky-500" />
                   <span className="font-medium text-sm">Active Goals ({activeGoals.length})</span>
                 </div>
                 <div className="space-y-2">
@@ -313,7 +313,7 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
             {completedGoals.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <CheckCircle className="h-4 w-4 text-green-500" />
                   <span className="font-medium text-sm">Completed Goals ({completedGoals.length})</span>
                 </div>
                 <div className="space-y-2">
@@ -322,7 +322,7 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
                       <div className="flex items-center gap-2">
                         {getStatusIcon(goal.status)}
                         <span className="font-medium text-sm">{goal.title}</span>
-                        <Badge variant="outline" className="text-xs bg-green-100 text-green-800">
+                        <Badge variant="outline" className="text-xs bg-green-50 text-green-600">
                           Completed
                         </Badge>
                       </div>
@@ -341,7 +341,7 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
             {pausedGoals.length > 0 && (
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <Pause className="h-4 w-4 text-yellow-600" />
+                  <Pause className="h-4 w-4 text-amber-500" />
                   <span className="font-medium text-sm">Paused Goals ({pausedGoals.length})</span>
                 </div>
                 <div className="space-y-2">
@@ -350,7 +350,7 @@ const StudentGoalsCard: React.FC<StudentGoalsCardProps> = ({ goals, loading }) =
                       <div className="flex items-center gap-2">
                         {getStatusIcon(goal.status)}
                         <span className="font-medium text-sm">{goal.title}</span>
-                        <Badge variant="outline" className="text-xs bg-yellow-100 text-yellow-800">
+                        <Badge variant="outline" className="text-xs bg-amber-50 text-amber-600">
                           Paused
                         </Badge>
                       </div>

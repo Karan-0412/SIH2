@@ -122,24 +122,24 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'certificate': return 'bg-green-100 text-green-800 border-green-200';
-      case 'course': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'event': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'competition': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'leadership': return 'bg-pink-100 text-pink-800 border-pink-200';
-      case 'volunteer': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'research': return 'bg-indigo-100 text-indigo-800 border-indigo-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+      case 'certificate': return 'bg-green-50 text-green-600 border-green-100';
+      case 'course': return 'bg-sky-50 text-sky-600 border-sky-100';
+      case 'event': return 'bg-violet-50 text-violet-600 border-violet-100';
+      case 'competition': return 'bg-amber-50 text-amber-600 border-amber-100';
+      case 'leadership': return 'bg-rose-50 text-rose-600 border-rose-100';
+      case 'volunteer': return 'bg-orange-50 text-orange-600 border-orange-100';
+      case 'research': return 'bg-indigo-50 text-indigo-600 border-indigo-100';
+      default: return 'bg-gray-50 text-gray-600 border-gray-100';
     }
   };
 
   const getBadgeRarityColor = (rarity: string) => {
     switch (rarity) {
-      case 'common': return 'bg-gray-100 text-gray-800';
-      case 'rare': return 'bg-blue-100 text-blue-800';
-      case 'epic': return 'bg-purple-100 text-purple-800';
-      case 'legendary': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'common': return 'bg-gray-50 text-gray-600';
+      case 'rare': return 'bg-sky-50 text-sky-600';
+      case 'epic': return 'bg-violet-50 text-violet-600';
+      case 'legendary': return 'bg-amber-50 text-amber-600';
+      default: return 'bg-gray-50 text-gray-600';
     }
   };
 
@@ -153,12 +153,12 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
   };
 
   const getLevelColor = (level: number) => {
-    if (level >= 50) return 'from-purple-600 to-pink-600';
-    if (level >= 40) return 'from-blue-600 to-purple-600';
-    if (level >= 30) return 'from-green-600 to-blue-600';
-    if (level >= 20) return 'from-yellow-600 to-green-600';
-    if (level >= 10) return 'from-orange-600 to-yellow-600';
-    return 'from-gray-600 to-orange-600';
+    if (level >= 50) return 'from-violet-400 to-rose-400';
+    if (level >= 40) return 'from-sky-400 to-violet-400';
+    if (level >= 30) return 'from-green-400 to-sky-400';
+    if (level >= 20) return 'from-amber-400 to-green-400';
+    if (level >= 10) return 'from-orange-400 to-amber-400';
+    return 'from-gray-400 to-orange-400';
   };
 
   if (loading) {
@@ -184,57 +184,57 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
       {/* Main Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Achievements */}
-        <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">
+        <Card className="bg-gradient-to-br from-green-100 to-emerald-100 text-green-800 border-green-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm font-medium">Total Achievements</p>
-                <p className="text-3xl font-bold">{stats.totalAchievements}</p>
-                <p className="text-green-100 text-xs">Keep achieving!</p>
+                <p className="text-green-600 text-sm font-medium">Total Achievements</p>
+                <p className="text-3xl font-bold text-green-700">{stats.totalAchievements}</p>
+                <p className="text-green-600 text-xs">Keep achieving!</p>
               </div>
-              <Trophy className="h-12 w-12 text-green-200" />
+              <Trophy className="h-12 w-12 text-green-500" />
             </div>
           </CardContent>
         </Card>
 
         {/* Current Streak */}
-        <Card className="bg-gradient-to-br from-orange-500 to-red-600 text-white">
+        <Card className="bg-gradient-to-br from-orange-100 to-red-100 text-orange-800 border-orange-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-100 text-sm font-medium">Active Streak</p>
-                <p className="text-3xl font-bold">{stats.currentStreak}</p>
-                <p className="text-orange-100 text-xs">days active</p>
+                <p className="text-orange-600 text-sm font-medium">Active Streak</p>
+                <p className="text-3xl font-bold text-orange-700">{stats.currentStreak}</p>
+                <p className="text-orange-600 text-xs">days active</p>
               </div>
-              <Flame className="h-12 w-12 text-orange-200" />
+              <Flame className="h-12 w-12 text-orange-500" />
             </div>
           </CardContent>
         </Card>
 
         {/* Level */}
-        <Card className={`bg-gradient-to-br ${getLevelColor(stats.level)} text-white`}>
+        <Card className={`bg-gradient-to-br ${getLevelColor(stats.level)} text-gray-800 border-gray-200`}>
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-white/80 text-sm font-medium">Level {stats.level}</p>
-                <p className="text-2xl font-bold">{getLevelTitle(stats.level)}</p>
-                <p className="text-white/80 text-xs">Keep growing!</p>
+                <p className="text-gray-600 text-sm font-medium">Level {stats.level}</p>
+                <p className="text-2xl font-bold text-gray-700">{getLevelTitle(stats.level)}</p>
+                <p className="text-gray-600 text-xs">Keep growing!</p>
               </div>
-              <Crown className="h-12 w-12 text-white/80" />
+              <Crown className="h-12 w-12 text-gray-500" />
             </div>
           </CardContent>
         </Card>
 
         {/* Total Points */}
-        <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+        <Card className="bg-gradient-to-br from-sky-100 to-indigo-100 text-sky-800 border-sky-200">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm font-medium">Total Points</p>
-                <p className="text-3xl font-bold">{stats.totalPoints}</p>
-                <p className="text-blue-100 text-xs">Earned through activities</p>
+                <p className="text-sky-600 text-sm font-medium">Total Points</p>
+                <p className="text-3xl font-bold text-sky-700">{stats.totalPoints}</p>
+                <p className="text-sky-600 text-xs">Earned through activities</p>
               </div>
-              <Star className="h-12 w-12 text-blue-200" />
+              <Star className="h-12 w-12 text-sky-500" />
             </div>
           </CardContent>
         </Card>
@@ -250,19 +250,19 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button className="h-20 flex-col gap-2 bg-green-100 text-green-800 hover:bg-green-200">
+            <Button className="h-20 flex-col gap-2 bg-green-50 text-green-600 hover:bg-green-100 border border-green-200">
               <Award className="h-6 w-6" />
               <span className="text-sm font-medium">Upload Certificate</span>
             </Button>
-            <Button className="h-20 flex-col gap-2 bg-blue-100 text-blue-800 hover:bg-blue-200">
+            <Button className="h-20 flex-col gap-2 bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-200">
               <BookOpen className="h-6 w-6" />
               <span className="text-sm font-medium">Add Course</span>
             </Button>
-            <Button className="h-20 flex-col gap-2 bg-purple-100 text-purple-800 hover:bg-purple-200">
+            <Button className="h-20 flex-col gap-2 bg-violet-50 text-violet-600 hover:bg-violet-100 border border-violet-200">
               <Calendar className="h-6 w-6" />
               <span className="text-sm font-medium">Log Event</span>
             </Button>
-            <Button className="h-20 flex-col gap-2 bg-yellow-100 text-yellow-800 hover:bg-yellow-200">
+            <Button className="h-20 flex-col gap-2 bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200">
               <Trophy className="h-6 w-6" />
               <span className="text-sm font-medium">Add Competition</span>
             </Button>
@@ -300,7 +300,7 @@ const AcademicAchievementDashboard: React.FC<AcademicAchievementDashboardProps> 
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="flex items-center gap-1 text-green-600">
+                  <div className="flex items-center gap-1 text-green-500">
                     <Star className="h-4 w-4" />
                     <span className="font-medium">+{achievement.points}</span>
                   </div>

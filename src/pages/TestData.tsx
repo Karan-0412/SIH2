@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, Database, Trash2, CheckCircle, AlertCircle } from 'lucide-react';
 import { populateMockData, clearMockData } from '@/scripts/populateMockData';
+import { VCIntegrationTest } from '@/components/verifiableCredentials/VCIntegrationTest';
 
 const TestData = () => {
   const [loading, setLoading] = useState(false);
@@ -218,6 +219,11 @@ const TestData = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* Verifiable Credentials Integration Test */}
+        <div className="mt-8">
+          <VCIntegrationTest />
+        </div>
       </div>
     </div>
   );
