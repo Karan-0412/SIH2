@@ -116,8 +116,18 @@ export class VerifiableCredentialServiceSimple {
     credentialUrl: string;
   }> {
     try {
-      // Get issuer information - use the faculty member as issuer
-      // First try to find faculty by user_id
+      // Get issuer information - use the default issuer from issuers table
+      const { data: issuerData, error: issuerError } = await supabase
+        .from('issuers')
+        .select('id, name, did, sign_key_id')
+        .eq('status', 'active')
+        .single();
+
+      if (issuerError || !issuerData) {
+        throw new Error('No active issuer found. Please ensure the default issuer is set up.');
+      }
+
+      // Get faculty information for the credential metadata
       let { data: facultyData, error: facultyError } = await supabase
         .from('faculty')
         .select('id, email, name, department, user_id')
@@ -151,12 +161,17 @@ export class VerifiableCredentialServiceSimple {
         throw new Error('Faculty not found');
       }
 
-      // Create issuer object from faculty data
+      // Use the issuer from the issuers table, but include faculty info in metadata
       const issuer = {
-        id: facultyData.id,
-        name: facultyData.name || 'Faculty Member',
-        did: `did:example:faculty:${facultyData.id}`,
-        sign_key_id: `key-${facultyData.id}`,
+        id: issuerData.id, // Use the issuer ID from issuers table
+        name: issuerData.name,
+        did: issuerData.did,
+        sign_key_id: issuerData.sign_key_id,
+        faculty_info: {
+          id: facultyData.id,
+          name: facultyData.name || 'Faculty Member',
+          department: facultyData.department,
+        }
       };
 
       // Get student profile
@@ -197,6 +212,11 @@ export class VerifiableCredentialServiceSimple {
         metadata: {
           studentRegistrationId: student.id,
           department: request.activityData.department,
+          issuedByFaculty: {
+            id: issuer.faculty_info.id,
+            name: issuer.faculty_info.name,
+            department: issuer.faculty_info.department,
+          },
         },
         verificationUrl: `${getBaseUrl()}/verify?t=${shortToken}`,
       };
@@ -279,6 +299,7 @@ export class VerifiableCredentialServiceSimple {
         vcId,
         studentId: request.studentId,
         issuerId: issuer.id,
+        facultyId: issuer.faculty_info.id,
         activityId: request.activityId,
         evidenceCount: evidenceFiles.length,
       });

@@ -45,6 +45,7 @@ import Home from "./pages/Home";
 import StudentCourses from "./pages/StudentCourses";
 import TestData from "./pages/TestData";
 import TestDataButton from "./components/TestDataButton";
+import VerifyCredentialPage from "./pages/VerifyCredentialPage";
 import { BlockchainProvider } from "./contexts/BlockchainContext";
 import ChatbotToggle from "./components/ai/ChatbotToggle";
 
@@ -96,6 +97,8 @@ const App = () => {
                         <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
                         <Route path="/student-courses" element={<StudentRoute><StudentCourses /></StudentRoute>} />
                         <Route path="/test-data" element={<TestData />} />
+                        {/* Verification Routes */}
+                        <Route path="/verify" element={<VerifyCredentialPage />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/leaderboard" element={<Leaderboard />} />

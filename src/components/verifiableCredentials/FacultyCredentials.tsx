@@ -146,8 +146,11 @@ export const FacultyCredentials: React.FC = () => {
       console.log('Faculty found:', facultyData);
 
       // Get credentials issued by this faculty
-      console.log('Fetching credentials for issuer_id:', facultyData.id);
-      const { data: credentialsData, error: credentialsError } = await supabase
+      // Since we now use a default issuer, we need to find credentials by checking the faculty info in metadata
+      console.log('Fetching credentials for faculty:', facultyData.id);
+      
+      // First, let's try to get all credentials and filter by faculty info in metadata
+      const { data: allCredentials, error: allCredentialsError } = await supabase
         .from('verifiable_credentials')
         .select(`
           *,
@@ -157,18 +160,21 @@ export const FacultyCredentials: React.FC = () => {
             email
           )
         `)
-        .eq('issuer_id', facultyData.id)
         .order('issued_at', { ascending: false });
 
-      console.log('Credentials fetch result:', { credentialsData, credentialsError });
-
-      if (credentialsError) {
-        console.error('Error fetching credentials:', credentialsError);
+      if (allCredentialsError) {
+        console.error('Error fetching all credentials:', allCredentialsError);
         setLoading(false);
         return;
       }
 
-      console.log('Setting credentials:', credentialsData);
+      // Filter credentials by faculty info in metadata
+      const credentialsData = allCredentials?.filter(cred => {
+        const facultyInfo = cred.credential_json?.credentialSubject?.metadata?.issuedByFaculty;
+        return facultyInfo && facultyInfo.id === facultyData.id;
+      }) || [];
+
+      console.log('Filtered credentials for faculty:', credentialsData);
       console.log('Number of credentials found:', credentialsData?.length || 0);
       setCredentials(credentialsData || []);
     } catch (error) {
