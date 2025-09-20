@@ -478,6 +478,9 @@ const CoursesPage: React.FC = () => {
             <p>Loading...</p>
           ) : (
             (() => {
+              console.log('Courses page - All courses:', courses);
+              console.log('Courses page - Current profile:', profile);
+              
               const visibleCourses = courses.filter(c => {
                 if (!profile) return false;
                 if (profile.role === 'faculty') {
@@ -489,6 +492,8 @@ const CoursesPage: React.FC = () => {
                 const assigned = (c.assigned_student_ids || c.assigned_students || c.student_ids || c.student_id || '').toString();
                 return assigned.includes(String(sid));
               });
+              
+              console.log('Courses page - Visible courses:', visibleCourses);
 
               if (!visibleCourses.length) return <p className="text-sm text-muted-foreground">No courses assigned.</p>;
 
