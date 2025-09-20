@@ -43,6 +43,9 @@ const FacultyForm: React.FC<FacultyFormProps> = ({
     email: '',
     department: '',
     designation: '',
+    faculty_code: '',
+    phone: '',
+    specialization: '',
     is_verified: false
   });
   const [loading, setLoading] = useState(false);
@@ -217,6 +220,38 @@ const FacultyForm: React.FC<FacultyFormProps> = ({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="faculty_code">Faculty Code</Label>
+            <Input
+              id="faculty_code"
+              value={formData.faculty_code}
+              onChange={(e) => handleChange('faculty_code', e.target.value)}
+              placeholder="e.g., CS001, IT002"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number</Label>
+            <Input
+              id="phone"
+              value={formData.phone}
+              onChange={(e) => handleChange('phone', e.target.value)}
+              placeholder="Enter phone number"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="specialization">Specialization</Label>
+            <Textarea
+              id="specialization"
+              value={formData.specialization}
+              onChange={(e) => handleChange('specialization', e.target.value)}
+              placeholder="Enter areas of specialization"
+              rows={3}
+            />
           </div>
 
           <DialogFooter>

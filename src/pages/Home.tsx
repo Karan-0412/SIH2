@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -29,6 +29,14 @@ import {
 const Home = () => {
   const { user, loading: authLoading } = useAuth();
   const { profile, loading: profileLoading } = useProfile();
+  const navigate = useNavigate();
+
+  // Redirect admin users to admin dashboard
+  useEffect(() => {
+    if (profile && profile.role === 'admin') {
+      navigate('/admin', { replace: true });
+    }
+  }, [profile, navigate]);
 
   if (authLoading || profileLoading) {
     return (
@@ -90,7 +98,7 @@ const Home = () => {
                   <BarChart3 className="w-5 h-5 mr-2" />
                   View Dashboard
                 </Button>
-                <Button size="lg" variant="outline" className="border-white/30 text-white hover:bg-white/10">
+                <Button size="lg" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-white/20 hover:text-white hover:border-white/60 shadow-lg">
                   <Calendar className="w-5 h-5 mr-2" />
                   View Schedule
                 </Button>

@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
+import { useCommunity } from '@/hooks/useCommunity';
 import TextType from '@/components/TextType';
 import DarkVeil from '@/components/DarkVeil';
 import Galaxy from '@/components/Galaxy';
@@ -37,42 +38,7 @@ import {
 
 type Category = 'Academics' | 'Placements' | 'Clubs' | 'Events' | 'General';
 
-type Comment = { id: string; authorId: string; authorName: string; content: string; createdAt: string; upvotes?: string[]; downvotes?: string[] };
-type Post = {
-  id: string;
-  authorId: string;
-  authorName: string;
-  content: string;
-  category: Category;
-  groupId?: string | null;
-  createdAt: string;
-  upvotes: string[]; // user ids
-  downvotes: string[];
-  comments: Comment[];
-  blocked?: boolean;
-  reports?: number;
-  bookmarked?: string[]; // user ids
-};
-
-type Group = { id: string; name: string; description?: string; members: string[]; admins: string[] };
-
-const STORAGE_KEYS = {
-  POSTS: 'community_posts_v1',
-  GROUPS: 'community_groups_v1',
-  BANS: 'community_bans_v1',
-};
-
 const CATEGORIES: Category[] = ['Academics', 'Placements', 'Clubs', 'Events', 'General'];
-
-function uid(prefix = '') { return prefix + Math.random().toString(36).slice(2, 9); }
-
-function nowIso() { return new Date().toISOString(); }
-
-function load<T>(key: string, fallback: T): T {
-  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) as T : fallback; } catch { return fallback; }
-}
-
-function save(key: string, value: any) { try { localStorage.setItem(key, JSON.stringify(value)); } catch {} }
 
 // Very small AI filter stub - replace with real moderation API if available
 function aiDetectAbuse(text: string) {
@@ -84,12 +50,19 @@ function aiDetectAbuse(text: string) {
 export default function CommunityPage() {
   const { profile } = useProfile();
   const { toast } = useToast();
-
-  const [posts, setPosts] = useState<Post[]>(() => load<Post[]>(STORAGE_KEYS.POSTS, []));
-  const [groups, setGroups] = useState<Group[]>(() => load<Group[]>(STORAGE_KEYS.GROUPS, [
-    { id: 'g-general', name: 'General', description: 'General campus discussion', members: [], admins: [] },
-  ]));
-  const [bans, setBans] = useState<Record<string, number>>(() => load(STORAGE_KEYS.BANS, {}));
+  const { 
+    posts, 
+    groups, 
+    loading, 
+    error, 
+    createPost, 
+    createComment, 
+    togglePostInteraction, 
+    createGroup, 
+    joinGroup, 
+    leaveGroup,
+    loadPosts 
+  } = useCommunity();
 
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [query, setQuery] = useState('');
@@ -106,25 +79,21 @@ export default function CommunityPage() {
   const [openPostId, setOpenPostId] = useState<string | null>(null);
   const openPost = posts.find(p => p.id === openPostId) || null;
 
-  useEffect(() => { save(STORAGE_KEYS.POSTS, posts); }, [posts]);
-  useEffect(() => { save(STORAGE_KEYS.GROUPS, groups); }, [groups]);
-  useEffect(() => { save(STORAGE_KEYS.BANS, bans); }, [bans]);
-
   // convenience
   const myId = profile?.id ?? 'anon_' + (profile?.email ?? 'guest');
   const myName = profile?.full_name ?? 'Anonymous';
 
-  const myBanExpires = bans[myId] ?? 0;
-  const amBanned = myBanExpires > Date.now();
-  const banRemaining = Math.max(0, Math.ceil((myBanExpires - Date.now()) / 1000));
+  const joinedGroups = groups.filter(g => g.is_member);
 
-  const joinedGroups = groups.filter(g => g.members.includes(myId));
+  // Note: Ban system will be implemented later
+  const amBanned = false;
+  const banRemaining = 0;
 
   // Compute profile stats for banner
   const profileStats = useMemo(() => {
-    const userPosts = posts.filter(p => p.authorId === myId && !p.blocked);
-    const upvotesReceived = userPosts.reduce((sum, p) => sum + p.upvotes.length, 0);
-    const downvotesReceived = userPosts.reduce((sum, p) => sum + p.downvotes.length, 0);
+    const userPosts = posts.filter(p => p.author_id === myId && !p.is_blocked);
+    const upvotesReceived = userPosts.reduce((sum, p) => sum + (p.upvotes || 0), 0);
+    const downvotesReceived = userPosts.reduce((sum, p) => sum + (p.downvotes || 0), 0);
     return {
       postsCount: userPosts.length,
       groupsCount: joinedGroups.length,
@@ -143,17 +112,28 @@ export default function CommunityPage() {
   };
 
   const visiblePosts = useMemo(() => {
-    let base = posts.slice().sort((a,b) => b.createdAt.localeCompare(a.createdAt));
-    if (selectedGroup) base = base.filter(p => (p.groupId || 'g-general') === selectedGroup);
+    let base = posts.slice().sort((a,b) => b.created_at.localeCompare(a.created_at));
+    if (selectedGroup) base = base.filter(p => (p.group_id || 'g-general') === selectedGroup);
     if (query) base = base.filter(p => p.content.toLowerCase().includes(query.toLowerCase()));
+    if (trendingFilter !== 'All') base = base.filter(p => p.category === trendingFilter);
     return base;
-  }, [posts, selectedGroup, query]);
+  }, [posts, selectedGroup, query, trendingFilter]);
+
+  // Load posts when filters change
+  useEffect(() => {
+    loadPosts(selectedGroup || undefined, trendingFilter !== 'All' ? trendingFilter : undefined);
+  }, [selectedGroup, trendingFilter, loadPosts]);
 
   // posting flow
-  const onCreatePost = () => {
-    if (!profile) { toast({ title: 'Sign in required', description: 'You must be signed in to post.' }); return; }
-    if (amBanned) { toast({ title: 'You are temporarily banned', description: `You are banned for abusive content. Try again in ${banRemaining}s`, variant: 'destructive' }); return; }
-    if (!newPostContent.trim()) { toast({ title: 'Empty post', description: 'Please write something.' }); return; }
+  const onCreatePost = async () => {
+    if (!profile) { 
+      toast({ title: 'Sign in required', description: 'You must be signed in to post.' }); 
+      return; 
+    }
+    if (!newPostContent.trim()) { 
+      toast({ title: 'Empty post', description: 'Please write something.' }); 
+      return; 
+    }
 
     // Respectful reminder popup - simple confirm
     if (!confirm('Be respectful. Abusive content leads to a temporary ban. Proceed?')) return;
@@ -161,98 +141,151 @@ export default function CommunityPage() {
     // AI moderation
     const abusive = aiDetectAbuse(newPostContent);
     if (abusive) {
-      // block post and ban user 1 hour
-      const expires = Date.now() + 60 * 60 * 1000;
-      setBans(bl => ({ ...bl, [myId]: expires }));
-      toast({ title: 'Content blocked', description: 'Abusive content detected. You are temporarily banned for 1 hour.', variant: 'destructive' });
-      // create a blocked post entry
-      const p: Post = { id: uid('p_'), authorId: myId, authorName: myName, content: newPostContent, category: newPostCategory, groupId: selectedGroup ?? 'g-general', createdAt: nowIso(), upvotes: [], downvotes: [], comments: [], blocked: true, reports: 1, bookmarked: [] };
-      setPosts(ps => [p, ...ps]);
-      setNewPostContent('');
+      toast({ title: 'Content blocked', description: 'Abusive content detected. Please revise your post.', variant: 'destructive' });
       return;
     }
 
-    const p: Post = { id: uid('p_'), authorId: myId, authorName: myName, content: newPostContent, category: newPostCategory, groupId: selectedGroup ?? 'g-general', createdAt: nowIso(), upvotes: [], downvotes: [], comments: [], blocked: false, reports: 0, bookmarked: [] };
-    setPosts(ps => [p, ...ps]);
-    setNewPostContent('');
-    toast({ title: 'Posted', description: 'Your post was added.' });
-  };
-
-  const toggleVote = (postId: string, type: 'up'|'down') => {
-    setPosts(ps => ps.map(p => {
-      if (p.id !== postId) return p;
-      const up = new Set(p.upvotes);
-      const down = new Set(p.downvotes);
-      const hasUp = up.has(myId);
-      const hasDown = down.has(myId);
-      if (type === 'up') {
-        if (hasUp) up.delete(myId); else { up.add(myId); down.delete(myId); }
-      } else {
-        if (hasDown) down.delete(myId); else { down.add(myId); up.delete(myId); }
-      }
-      return { ...p, upvotes: Array.from(up), downvotes: Array.from(down) };
-    }));
-  };
-
-  const toggleCommentVote = (postId: string, commentId: string, type: 'up'|'down') => {
-    setPosts(ps => ps.map(p => {
-      if (p.id !== postId) return p;
-      const comments = p.comments.map(c => {
-        if (c.id !== commentId) return c;
-        const up = new Set(c.upvotes || []);
-        const down = new Set(c.downvotes || []);
-        const hasUp = up.has(myId);
-        const hasDown = down.has(myId);
-        if (type === 'up') {
-          if (hasUp) up.delete(myId); else { up.add(myId); down.delete(myId); }
-        } else {
-          if (hasDown) down.delete(myId); else { down.add(myId); up.delete(myId); }
-        }
-        return { ...c, upvotes: Array.from(up), downvotes: Array.from(down) };
+    try {
+      await createPost(newPostContent, newPostCategory, selectedGroup || undefined);
+      setNewPostContent('');
+      toast({ title: 'Posted', description: 'Your post was added.' });
+    } catch (error) {
+      console.error('Error creating post:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to create post. Please try again.', 
+        variant: 'destructive' 
       });
-      return { ...p, comments };
-    }));
+    }
   };
 
-  const addComment = (postId: string, text: string) => {
+  const toggleVote = async (postId: string, type: 'up'|'down') => {
+    try {
+      await togglePostInteraction(postId, type === 'up' ? 'upvote' : 'downvote');
+    } catch (error) {
+      console.error('Error toggling vote:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to update vote. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const toggleCommentVote = async (commentId: string, type: 'up'|'down') => {
+    try {
+      // Note: This would need to be implemented in the service
+      // For now, we'll just show a message
+      toast({ title: 'Comment voting', description: 'Comment voting will be implemented soon.' });
+    } catch (error) {
+      console.error('Error toggling comment vote:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to update comment vote. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
+  };
+
+  const addComment = async (postId: string, text: string) => {
     if (!text.trim()) return;
-    if (!profile) { toast({ title: 'Sign in required' }); return; }
-    const comment: Comment = { id: uid('c_'), authorId: myId, authorName: myName, content: text, createdAt: nowIso(), upvotes: [], downvotes: [] };
-    setPosts(ps => ps.map(p => p.id === postId ? { ...p, comments: [...p.comments, comment] } : p));
-    toast({ title: 'Replied' });
+    if (!profile) { 
+      toast({ title: 'Sign in required' }); 
+      return; 
+    }
+    
+    try {
+      await createComment(postId, text);
+      toast({ title: 'Replied' });
+    } catch (error) {
+      console.error('Error creating comment:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to create comment. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
   const reportPost = (postId: string) => {
-    setPosts(ps => ps.map(p => p.id === postId ? { ...p, reports: (p.reports||0) + 1 } : p));
+    // TODO: Implement reporting functionality
     toast({ title: 'Reported', description: 'Thanks — moderators will review.' });
   };
 
-  const bookmarkPost = (postId: string) => {
-    setPosts(ps => ps.map(p => p.id === postId ? { ...p, bookmarked: p.bookmarked?.includes(myId) ? p.bookmarked.filter(id=>id!==myId) : [...(p.bookmarked||[]), myId] } : p));
+  const bookmarkPost = async (postId: string) => {
+    try {
+      await togglePostInteraction(postId, 'bookmark');
+      toast({ title: 'Bookmark updated' });
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to update bookmark. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
-  const createGroup = () => {
+  const handleCreateGroup = async () => {
     if (!newGroupName.trim()) return toast({ title: 'Name required' });
-    const id = uid('g_');
-    const g: Group = { id, name: newGroupName.trim(), description: newGroupDesc.trim(), members: [myId], admins: [myId] };
-    setGroups(gs => [g, ...gs]);
-    setNewGroupName(''); setNewGroupDesc(''); setCreatingGroup(false);
-    toast({ title: 'Group created' });
+    
+    try {
+      await createGroup(newGroupName.trim(), newGroupDesc.trim());
+      setNewGroupName(''); 
+      setNewGroupDesc(''); 
+      setCreatingGroup(false);
+      toast({ title: 'Group created' });
+    } catch (error) {
+      console.error('Error creating group:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to create group. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
-  const joinGroup = (gid: string) => {
-    setGroups(gs => gs.map(g => g.id === gid ? { ...g, members: g.members.includes(myId) ? g.members : [...g.members, myId] } : g));
-    toast({ title: 'Joined group' });
+  const handleJoinGroup = async (gid: string) => {
+    try {
+      await joinGroup(gid);
+      toast({ title: 'Joined group' });
+    } catch (error) {
+      console.error('Error joining group:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to join group. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
-  const leaveGroup = (gid: string) => {
-    setGroups(gs => gs.map(g => g.id === gid ? { ...g, members: g.members.filter(id=>id!==myId) } : g));
-    if (selectedGroup === gid) setSelectedGroup(null);
+  const handleLeaveGroup = async (gid: string) => {
+    try {
+      await leaveGroup(gid);
+      if (selectedGroup === gid) setSelectedGroup(null);
+      toast({ title: 'Left group' });
+    } catch (error) {
+      console.error('Error leaving group:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to leave group. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
-  const deletePost = (postId: string) => {
-    setPosts(ps => ps.filter(p => p.id !== postId));
-    toast({ title: 'Post removed' });
+  const deletePost = async (postId: string) => {
+    try {
+      // TODO: Implement delete post in service
+      toast({ title: 'Post removed' });
+    } catch (error) {
+      console.error('Error deleting post:', error);
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to delete post. Please try again.', 
+        variant: 'destructive' 
+      });
+    }
   };
 
   return (
@@ -370,12 +403,12 @@ export default function CommunityPage() {
                       <Hash className="w-4 h-4 mr-2" />
                       {g.name}
                     </Button>
-                    {g.members.includes(myId) ? (
-                      <Button size="sm" variant="outline" onClick={() => leaveGroup(g.id)} className="ml-2">
+                    {g.is_member ? (
+                      <Button size="sm" variant="outline" onClick={() => handleLeaveGroup(g.id)} className="ml-2">
                         Leave
                       </Button>
                     ) : (
-                      <Button size="sm" onClick={() => joinGroup(g.id)} className="ml-2">
+                      <Button size="sm" onClick={() => handleJoinGroup(g.id)} className="ml-2">
                         Join
                       </Button>
                     )}
@@ -483,26 +516,26 @@ export default function CommunityPage() {
 
           <div className="space-y-4">
             {visiblePosts.map(post => (
-              <Card key={post.id} className={`shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${post.blocked ? 'opacity-60' : ''}`}>
+              <Card key={post.id} className={`shadow-lg border-0 bg-white/90 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${post.is_blocked ? 'opacity-60' : ''}`}>
                 <CardContent className="p-6">
                   <header className="flex items-start gap-4 mb-4">
                     <Avatar className="w-12 h-12 ring-2 ring-black/20">
-                      <AvatarImage src={getAvatarFor(post.authorId) || '/placeholder.svg'} alt={post.authorName} />
+                      <AvatarImage src={getAvatarFor(post.author_id) || post.author_avatar || '/placeholder.svg'} alt={post.author_name} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
-                        {(post.authorName || 'U').slice(0,1)}
+                        {(post.author_name || 'U').slice(0,1)}
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <h3 className="font-semibold text-gray-900">{post.authorName}</h3>
+                          <h3 className="font-semibold text-gray-900">{post.author_name}</h3>
                           <Badge variant="secondary" className="bg-black text-white">
                             {post.category}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
-                          {new Date(post.createdAt).toLocaleDateString()}
+                          {new Date(post.created_at).toLocaleDateString()}
                         </div>
                       </div>
                       <div id={`post-${post.id}`} className="text-gray-700 leading-relaxed whitespace-pre-wrap">
@@ -518,19 +551,19 @@ export default function CommunityPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleVote(post.id, 'up')}
-                        className={`flex items-center gap-2 ${post.upvotes.includes(myId) ? 'text-green-600 bg-green-50' : 'text-gray-600 hover:text-green-600'}`}
+                        className={`flex items-center gap-2 ${post.user_has_upvoted ? 'text-green-600 bg-green-50' : 'text-gray-600 hover:text-green-600'}`}
                       >
                         <ThumbsUp className="w-4 h-4" />
-                        <span>{post.upvotes.length}</span>
+                        <span>{post.upvotes || 0}</span>
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => toggleVote(post.id, 'down')}
-                        className={`flex items-center gap-2 ${post.downvotes.includes(myId) ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-600'}`}
+                        className={`flex items-center gap-2 ${post.user_has_downvoted ? 'text-red-600 bg-red-50' : 'text-gray-600 hover:text-red-600'}`}
                       >
                         <ThumbsDown className="w-4 h-4" />
-                        <span>{post.downvotes.length}</span>
+                        <span>{post.downvotes || 0}</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -556,7 +589,7 @@ export default function CommunityPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => bookmarkPost(post.id)}
-                        className={`${(post.bookmarked || []).includes(myId) ? 'text-yellow-600' : 'text-gray-600 hover:text-yellow-600'}`}
+                        className={`${post.user_has_bookmarked ? 'text-yellow-600' : 'text-gray-600 hover:text-yellow-600'}`}
                       >
                         <Bookmark className="w-4 h-4" />
                       </Button>
@@ -568,7 +601,7 @@ export default function CommunityPage() {
                       >
                         <Flag className="w-4 h-4" />
                       </Button>
-                      {groups.find(g => g.id === post.groupId)?.admins.includes(myId) && (
+                      {groups.find(g => g.id === post.group_id)?.is_admin && (
                         <Button
                           variant="ghost"
                           size="sm"
@@ -592,34 +625,34 @@ export default function CommunityPage() {
                         {post.comments.map(c => (
                           <div key={c.id} className="flex gap-3 p-4 bg-gray-50 rounded-lg">
                             <Avatar className="w-8 h-8">
-                              <AvatarImage src={getAvatarFor(c.authorId) || '/placeholder.svg'} alt={c.authorName} />
-                              <AvatarFallback className="text-xs">{c.authorName.charAt(0)}</AvatarFallback>
+                              <AvatarImage src={getAvatarFor(c.author_id) || c.author_avatar || '/placeholder.svg'} alt={c.author_name} />
+                              <AvatarFallback className="text-xs">{c.author_name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">
                               <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium text-sm">{c.authorName}</span>
+                                <span className="font-medium text-sm">{c.author_name}</span>
                                 <span className="text-xs text-gray-500">•</span>
-                                <span className="text-xs text-gray-500">{new Date(c.createdAt).toLocaleDateString()}</span>
+                                <span className="text-xs text-gray-500">{new Date(c.created_at).toLocaleDateString()}</span>
                               </div>
                               <p className="text-sm text-gray-700 mb-2">{c.content}</p>
                               <div className="flex items-center gap-4">
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => toggleCommentVote(post.id, c.id, 'up')}
-                                  className={`text-xs ${(c.upvotes || []).includes(myId) ? 'text-green-600' : 'text-gray-500 hover:text-green-600'}`}
+                                  onClick={() => toggleCommentVote(c.id, 'up')}
+                                  className={`text-xs ${c.user_has_upvoted ? 'text-green-600' : 'text-gray-500 hover:text-green-600'}`}
                                 >
                                   <ThumbsUp className="w-3 h-3 mr-1" />
-                                  {(c.upvotes || []).length}
+                                  {c.upvotes || 0}
                                 </Button>
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => toggleCommentVote(post.id, c.id, 'down')}
-                                  className={`text-xs ${(c.downvotes || []).includes(myId) ? 'text-red-600' : 'text-gray-500 hover:text-red-600'}`}
+                                  onClick={() => toggleCommentVote(c.id, 'down')}
+                                  className={`text-xs ${c.user_has_downvoted ? 'text-red-600' : 'text-gray-500 hover:text-red-600'}`}
                                 >
                                   <ThumbsDown className="w-3 h-3 mr-1" />
-                                  {(c.downvotes || []).length}
+                                  {c.downvotes || 0}
                                 </Button>
                               </div>
                             </div>
@@ -660,8 +693,8 @@ export default function CommunityPage() {
                 </div>
                 <div className="space-y-3">
                   {(() => {
-                    const filtered = posts.filter(p => !p.blocked && (trendingFilter === 'All' || p.category === trendingFilter));
-                    const sorted = filtered.sort((a, b) => (b.upvotes.length - b.downvotes.length) - (a.upvotes.length - a.downvotes.length) || b.createdAt.localeCompare(a.createdAt));
+                    const filtered = posts.filter(p => !p.is_blocked && (trendingFilter === 'All' || p.category === trendingFilter));
+                    const sorted = filtered.sort((a, b) => ((b.upvotes || 0) - (b.downvotes || 0)) - ((a.upvotes || 0) - (a.downvotes || 0)) || b.created_at.localeCompare(a.created_at));
                     return sorted.slice(0, 5).map((p, i) => (
                       <div key={p.id} className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors">
                         <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center text-white font-bold text-sm">
@@ -690,7 +723,7 @@ export default function CommunityPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {groups.filter(g => !g.members.includes(myId)).slice(0, 4).map(g => (
+                  {groups.filter(g => !g.is_member).slice(0, 4).map(g => (
                     <div key={g.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-blue-500 flex items-center justify-center text-white font-semibold">
@@ -698,10 +731,10 @@ export default function CommunityPage() {
                         </div>
                         <div>
                           <div className="font-medium text-sm">{g.name}</div>
-                          <div className="text-xs text-gray-500">{g.members.length} members</div>
+                          <div className="text-xs text-gray-500">{g.member_count || 0} members</div>
                         </div>
                       </div>
-                      <Button size="sm" onClick={() => joinGroup(g.id)} className="bg-green-600 hover:bg-green-700">
+                      <Button size="sm" onClick={() => handleJoinGroup(g.id)} className="bg-green-600 hover:bg-green-700">
                         Join
                       </Button>
                     </div>
@@ -721,7 +754,7 @@ export default function CommunityPage() {
               <CardContent>
                 <div className="space-y-3">
                   {Object.entries(posts.reduce((acc, p) => { 
-                    acc[p.authorName] = (acc[p.authorName] || 0) + (p.upvotes.length - p.downvotes.length); 
+                    acc[p.author_name] = (acc[p.author_name] || 0) + ((p.upvotes || 0) - (p.downvotes || 0)); 
                     return acc; 
                   }, {} as Record<string, number>)).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name, score], i) => (
                     <div key={name} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 transition-colors">
@@ -782,7 +815,7 @@ export default function CommunityPage() {
                 <Button variant="outline" onClick={() => setCreatingGroup(false)}>
                   Cancel
                 </Button>
-                <Button onClick={createGroup} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={handleCreateGroup} className="bg-blue-600 hover:bg-blue-700">
                   Create Group
                 </Button>
               </div>

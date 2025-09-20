@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -12,10 +13,26 @@ import {
   Trash2,
   UserCheck,
   UserX,
-  Filter
+  Filter,
+  Users,
+  Shield,
+  Clock,
+  TrendingUp,
+  MoreVertical,
+  Download,
+  Upload,
+  RefreshCw,
+  Eye,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Award,
+  Activity
 } from 'lucide-react';
 import FacultyForm from '@/components/admin/FacultyForm';
 import FacultyTable from '@/components/admin/FacultyTable';
+import CSVImportModal from '@/components/admin/CSVImportModal';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Faculty = Tables<'faculty'>;
@@ -27,6 +44,7 @@ const AdminFaculty: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [editingFaculty, setEditingFaculty] = useState<Faculty | null>(null);
   const [filterVerified, setFilterVerified] = useState<'all' | 'verified' | 'unverified'>('all');
+  const [showCSVImport, setShowCSVImport] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -120,102 +138,207 @@ const AdminFaculty: React.FC = () => {
     return matchesSearch && matchesFilter;
   });
 
+  const verifiedCount = faculty.filter(f => f.is_verified).length;
+  const pendingCount = faculty.filter(f => !f.is_verified).length;
+  const verificationRate = faculty.length > 0 ? (verifiedCount / faculty.length) * 100 : 0;
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading faculty data...</p>
+        <div className="text-center py-12">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-blue-200 border-t-blue-600 mx-auto mb-4"></div>
+            <div className="absolute inset-0 rounded-full h-12 w-12 border-4 border-transparent border-t-purple-400 animate-spin mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+          </div>
+          <p className="text-gray-600 text-lg">Loading faculty data...</p>
+          <p className="text-gray-400 text-sm mt-2">Please wait while we fetch the latest information</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Faculty Management</h1>
-          <p className="text-gray-600 mt-1">Manage faculty members and their verification status</p>
+    <div className="space-y-8">
+      {/* Hero Header */}
+      <div className="relative overflow-hidden bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 rounded-3xl">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative px-8 py-12 text-white">
+          <div className="flex items-center justify-between">
+            <div className="max-w-3xl">
+              <Badge className="mb-4 bg-white/20 text-white border-white/30 hover:bg-white/30">
+                <Users className="w-3 h-3 mr-1" />
+                Faculty Management
+              </Badge>
+              <h1 className="text-4xl font-bold mb-4 leading-tight">
+                Faculty Management System
+              </h1>
+              <p className="text-xl text-blue-100 mb-6 leading-relaxed">
+                Manage faculty members, verify credentials, and oversee academic staff with powerful admin tools.
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button size="lg" className="bg-white text-blue-600 hover:bg-blue-50 font-semibold" onClick={() => setShowForm(true)}>
+                  <Plus className="w-5 h-5 mr-2" />
+                  Add New Faculty
+                </Button>
+                <Button size="lg" className="bg-white/10 backdrop-blur-sm border-2 border-white/40 text-white hover:bg-white/20 hover:text-white hover:border-white/60 shadow-lg" onClick={() => setShowCSVImport(true)}>
+                  <Upload className="w-5 h-5 mr-2" />
+                  Import Assignments
+                </Button>
+              </div>
+            </div>
+            <div className="hidden lg:block">
+              <div className="w-32 h-32 bg-white/10 rounded-full flex items-center justify-center">
+                <Users className="w-16 h-16 text-white/80" />
+              </div>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Faculty
-        </Button>
+        <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full"></div>
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white/5 rounded-full"></div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Faculty</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{faculty.length}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Verified Faculty</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {faculty.filter(f => f.is_verified).length}
+      {/* Enhanced Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 group-hover:scale-110 transition-transform">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex items-center text-green-600 text-sm font-medium">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                +12%
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Total Faculty</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{faculty.length}</p>
+              <p className="text-xs text-gray-500">Registered members</p>
             </div>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Pending Verification</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">
-              {faculty.filter(f => !f.is_verified).length}
+        <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-green-500 to-green-600 group-hover:scale-110 transition-transform">
+                <UserCheck className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex items-center text-green-600 text-sm font-medium">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                +8%
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Verified Faculty</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{verifiedCount}</p>
+              <p className="text-xs text-gray-500">Active and verified</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 group-hover:scale-110 transition-transform">
+                <Clock className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex items-center text-orange-600 text-sm font-medium">
+                <Activity className="w-4 h-4 mr-1" />
+                Pending
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Pending Verification</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{pendingCount}</p>
+              <p className="text-xs text-gray-500">Awaiting approval</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/80 backdrop-blur-sm hover:scale-105">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="p-3 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 group-hover:scale-110 transition-transform">
+                <Shield className="h-6 w-6 text-white" />
+              </div>
+              <div className="flex items-center text-purple-600 text-sm font-medium">
+                <Award className="w-4 h-4 mr-1" />
+                {verificationRate.toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-600 mb-1">Verification Rate</p>
+              <p className="text-3xl font-bold text-gray-900 mb-1">{verificationRate.toFixed(1)}%</p>
+              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div className="bg-gradient-to-r from-purple-500 to-purple-600 h-2 rounded-full" style={{ width: `${verificationRate}%` }}></div>
+              </div>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Search and Filter */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="flex flex-col sm:flex-row gap-4">
+      {/* Enhanced Search and Filter */}
+      <Card className="border-0 bg-white/80 backdrop-blur-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-3 text-xl">
+              <div className="bg-gradient-to-br from-purple-500 to-purple-600 p-2 rounded-lg">
+                <Search className="h-5 w-5 text-white" />
+              </div>
+              Search & Filter
+            </CardTitle>
+            <div className="flex items-center space-x-2">
+              <Button variant="outline" size="sm" onClick={fetchFaculty}>
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col lg:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
               <Input
-                placeholder="Search faculty by name, email, or department..."
+                placeholder="Search faculty by name, email, department, or specialization..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10"
+                className="pl-12 h-12 bg-white/50 border-white/20 focus:bg-white focus:border-blue-300 text-lg"
               />
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={filterVerified === 'all' ? 'default' : 'outline'}
-                size="sm"
+                size="lg"
                 onClick={() => setFilterVerified('all')}
+                className="px-6"
               >
-                All
+                <Users className="h-4 w-4 mr-2" />
+                All ({faculty.length})
               </Button>
               <Button
                 variant={filterVerified === 'verified' ? 'default' : 'outline'}
-                size="sm"
+                size="lg"
                 onClick={() => setFilterVerified('verified')}
+                className="px-6"
               >
-                <UserCheck className="h-4 w-4 mr-1" />
-                Verified
+                <UserCheck className="h-4 w-4 mr-2" />
+                Verified ({verifiedCount})
               </Button>
               <Button
                 variant={filterVerified === 'unverified' ? 'default' : 'outline'}
-                size="sm"
+                size="lg"
                 onClick={() => setFilterVerified('unverified')}
+                className="px-6"
               >
-                <UserX className="h-4 w-4 mr-1" />
-                Unverified
+                <UserX className="h-4 w-4 mr-2" />
+                Pending ({pendingCount})
               </Button>
             </div>
           </div>
@@ -241,6 +364,14 @@ const AdminFaculty: React.FC = () => {
         onSave={() => {
           setShowForm(false);
           setEditingFaculty(null);
+          fetchFaculty();
+        }}
+      />
+
+      <CSVImportModal
+        open={showCSVImport}
+        onOpenChange={setShowCSVImport}
+        onImport={() => {
           fetchFaculty();
         }}
       />
