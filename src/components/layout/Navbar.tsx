@@ -38,6 +38,7 @@ const Navbar = () => {
   const [focusedIndex, setFocusedIndex] = React.useState<number | null>(null);
 
   const baseItems = [
+    { label: 'Home', to: '/home' },
     { label: 'Courses', to: '/courses' },
     { label: 'Dashboard', to: '/' },
     { label: 'Community', to: '/community' },

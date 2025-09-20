@@ -17,7 +17,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { TrendingUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
 
 interface Certificate {
   id: string;
@@ -155,6 +154,7 @@ const StudentDashboard = () => {
           <NotificationsDropdown />
         </div>
       </div>
+
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="w-full">

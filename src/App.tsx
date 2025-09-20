@@ -23,18 +23,34 @@ import FacultyCommunity from "./pages/FacultyCommunity";
 import FacultyChatHub from "./pages/FacultyChatHub";
 import FacultyRoute from "./components/routing/FacultyRoute";
 import IntegrationsAnalytics from "./pages/IntegrationsAnalytics";
+import AcademicAchievements from "./pages/AcademicAchievements";
+import ResumeGenerator from "./pages/ResumeGenerator";
+import MyActivitiesPage from "./pages/MyActivitesPage";
+import CertificateManagement from "./pages/CertificateManagement";
+import Home from "./pages/Home";
+import { BlockchainProvider } from "./contexts/BlockchainContext";
 
-const queryClient = new QueryClient();
+const App = () => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: 1,
+        refetchOnWindowFocus: false,
+      },
+    },
+  });
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BlockchainProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Index />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/auth" element={<AuthPage />} />
             <Route path="/events" element={<EventsPage />} />
             <Route path="/events/:id" element={<EventDetail />} />
@@ -47,15 +63,23 @@ const App = () => (
             <Route path="/integrations" element={<StudentRoute><IntegrationsAnalytics /></StudentRoute>} />
             <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
             <Route path="/faculty/chat" element={<FacultyRoute><FacultyChatHub /></FacultyRoute>} />
+            {/* Student Pages */}
+            <Route path="/academic-achievements" element={<StudentRoute><AcademicAchievements /></StudentRoute>} />
+            <Route path="/resume-generator" element={<StudentRoute><ResumeGenerator /></StudentRoute>} />
+            <Route path="/my-projects" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
+            <Route path="/my-activities" element={<StudentRoute><MyActivitiesPage /></StudentRoute>} />
+            <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+          </BrowserRouter>
+        </TooltipProvider>
+      </BlockchainProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
