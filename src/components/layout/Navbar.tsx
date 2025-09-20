@@ -1,35 +1,11 @@
 import React from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useProfile } from '@/hooks/useProfile';
-import { useToast } from '@/hooks/use-toast';
-import { LogOut, User } from 'lucide-react';
 import NotificationsDropdown from '../dashboard/student/NotificationsDropdown';
-import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from '@/components/ui/dropdown-menu';
+import ProfileDropdown from './ProfileDropdown';
 
 const Navbar = () => {
-  const { signOut } = useAuth();
   const { profile } = useProfile();
-  const { toast } = useToast();
-  const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    const { error } = await signOut();
-    if (error) {
-      toast({
-        title: 'Error',
-        description: error.message,
-        variant: 'destructive',
-      });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Signed out successfully!',
-      });
-      navigate('/auth', { replace: true });
-    }
-  };
 
   const location = useLocation();
   const tabsRef = React.useRef<HTMLDivElement | null>(null);
@@ -115,17 +91,7 @@ const Navbar = () => {
 
           <div className="flex items-center gap-3">
             {profile?.role === 'student' && <NotificationsDropdown />}
-            {profile && (
-              <div className="hidden sm:flex items-center gap-2 text-sm text-gray-700 transition-colors">
-                <User className="h-4 w-4" />
-                <Link to="/profile" className="font-medium hover:underline">{profile.full_name}</Link>
-                <span className="text-xs capitalize">({profile.role})</span>
-              </div>
-            )}
-            <Button variant="outline" size="sm" onClick={handleSignOut} className="transition-all duration-200 hover:-translate-y-0.5">
-              <LogOut className="h-4 w-4 mr-2" />
-              Sign Out
-            </Button>
+            {profile && <ProfileDropdown />}
           </div>
         </div>
       </div>

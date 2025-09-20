@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { useProfile } from '@/hooks/useProfile';
-import { Trophy, Sparkles, Zap, Check, Star } from 'lucide-react';
+import { Trophy, Zap, Check, UserCircle, User } from 'lucide-react';
 
 import ProfileCard from '../components/ProfileCard';
 
@@ -74,8 +74,8 @@ const ProfilePage: React.FC = () => {
   const [level, setLevel] = useState(4);
   const [streak, setStreak] = useState(5);
   const [accepted, setAccepted] = useState(false);
-  const [classFilter, setClassFilter] = useState('all');
-  const [batchFilter, setBatchFilter] = useState('all');
+  const [classFilter] = useState('all');
+  const [batchFilter] = useState('all');
   const [showAllMonths, setShowAllMonths] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [nameInput, setNameInput] = useState('');
@@ -94,7 +94,13 @@ const ProfilePage: React.FC = () => {
   const loadOverrides = () => {
     try { return JSON.parse(localStorage.getItem(overridesKey) || '{}'); } catch { return {}; }
   };
-  const saveOverrides = (obj: any) => { try { localStorage.setItem(overridesKey, JSON.stringify(obj)); } catch {} };
+  const saveOverrides = (obj: any) => { 
+    try { 
+      localStorage.setItem(overridesKey, JSON.stringify(obj)); 
+    } catch (error) {
+      console.error('Error saving overrides:', error);
+    }
+  };
 
   const badges = useMemo(() => [
     { id: 'b1', name: 'Getting Started', color: 'bg-yellow-100 text-yellow-800' },
@@ -193,53 +199,41 @@ const ProfilePage: React.FC = () => {
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Hero Card */}
-        <div className="mb-6 -mt-6">
+        {/* Compact Hero Header */}
+        <div className="mb-8 -mt-6">
           <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Avatar className="h-16 w-16">
+                <Avatar className="h-20 w-20">
                   <AvatarImage src={(typeof window !== 'undefined' ? (JSON.parse(localStorage.getItem('profile_overrides_v1') || '{}')?.avatarDataUrl || '') : '')} />
-                  <AvatarFallback className="text-xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback className="text-2xl">{profile.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="text-sm text-muted-foreground">Hi {profile.full_name.split(' ')[0]},</div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    <button onClick={() => setShowProfileCard(true)} className="underline decoration-dotted underline-offset-4 hover:decoration-solid">{profile.full_name}</button>
-                  </h1>
+                  <div className="text-sm text-muted-foreground">Welcome back,</div>
+                  <h1 className="text-4xl font-bold tracking-tight">{profile.full_name}</h1>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Badge variant="secondary" className="capitalize">
+                      {profile.role}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">•</span>
+                    <span className="text-sm text-muted-foreground">{profile.email}</span>
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-3">
                 <Button variant="outline" onClick={() => { const ov = (typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('profile_overrides_v1') || '{}') : {}); setNameInput(profile.full_name || ''); setEmailInput(profile.email || ''); setAvatarDataUrl(ov?.avatarDataUrl || ''); setAgeInput(ov?.age || ''); setYearInput(ov?.year || ''); setCourseInput(ov?.course || ''); setCollegeInput(ov?.college || ''); setPhoneInput(ov?.phone || ''); setBioInput(ov?.bio || ''); setShowEdit(true); }}>
+                  <User className="h-4 w-4 mr-2" />
                   Edit Profile
                 </Button>
-                <div className="w-72">
+                <Button variant="outline" onClick={() => setShowProfileCard(true)}>
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  Interactive Card
+                </Button>
+                <div className="w-64">
                   <Input placeholder="Search for content, challenges..." />
                 </div>
               </div>
             </div>
-          </div>
-        </div>
-
-        {/* Profile Card at Top */}
-        <div className="flex justify-center mb-12">
-          <div>
-            <ProfileCard
-              name={profile.full_name || 'User'}
-              title={profile.role === 'faculty' ? 'Faculty' : 'Student'}
-              handle={(profile.email || '').split('@')[0]}
-              status="Online"
-              contactText="Contact Me"
-              avatarUrl="/spiderman-avatar.png"
-              iconUrl="/spiderman-avatar.png"
-              showUserInfo={true}
-              enableTilt={true}
-              enableMobileTilt={false}
-              onContactClick={() => console.log('Contact clicked')}
-              showBehindGradient={true}
-              behindGradient="radial-gradient(farthest-side circle at var(--pointer-x) var(--pointer-y),hsla(266,100%,90%,var(--card-opacity)) 4%,hsla(266,50%,80%,calc(var(--card-opacity)*0.75)) 10%,hsla(266,25%,70%,calc(var(--card-opacity)*0.5)) 50%,hsla(266,0%,60%,0) 100%),radial-gradient(35% 52% at 55% 20%,#00ffaac4 0%,#073aff00 100%),radial-gradient(100% 100% at 50% 50%,#00c1ffff 1%,#073aff00 76%),conic-gradient(from 124deg at 50% 50%,#c137ffff 0%,#07c6ffff 40%,#07c6ffff 60%,#c137ffff 100%)"
-              className="pc-card-wrapper-active"
-            />
           </div>
         </div>
 
@@ -361,6 +355,42 @@ const ProfilePage: React.FC = () => {
           </main>
 
           <aside className="xl:col-span-1 space-y-6">
+            {/* Interactive Profile Card */}
+            <Card className="rounded-2xl p-4 shadow-lg bg-gradient-to-br from-indigo-50 to-purple-50">
+              <div className="flex flex-col items-center">
+                <h3 className="text-lg font-semibold mb-4 text-center">Interactive Profile</h3>
+                <div className="scale-75 origin-center">
+                  <ProfileCard
+                    name={profile.full_name || 'User'}
+                    title={profile.role === 'faculty' ? 'Faculty' : 'Student'}
+                    handle={(profile.email || '').split('@')[0]}
+                    status="Online"
+                    contactText="Contact Me"
+                    avatarUrl="/spiderman-avatar.png"
+                    iconUrl="/spiderman-avatar.png"
+                    showUserInfo={true}
+                    enableTilt={true}
+                    enableMobileTilt={false}
+                    onContactClick={() => {
+                      // Contact functionality can be implemented here
+                    }}
+                    showBehindGradient={true}
+                    behindGradient="radial-gradient(farthest-side circle at var(--pointer-x) var(--pointer-y),hsla(266,100%,90%,var(--card-opacity)) 4%,hsla(266,50%,80%,calc(var(--card-opacity)*0.75)) 10%,hsla(266,25%,70%,calc(var(--card-opacity)*0.5)) 50%,hsla(266,0%,60%,0) 100%),radial-gradient(35% 52% at 55% 20%,#00ffaac4 0%,#073aff00 100%),radial-gradient(100% 100% at 50% 50%,#00c1ffff 1%,#073aff00 76%),conic-gradient(from 124deg at 50% 50%,#c137ffff 0%,#07c6ffff 40%,#07c6ffff 60%,#c137ffff 100%)"
+                    className="pc-card-wrapper-active"
+                  />
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setShowProfileCard(true)}
+                  className="mt-3 w-full"
+                >
+                  <UserCircle className="h-4 w-4 mr-2" />
+                  View Full Card
+                </Button>
+              </div>
+            </Card>
+
             <Card className="rounded-3xl p-3">
               <div className="flex flex-col items-center">
                 <div className="text-3xl font-bold">{currentMonthName}</div>
@@ -588,7 +618,9 @@ const ProfilePage: React.FC = () => {
               showUserInfo={true}
               enableTilt={true}
               enableMobileTilt={false}
-              onContactClick={() => console.log('Contact clicked')}
+              onContactClick={() => {
+                // Contact functionality can be implemented here
+              }}
               showBehindGradient={true}
               behindGradient="radial-gradient(farthest-side circle at var(--pointer-x) var(--pointer-y),hsla(266,100%,90%,var(--card-opacity)) 4%,hsla(266,50%,80%,calc(var(--card-opacity)*0.75)) 10%,hsla(266,25%,70%,calc(var(--card-opacity)*0.5)) 50%,hsla(266,0%,60%,0) 100%),radial-gradient(35% 52% at 55% 20%,#00ffaac4 0%,#073aff00 100%),radial-gradient(100% 100% at 50% 50%,#00c1ffff 1%,#073aff00 76%),conic-gradient(from 124deg at 50% 50%,#c137ffff 0%,#07c6ffff 40%,#07c6ffff 60%,#c137ffff 100%)"
               className="pc-card-wrapper-active"

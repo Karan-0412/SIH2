@@ -23,6 +23,9 @@ import FacultyCommunity from "./pages/FacultyCommunity";
 import FacultyChatHub from "./pages/FacultyChatHub";
 import FacultyRoute from "./components/routing/FacultyRoute";
 import IntegrationsAnalytics from "./pages/IntegrationsAnalytics";
+import RecruiterLogin from "./pages/RecruiterLogin";
+import RecruiterDashboard from "./pages/RecruiterDashboard";
+import RecruiterStudentProfile from "./pages/RecruiterStudentProfile";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +50,10 @@ const App = () => (
             <Route path="/integrations" element={<StudentRoute><IntegrationsAnalytics /></StudentRoute>} />
             <Route path="/faculty/community" element={<FacultyRoute><FacultyCommunity /></FacultyRoute>} />
             <Route path="/faculty/chat" element={<FacultyRoute><FacultyChatHub /></FacultyRoute>} />
+            {/* Recruiter Routes */}
+            <Route path="/recruiter/login" element={<RecruiterLogin />} />
+            <Route path="/recruiter/dashboard" element={<RecruiterDashboard />} />
+            <Route path="/recruiter/student/:id" element={<RecruiterStudentProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/profile" element={<Profile />} />
             <Route path="/leaderboard" element={<Leaderboard />} />
