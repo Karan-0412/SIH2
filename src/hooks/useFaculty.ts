@@ -47,11 +47,40 @@ export const useFaculty = () => {
 
     try {
       setLoading(true);
+      
+      // Get faculty record by email (simpler approach)
+      console.log('Looking up faculty by email:', profile.email);
+      const { data: facultyData, error: facultyError } = await supabase
+        .from('faculty')
+        .select('id, email, name, department, designation')
+        .eq('email', profile.email)
+        .single();
+
+      if (facultyError && facultyError.code === 'PGRST116') {
+        // No faculty record found
+        console.log('No faculty record found for user');
+        setError(new Error('No faculty record found for your account. Please contact administrator to set up your faculty profile.'));
+        return;
+      }
+
+      if (facultyError) {
+        setError(facultyError);
+        console.error('Error fetching faculty:', facultyError);
+        return;
+      }
+
+      if (!facultyData) {
+        setError(new Error('No faculty record found for user'));
+        console.error('No faculty record found for user');
+        return;
+      }
+
+      // Get assigned students through the student_mentor_assignments table
       const { data, error } = await supabase
-        .from('faculty_assignments')
+        .from('student_mentor_assignments')
         .select(`
           *,
-          student:profiles!faculty_assignments_student_id_fkey(
+          student:profiles!student_mentor_assignments_student_id_fkey(
             id,
             full_name,
             email,
@@ -59,7 +88,7 @@ export const useFaculty = () => {
             department
           )
         `)
-        .eq('faculty_id', profile.id);
+        .eq('mentor_id', facultyData.id);
 
       if (error) {
         setError(error);

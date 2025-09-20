@@ -152,11 +152,33 @@ const FacultyDashboard = () => {
     try {
       let filterIds: string[] | null = null;
       if (profile.faculty_level !== 'senior' && profile.faculty_level !== 'admin') {
-        const { data: assigned } = await supabase
-          .from('profiles')
+        // Get assigned students through the student_mentor_assignments table
+        const { data: facultyData, error: facultyError } = await supabase
+          .from('faculty')
           .select('id')
-          .eq('assigned_faculty_id', profile.id);
-        const ids = (assigned || []).map((r: any) => r.id);
+          .eq('email', profile.email)
+          .single();
+
+        if (facultyError || !facultyData) {
+          console.log('No faculty record found, showing no certificates');
+          setCertificates([]);
+          setLoading(false);
+          return;
+        }
+
+        const { data: assignmentsData, error: assignmentsError } = await supabase
+          .from('student_mentor_assignments')
+          .select('student_id')
+          .eq('mentor_id', facultyData.id);
+
+        if (assignmentsError) {
+          console.error('Error fetching assignments:', assignmentsError);
+          setCertificates([]);
+          setLoading(false);
+          return;
+        }
+
+        const ids = (assignmentsData || []).map((assignment: any) => assignment.student_id);
         filterIds = ids.length ? ids : [];
         if (filterIds.length === 0) {
           setCertificates([]);
@@ -205,34 +227,74 @@ const FacultyDashboard = () => {
     }
 
     try {
-      let query = supabase
-        .from('profiles')
-        .select(`
-          id,
-          full_name,
-          email,
-          student_id,
-          department
-        `)
-        .eq('role', 'student');
+      // Get faculty record by email (simpler approach)
+      console.log('Looking up faculty by email:', profile.email);
+      const { data: facultyData, error: facultyError } = await supabase
+        .from('faculty')
+        .select('id, email, name, department, designation')
+        .eq('email', profile.email)
+        .single();
 
-      // If faculty is not senior/admin, only show assigned students
-      if (profile.faculty_level !== 'senior' && profile.faculty_level !== 'admin') {
-        query = query.eq('assigned_faculty_id', profile.id);
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        console.error('Error fetching students:', error);
+      if (facultyError && facultyError.code === 'PGRST116') {
+        // No faculty record found, show helpful message
+        console.log('No faculty record found for user');
         toast({
-          title: 'Error fetching students',
-          description: (error as any)?.message || JSON.stringify(error),
+          title: 'Faculty Record Not Found',
+          description: 'No faculty record found for your account. Please contact administrator to set up your faculty profile.',
           variant: 'destructive',
         });
-      } else {
-        setStudents((data as Student[]) || []);
+        return;
       }
+
+      if (facultyError) {
+        console.error('Error fetching faculty:', facultyError);
+        toast({
+          title: 'Error fetching faculty',
+          description: 'Failed to load faculty information. Please ensure you are registered as faculty.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      if (!facultyData) {
+        console.error('No faculty record found for user');
+        toast({
+          title: 'Faculty Not Found',
+          description: 'No faculty record found for your account. Please contact administrator.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get assigned students through the student_mentor_assignments table
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('student_mentor_assignments')
+        .select(`
+          *,
+          student:profiles!student_mentor_assignments_student_id_fkey(
+            id,
+            full_name,
+            email,
+            student_id,
+            department
+          )
+        `)
+        .eq('mentor_id', facultyData.id)
+        .order('created_at', { ascending: false });
+
+      if (assignmentsError) {
+        console.error('Error fetching assignments:', assignmentsError);
+        toast({
+          title: 'Error fetching students',
+          description: 'Failed to load assigned students',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Extract students from assignments
+      const studentsData = assignmentsData?.map(assignment => assignment.student).filter(Boolean) || [];
+      setStudents(studentsData as Student[]);
     } catch (err) {
       console.error('Error fetching students:', err);
       toast({
@@ -560,7 +622,14 @@ const FacultyDashboard = () => {
             <CardContent>
               {students.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
-                  No students found
+                  <div className="mb-4">
+                    <Users className="h-12 w-12 mx-auto text-muted-foreground/50" />
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">No Assigned Students</h3>
+                  <p className="text-sm">
+                    You don't have any students assigned to you yet. 
+                    Contact your administrator to assign students to your faculty account.
+                  </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
