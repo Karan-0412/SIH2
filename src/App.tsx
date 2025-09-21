@@ -34,6 +34,9 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminFaculty from "./pages/AdminFaculty";
 import AdminAssignments from "./pages/AdminAssignments";
 import AdminDebug from "./pages/AdminDebug";
+import AdminIntegrations from "./pages/AdminIntegrations";
+import AdminApiTesting from "./pages/AdminApiTesting";
+import AdminReports from "./pages/AdminReports";
 import AcademicAchievements from "./pages/AcademicAchievements";
 import ResumeGenerator from "./pages/ResumeGenerator";
 import MyActivitiesPage from "./pages/MyActivitesPage";
@@ -43,8 +46,10 @@ import GithubCallback from "./pages/GithubCallback";
 import GithubTest from "./pages/GithubTest";
 import CertificateManagement from "./pages/CertificateManagement";
 import Home from "./pages/Home";
+import StudentCourses from "./pages/StudentCourses";
 import TestData from "./pages/TestData";
 import TestDataButton from "./components/TestDataButton";
+import VerifyCredentialPage from "./pages/VerifyCredentialPage";
 import { BlockchainProvider } from "./contexts/BlockchainContext";
 import ChatbotToggle from "./components/ai/ChatbotToggle";
 
@@ -95,7 +100,10 @@ const App = () => {
                         <Route path="/github-callback" element={<GithubCallback />} />
                         <Route path="/github-test" element={<GithubTest />} />
                         <Route path="/certificate-management" element={<StudentRoute><CertificateManagement /></StudentRoute>} />
+                        <Route path="/student-courses" element={<StudentRoute><StudentCourses /></StudentRoute>} />
                         <Route path="/test-data" element={<TestData />} />
+                        {/* Verification Routes */}
+                        <Route path="/verify" element={<VerifyCredentialPage />} />
                         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                         <Route path="/profile" element={<Profile />} />
                         <Route path="/leaderboard" element={<Leaderboard />} />
@@ -107,6 +115,9 @@ const App = () => {
                 <Route index element={<AdminDashboard />} />
                 <Route path="faculty" element={<AdminFaculty />} />
                 <Route path="assignments" element={<AdminAssignments />} />
+                <Route path="integrations" element={<AdminIntegrations />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="api-testing" element={<AdminApiTesting />} />
                 <Route path="debug" element={<AdminDebug />} />
           </Route>
         </Routes>

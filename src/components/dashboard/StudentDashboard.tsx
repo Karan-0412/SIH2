@@ -5,6 +5,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAchievements } from '@/hooks/useAchievements';
 import { usePlatformIntegration } from '@/hooks/usePlatformIntegration';
 import { useToast } from '@/hooks/use-toast';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,10 @@ import { Upload } from 'lucide-react';
 import ProfileSection from './student/ProfileSection';
 import CertificatesSection from './student/CertificatesSection';
 import RecommendationsSection from './student/RecommendationsSection';
+import CourseRecommendations from '../recommendations/CourseRecommendations';
+import ExternalCourseRecommendations from '../recommendations/ExternalCourseRecommendations';
+import ProfileSetup from '../recommendations/ProfileSetup';
+import { StudentCredentials } from '../verifiableCredentials/StudentCredentials';
 import UploadCertificateSection from './student/UploadCertificateSection';
 import NotificationsDropdown from './student/NotificationsDropdown';
 import StudentProgressCard from './student/StudentProgressCard';
@@ -586,7 +591,7 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
         <div className="flex items-center gap-3">
           <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
           <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)}>My Certificates</Button>
-          <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-[#6D28D9] hover:bg-[#5b21b6] text-white">
+          <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-violet-100 hover:bg-violet-200 text-violet-700 border border-violet-200">
             <Upload className="h-4 w-4 mr-2" />
             {showUploadPanel ? 'Close Upload' : 'Upload Certificate'}
           </Button>
@@ -597,13 +602,14 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
 
       {/* Main Dashboard Tabs */}
       <Tabs defaultValue="overview" className="w-full">
+
         <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="progress">Progress</TabsTrigger>
-          <TabsTrigger value="goals">Goals</TabsTrigger>
           <TabsTrigger value="achievements">Achievements</TabsTrigger>
           <TabsTrigger value="portfolio">Portfolio</TabsTrigger>
-          <TabsTrigger value="activity">Activity</TabsTrigger>
+          <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+          <TabsTrigger value="credentials">Credentials</TabsTrigger>
         </TabsList>
 
         {/* Overview Tab */}
@@ -633,10 +639,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
           <SocialActivityFeed loading={studentLoading} />
         </TabsContent>
 
-        {/* Goals Tab */}
-        <TabsContent value="goals" className="space-y-6">
-          <StudentGoalsCard goals={goals} loading={studentLoading} />
-        </TabsContent>
 
         {/* Achievements Tab */}
         <TabsContent value="achievements" className="space-y-6">
@@ -1172,9 +1174,28 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
           </Card>
         </TabsContent>
 
-        {/* Activity Tab */}
-        <TabsContent value="activity" className="space-y-6">
-          <SocialActivityFeed loading={studentLoading} />
+
+        {/* Recommendations Tab */}
+        <TabsContent value="recommendations" className="space-y-6">
+          <div className="space-y-6">
+            {/* Internal Course Recommendations */}
+            <CourseRecommendations />
+            
+            {/* External Course Recommendations */}
+            <ExternalCourseRecommendations />
+            
+            {/* Profile Setup */}
+            <ProfileSetup />
+          </div>
+        </TabsContent>
+
+        {/* Verifiable Credentials Tab */}
+        <TabsContent value="credentials" className="space-y-6">
+          {profile && (
+            <StudentCredentials 
+              studentId={profile.id} 
+            />
+          )}
         </TabsContent>
       </Tabs>
 

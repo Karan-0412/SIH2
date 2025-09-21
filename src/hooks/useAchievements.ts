@@ -631,10 +631,19 @@ export const useAchievements = () => {
 
   // Add test achievements for testing purposes
   const addTestAchievements = useCallback(() => {
-    const testAchievements = [
+    if (!profile) {
+      toast({
+        title: 'No Profile',
+        description: 'Please log in to add test achievements.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const testAchievements: Achievement[] = [
       {
         id: crypto.randomUUID(),
-        student_id: 'test-student-id',
+        student_id: profile.id,
         title: 'LeetCode Master',
         description: 'Solved 100+ problems on LeetCode',
         achievement_type: 'coding_platform' as const,
@@ -642,6 +651,8 @@ export const useAchievements = () => {
         points: 100,
         earned_at: new Date().toISOString(),
         icon_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         metadata: {
           platform: 'LeetCode',
           level: 'Expert',
@@ -652,7 +663,7 @@ export const useAchievements = () => {
       },
       {
         id: crypto.randomUUID(),
-        student_id: 'test-student-id',
+        student_id: profile.id,
         title: 'AWS Certified',
         description: 'AWS Cloud Practitioner Certification',
         achievement_type: 'professional' as const,
@@ -660,6 +671,8 @@ export const useAchievements = () => {
         points: 150,
         earned_at: new Date().toISOString(),
         icon_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         metadata: {
           platform: 'AWS',
           level: 'Professional',
@@ -670,7 +683,7 @@ export const useAchievements = () => {
       },
       {
         id: crypto.randomUUID(),
-        student_id: 'test-student-id',
+        student_id: profile.id,
         title: 'Full Stack Developer',
         description: 'Completed full-stack development project',
         achievement_type: 'milestone' as const,
@@ -678,6 +691,8 @@ export const useAchievements = () => {
         points: 200,
         earned_at: new Date().toISOString(),
         icon_url: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
         metadata: {
           platform: 'GitHub',
           level: 'Advanced',
@@ -688,12 +703,20 @@ export const useAchievements = () => {
       }
     ];
 
-    setAchievements(prev => [...prev, ...testAchievements]);
-    
-    // Save to localStorage
-    const updatedAchievements = [...achievements, ...testAchievements];
-    localStorage.setItem('student_achievements', JSON.stringify(updatedAchievements));
-  }, [achievements]);
+    setAchievements(prev => {
+      const updated = [...prev, ...testAchievements];
+      // Save to localStorage with the updated array
+      if (profile) {
+        localStorage.setItem(`achievements_${profile.id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+
+    toast({
+      title: 'Test Achievements Added!',
+      description: '3 test achievements have been added to your profile.',
+    });
+  }, [profile, toast]);
 
   return {
     achievements,

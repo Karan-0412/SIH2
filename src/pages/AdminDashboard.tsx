@@ -25,7 +25,10 @@ import {
   Database,
   Server,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Link as LinkIcon,
+  Plug,
+  Code
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -157,6 +160,17 @@ const AdminDashboard = () => {
       change: '+5%',
       changeType: 'positive',
       description: 'Mentor-student pairs'
+    },
+    {
+      title: 'LMS Integrations',
+      value: '0',
+      icon: Plug,
+      color: 'text-indigo-600',
+      bgColor: 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+      link: '/admin/integrations',
+      change: 'New',
+      changeType: 'positive',
+      description: 'Connected systems'
     }
   ];
 
@@ -176,6 +190,14 @@ const AdminDashboard = () => {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       link: '/admin/assignments'
+    },
+    {
+      title: 'LMS/ERP Integration',
+      description: 'Connect with external learning systems',
+      icon: Plug,
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-50',
+      link: '/admin/integrations'
     },
     {
       title: 'System Settings',
@@ -398,6 +420,121 @@ const AdminDashboard = () => {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* LMS/ERP Integration Section */}
+        <div className="mb-8">
+          <Card className="border-0 bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-2xl text-indigo-900">
+                    <div className="bg-gradient-to-br from-indigo-500 to-purple-600 p-3 rounded-xl">
+                      <Plug className="h-6 w-6 text-white" />
+                    </div>
+                    LMS/ERP Integration
+                  </CardTitle>
+                  <p className="text-indigo-700 mt-2">
+                    Connect your SIH2 platform with external learning management systems and enterprise resource planning tools
+                  </p>
+                </div>
+                <Link to="/admin/integrations">
+                  <Button size="lg" className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                    <LinkIcon className="h-5 w-5 mr-2" />
+                    Manage Integrations
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 bg-white/60 rounded-xl">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Globe className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Moodle</h3>
+                  <p className="text-sm text-gray-600 mb-3">Connect with Moodle LMS</p>
+                  <Badge variant="outline" className="text-xs">Ready</Badge>
+                </div>
+                <div className="text-center p-4 bg-white/60 rounded-xl">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Globe className="h-6 w-6 text-green-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Canvas</h3>
+                  <p className="text-sm text-gray-600 mb-3">Connect with Canvas LMS</p>
+                  <Badge variant="outline" className="text-xs">Ready</Badge>
+                </div>
+                <div className="text-center p-4 bg-white/60 rounded-xl">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Globe className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Blackboard</h3>
+                  <p className="text-sm text-gray-600 mb-3">Connect with Blackboard</p>
+                  <Badge variant="outline" className="text-xs">Ready</Badge>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-white/40 rounded-xl">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Quick Setup</h4>
+                    <p className="text-sm text-gray-600">Get started with your first integration in minutes</p>
+                  </div>
+                  <Link to="/admin/integrations">
+                    <Button variant="outline" className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                      <ArrowRight className="h-4 w-4 mr-2" />
+                      Get Started
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Developer Tools Section */}
+        <div className="mb-8">
+          <Card className="border-0 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-3 text-2xl text-purple-900">
+                    <div className="bg-gradient-to-br from-purple-500 to-pink-600 p-3 rounded-xl">
+                      <Code className="h-6 w-6 text-white" />
+                    </div>
+                    Developer Tools
+                  </CardTitle>
+                  <p className="text-purple-700 mt-2">
+                    Tools for developers to test APIs and manage system data
+                  </p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="text-center p-4 bg-white/60 rounded-xl">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Code className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">API Testing Lab</h3>
+                  <p className="text-sm text-gray-600 mb-3">Test and experiment with different APIs</p>
+                  <Link to="/admin/api-testing">
+                    <Button variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
+                      <Code className="h-4 w-4 mr-2" />
+                      Open API Lab
+                    </Button>
+                  </Link>
+                </div>
+                <div className="text-center p-4 bg-white/60 rounded-xl">
+                  <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <Database className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Test Data Management</h3>
+                  <p className="text-sm text-gray-600 mb-3">Load and manage sample data for testing</p>
+                  <Badge variant="outline" className="text-xs">Available in floating button</Badge>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* System Status */}
