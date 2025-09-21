@@ -5,6 +5,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileAvatarUrl } from '@/utils/avatarUtils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -230,7 +231,7 @@ const FacultySchedule: React.FC = () => {
             </div>
 
             <div className="flex items-center gap-3">
-              <Avatar className="w-10 h-10"><AvatarImage src="/placeholder.svg" alt="faculty" /><AvatarFallback>F</AvatarFallback></Avatar>
+              <Avatar className="w-10 h-10"><AvatarImage src={getProfileAvatarUrl({ full_name: 'Faculty Member', role: 'faculty' })} alt="faculty" /><AvatarFallback>F</AvatarFallback></Avatar>
               <div className="text-right">
                 <div className="font-medium">Faculty Name</div>
                 <div className="text-sm text-muted-foreground">Department</div>

@@ -88,10 +88,9 @@ const Navbar = () => {
     if (profile?.role === 'student') {
       return studentItems; // student sees Home + Community
     }
-    // faculty: hide student Community, add Faculty Community and My Students
+    // faculty: hide student Community, add Faculty Community
     const list = baseItems.filter(i=> i.label !== 'Community');
     list.splice(2, 0, { label: 'Faculty Community', to: '/faculty/community' });
-    list.splice(3, 0, { label: 'My Students', to: '/faculty/students' });
     return list;
   }, [profile]);
 

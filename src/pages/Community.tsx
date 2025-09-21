@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileAvatarUrl, getAvatarWithOverride } from '@/utils/avatarUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -354,7 +355,7 @@ export default function CommunityPage() {
                 <div className="relative rounded-2xl p-5 bg-transparent backdrop-blur-sm backdrop-saturate-150 border border-white/5 ring-1 ring-white/5">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-14 h-14 ring-2 ring-white/30">
-                      <AvatarImage src={(avatarOverrides?.avatarDataUrl || '') || '/placeholder.svg'} alt={profile?.full_name || 'You'} />
+                      <AvatarImage src={getAvatarWithOverride(profile?.avatar_url, { name: profile?.full_name, role: profile?.role })} alt={profile?.full_name || 'You'} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                         {(profile?.full_name || 'U').slice(0,1)}
                       </AvatarFallback>
@@ -486,7 +487,7 @@ export default function CommunityPage() {
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <Avatar className="w-10 h-10">
-                      <AvatarImage src={getAvatarFor(myId) || '/placeholder.svg'} alt={myName} />
+                      <AvatarImage src={getAvatarFor(myId) || getProfileAvatarUrl({ full_name: myName })} alt={myName} />
                       <AvatarFallback>{myName.charAt(0)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
@@ -537,7 +538,7 @@ export default function CommunityPage() {
                 <CardContent className="p-6">
                   <header className="flex items-start gap-4 mb-4">
                     <Avatar className="w-12 h-12 ring-2 ring-black/20">
-                      <AvatarImage src={getAvatarFor(post.author_id) || post.author_avatar || '/placeholder.svg'} alt={post.author_name} />
+                      <AvatarImage src={getAvatarFor(post.author_id) || post.author_avatar || getProfileAvatarUrl({ full_name: post.author_name })} alt={post.author_name} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white font-semibold">
                         {(post.author_name || 'U').slice(0,1)}
                       </AvatarFallback>
@@ -652,7 +653,7 @@ export default function CommunityPage() {
                         {(post.comments || []).map(c => (
                           <div key={c.id} className="flex gap-3 p-4 bg-gray-50 rounded-lg">
                             <Avatar className="w-8 h-8">
-                              <AvatarImage src={getAvatarFor(c.author_id) || c.author_avatar || '/placeholder.svg'} alt={c.author_name} />
+                              <AvatarImage src={getAvatarFor(c.author_id) || c.author_avatar || getProfileAvatarUrl({ full_name: c.author_name })} alt={c.author_name} />
                               <AvatarFallback className="text-xs">{c.author_name.charAt(0)}</AvatarFallback>
                             </Avatar>
                             <div className="flex-1">

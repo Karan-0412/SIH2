@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileAvatarUrl } from '@/utils/avatarUtils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
@@ -409,7 +410,7 @@ export default function FacultyCommunity(){
               full_name: p.full_name,
               email: p.email,
               updated_at: p.updated_at,
-              avatar_url: null, // Database doesn't have avatar_url
+              avatar_url: p.avatar_url, // Use actual avatar_url from database
               department: assignedDept, // Varied department assignment
               sections: [`${assignedDept}-1`, `${assignedDept}-2`], // Department-specific sections
               subjects: getSubjectsForDepartment(assignedDept), // Department-specific subjects
@@ -759,7 +760,7 @@ export default function FacultyCommunity(){
                       )}
                       <div className="flex flex-col items-center text-center space-y-3">
                       <div className="relative">
-                          <Avatar className="h-16 w-16"><AvatarImage src={f.avatar_url||'/placeholder.svg'} alt={f.full_name}/><AvatarFallback className="text-lg">{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                          <Avatar className="h-16 w-16"><AvatarImage src={getProfileAvatarUrl({ avatar_url: f.avatar_url, full_name: f.full_name, role: 'faculty' })} alt={f.full_name}/><AvatarFallback className="text-lg">{f.full_name.slice(0,1)}</AvatarFallback></Avatar>
                           <span className={`absolute -bottom-0.5 -right-0.5 h-4 w-4 rounded-full ring-2 ring-white ${getAvailabilityColor(getAvailabilityStatus(f))}`} />
                       </div>
                         <div className="space-y-1">
@@ -858,7 +859,7 @@ export default function FacultyCommunity(){
                 <div className="flex items-start gap-4">
                   <div className="relative">
                     <Avatar className="h-20 w-20">
-                      <AvatarImage src={selectedFaculty.avatar_url||'/placeholder.svg'} alt={selectedFaculty.full_name}/>
+                      <AvatarImage src={getProfileAvatarUrl({ avatar_url: selectedFaculty.avatar_url, full_name: selectedFaculty.full_name, role: 'faculty' })} alt={selectedFaculty.full_name}/>
                       <AvatarFallback className="text-2xl">{selectedFaculty.full_name.slice(0,1)}</AvatarFallback>
                     </Avatar>
                     <span className={`absolute -bottom-1 -right-1 h-5 w-5 rounded-full ring-2 ring-white ${getAvailabilityColor(getAvailabilityStatus(selectedFaculty))}`} />

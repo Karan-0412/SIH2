@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileAvatarUrl } from '@/utils/avatarUtils';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useProfile } from '@/hooks/useProfile';
@@ -195,7 +196,7 @@ const FacultyStudents: React.FC = () => {
                 <CardHeader className="pb-4">
                   <div className="flex items-center space-x-4">
                     <Avatar className="h-12 w-12">
-                      <AvatarImage src={student.avatar_url || ''} />
+                      <AvatarImage src={getProfileAvatarUrl({ avatar_url: student.avatar_url, full_name: student.full_name, role: 'student' })} />
                       <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-600 text-white">
                         {student.full_name?.charAt(0) || 'S'}
                       </AvatarFallback>

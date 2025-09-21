@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { getProfileAvatarUrl } from '@/utils/avatarUtils';
 import { ArrowLeft, MoreVertical, Send } from 'lucide-react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -250,7 +251,7 @@ const FacultyChatHub: React.FC = () => {
                     <button key={p.id} className={`w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-[#131a3b] ${activePeerId===p.id? 'bg-gray-50 dark:bg-[#131a3b]':''}`} onClick={()=>{ setActivePeerId(p.id); mobileToChat(); }}>
                       <div className="flex items-center gap-3">
                         <div className="relative">
-                          <Avatar className="h-9 w-9"><AvatarImage src={p.avatar_url||'/placeholder.svg'} alt={p.full_name}/><AvatarFallback>{p.full_name.slice(0,1)}</AvatarFallback></Avatar>
+                          <Avatar className="h-9 w-9"><AvatarImage src={getProfileAvatarUrl({ avatar_url: p.avatar_url, full_name: p.full_name, role: 'faculty' })} alt={p.full_name}/><AvatarFallback>{p.full_name.slice(0,1)}</AvatarFallback></Avatar>
                           {unreadCount > 0 && (
                             <div className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-medium">
                               {unreadCount > 99 ? '99+' : unreadCount}
@@ -279,7 +280,7 @@ const FacultyChatHub: React.FC = () => {
                 <Button variant="ghost" size="icon" className="md:hidden" onClick={mobileToList} aria-label="Back"><ArrowLeft className="h-4 w-4"/></Button>
                 {activePeerId ? (
                   <>
-                    <Avatar className="h-8 w-8"><AvatarImage src={(activePeer?.avatar_url)||'/placeholder.svg'} alt={(activePeer?.full_name)||'Faculty'}/><AvatarFallback>{(activePeer?.full_name||'F').slice(0,1)}</AvatarFallback></Avatar>
+                    <Avatar className="h-8 w-8"><AvatarImage src={getProfileAvatarUrl({ avatar_url: activePeer?.avatar_url, full_name: activePeer?.full_name, role: 'faculty' })} alt={(activePeer?.full_name)||'Faculty'}/><AvatarFallback>{(activePeer?.full_name||'F').slice(0,1)}</AvatarFallback></Avatar>
                     <div>
                       <div className="font-medium leading-tight">{activePeer?.full_name || 'Faculty'}</div>
                       <div className="text-xs text-muted-foreground -mt-0.5">{activePeer?.department || '—'}</div>
