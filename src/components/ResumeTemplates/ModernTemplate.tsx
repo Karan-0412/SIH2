@@ -67,6 +67,24 @@ const ModernTemplate = forwardRef<HTMLDivElement, ResumeProps>(
           </p>
         </header>
 
+        {/* Overview Section */}
+        {data.overview && (
+          <section className="mb-5">
+            <h2
+              style={{ fontSize: sectionTextSizes.overview || 18 }}
+              className="font-semibold text-indigo-700 border-b pb-1 mb-2"
+            >
+              Overview
+            </h2>
+            <p
+              style={{ fontSize: sectionTextSizes.overview || 14 }}
+              className="text-indigo-800"
+            >
+              {data.overview}
+            </p>
+          </section>
+        )}
+
         {/* Education */}
         <section className="mb-5">
           <h2

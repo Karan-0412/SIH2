@@ -10,17 +10,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Upload } from 'lucide-react';
-import ProfileSection from './student/ProfileSection';
-import CertificatesSection from './student/CertificatesSection';
 import RecommendationsSection from './student/RecommendationsSection';
 import CourseRecommendations from '../recommendations/CourseRecommendations';
 import ExternalCourseRecommendations from '../recommendations/ExternalCourseRecommendations';
 import ProfileSetup from '../recommendations/ProfileSetup';
 import { StudentCredentials } from '../verifiableCredentials/StudentCredentials';
-import UploadCertificateSection from './student/UploadCertificateSection';
-import NotificationsDropdown from './student/NotificationsDropdown';
-import StudentProgressCard from './student/StudentProgressCard';
+import StudentAnalytics from './student/StudentAnalytics';
 import StudentAchievementsCard from './student/StudentAchievementsCard';
 import StudentGoalsCard from './student/StudentGoalsCard';
 import AcademicAchievementDashboard from './student/AcademicAchievementDashboard';
@@ -175,9 +170,6 @@ const StudentDashboard = () => {
   const { toast } = useToast();
   const [certificates, setCertificates] = useState<Certificate[]>([]);
   const [loading, setLoading] = useState(false);
-  const [showUploadPanel, setShowUploadPanel] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
-  const [certsOpen, setCertsOpen] = useState(false);
   const [showAddAchievementDialog, setShowAddAchievementDialog] = useState(false);
   const [editingAchievement, setEditingAchievement] = useState<any>(null);
 
@@ -301,7 +293,6 @@ const StudentDashboard = () => {
 
   const handleUploadComplete = async () => {
     await fetchCertificates();
-    setShowUploadPanel(false);
   };
 
   const handleEditAchievement = (achievement: any) => {
@@ -588,15 +579,6 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
             <span className="text-gray-600 text-sm">Welcome back, {profile?.full_name}!</span>
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" size="sm" onClick={() => setProfileOpen(true)}>Profile</Button>
-          <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)}>My Certificates</Button>
-          <Button size="sm" onClick={() => setShowUploadPanel((v) => !v)} className="bg-violet-100 hover:bg-violet-200 text-violet-700 border border-violet-200">
-            <Upload className="h-4 w-4 mr-2" />
-            {showUploadPanel ? 'Close Upload' : 'Upload Certificate'}
-          </Button>
-          <NotificationsDropdown />
-        </div>
       </div>
 
 
@@ -625,7 +607,13 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
           
           {/* Progress and Goals */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <StudentProgressCard progress={progress} loading={studentLoading} />
+            <StudentAnalytics 
+              progress={progress} 
+              loading={studentLoading} 
+              achievements={achievements}
+              projects={projects}
+              certificates={certificates}
+            />
             <StudentGoalsCard goals={goals} loading={studentLoading} />
           </div>
           
@@ -635,7 +623,13 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
 
         {/* Progress Tab */}
         <TabsContent value="progress" className="space-y-6">
-          <StudentProgressCard progress={progress} loading={studentLoading} />
+          <StudentAnalytics 
+            progress={progress} 
+            loading={studentLoading} 
+            achievements={achievements}
+            projects={projects}
+            certificates={certificates}
+          />
           <SocialActivityFeed loading={studentLoading} />
         </TabsContent>
 
@@ -990,7 +984,7 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
                   <div className="text-2xl font-bold text-green-600 mb-2">{certificates.length}</div>
                   <p className="text-sm text-gray-600 mb-4">Total Certificates</p>
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" onClick={() => setCertsOpen(true)} className="w-full">
+                    <Button variant="outline" size="sm" className="w-full">
                       View Certificates
                     </Button>
                     <Button 
@@ -1142,6 +1136,7 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
             </CardContent>
           </Card>
 
+
           {/* Recent Activity */}
           <Card>
             <CardHeader>
@@ -1199,31 +1194,8 @@ ${portfolioData.certificates.filter(c => c.status === 'approved').slice(0, 3).ma
         </TabsContent>
       </Tabs>
 
-      {/* Upload Panel */}
-      {showUploadPanel && (
-        <div className="mt-6">
-          <UploadCertificateSection onUploadComplete={handleUploadComplete} />
-        </div>
-      )}
 
       {/* Popups */}
-      <Dialog open={profileOpen} onOpenChange={setProfileOpen}>
-        <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>My Profile</DialogTitle>
-          </DialogHeader>
-          <ProfileSection certificates={certificates} />
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={certsOpen} onOpenChange={setCertsOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>My Certificates</DialogTitle>
-          </DialogHeader>
-          <CertificatesSection certificates={certificates as any} />
-        </DialogContent>
-      </Dialog>
 
       {/* Add/Edit Achievement Dialog */}
       <Dialog open={showAddAchievementDialog} onOpenChange={setShowAddAchievementDialog}>
