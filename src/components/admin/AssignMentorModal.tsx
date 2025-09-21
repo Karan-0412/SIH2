@@ -1,24 +1,24 @@
-import React, { useState } from 'react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle
+} from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserCheck, Mail, GraduationCap } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import { GraduationCap, Loader2, Mail, UserCheck } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 type Profile = Tables<'profiles'>;
 type Faculty = Tables<'faculty'>;
@@ -28,6 +28,7 @@ interface AssignMentorModalProps {
   onOpenChange: (open: boolean) => void;
   students: Profile[];
   faculty: Faculty[];
+  assignments?: any[];
   onAssign: (studentId: string, mentorId: string) => void;
 }
 
@@ -36,12 +37,21 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
   onOpenChange,
   students,
   faculty,
+  assignments = [],
   onAssign
 }) => {
   const [selectedStudent, setSelectedStudent] = useState<string>('');
   const [selectedMentor, setSelectedMentor] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('AssignMentorModal - students:', students);
+    console.log('AssignMentorModal - faculty:', faculty);
+    console.log('Students length:', students?.length || 0);
+    console.log('Faculty length:', faculty?.length || 0);
+  }, [students, faculty]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,6 +81,10 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
 
   const selectedStudentData = students.find(s => s.id === selectedStudent);
   const selectedMentorData = faculty.find(f => f.id === selectedMentor);
+  
+  // Get current mentor for selected student
+  const currentAssignment = assignments.find(a => a.student_id === selectedStudent);
+  const currentMentor = currentAssignment ? faculty.find(f => f.id === currentAssignment.mentor_id) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -87,17 +101,23 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
                 <SelectValue placeholder="Choose a student" />
               </SelectTrigger>
               <SelectContent>
-                {students.map((student) => (
-                  <SelectItem key={student.id} value={student.id}>
-                    <div className="flex items-center space-x-2">
-                      <GraduationCap className="h-4 w-4 text-green-600" />
-                      <span>{student.full_name}</span>
-                      <Badge variant="outline" className="text-xs">
-                        {student.student_id || 'N/A'}
-                      </Badge>
-                    </div>
+                {students.length === 0 ? (
+                  <SelectItem value="no-students" disabled>
+                    No students available
                   </SelectItem>
-                ))}
+                ) : (
+                  students.map((student) => (
+                    <SelectItem key={student.id} value={student.id}>
+                      <div className="flex items-center space-x-2">
+                        <GraduationCap className="h-4 w-4 text-green-600" />
+                        <span>{student.full_name}</span>
+                        <Badge variant="outline" className="text-xs">
+                          {student.student_id || 'N/A'}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {selectedStudentData && (
@@ -107,8 +127,13 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
                   <span>{selectedStudentData.email}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Department: {selectedStudentData.faculty_id || 'Computer Science'}
+                  Department: {selectedStudentData.department || 'Computer Science'}
                 </div>
+                {currentMentor && (
+                  <div className="text-xs text-blue-600 mt-1">
+                    Current Mentor: {currentMentor.name} ({currentMentor.department})
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -120,17 +145,23 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
                 <SelectValue placeholder="Choose a verified faculty member" />
               </SelectTrigger>
               <SelectContent>
-                {faculty.map((mentor) => (
-                  <SelectItem key={mentor.id} value={mentor.id}>
-                    <div className="flex items-center space-x-2">
-                      <UserCheck className="h-4 w-4 text-blue-600" />
-                      <span>{mentor.name}</span>
-                      <Badge variant="secondary" className="text-xs">
-                        {mentor.department}
-                      </Badge>
-                    </div>
+                {faculty.length === 0 ? (
+                  <SelectItem value="no-faculty" disabled>
+                    No faculty available
                   </SelectItem>
-                ))}
+                ) : (
+                  faculty.map((mentor) => (
+                    <SelectItem key={mentor.id} value={mentor.id}>
+                      <div className="flex items-center space-x-2">
+                        <UserCheck className="h-4 w-4 text-blue-600" />
+                        <span>{mentor.name}</span>
+                        <Badge variant="secondary" className="text-xs">
+                          {mentor.department}
+                        </Badge>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
             {selectedMentorData && (

@@ -1,21 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
-import { useProfile } from '@/hooks/useProfile';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { CheckCircle, XCircle, Clock, Users, FileText, MessageSquare, BookOpen, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
+import { useProfile } from '@/hooks/useProfile';
+import { supabase } from '@/integrations/supabase/client';
+import { BookOpen, CheckCircle, Clock, ExternalLink, FileText, Users, XCircle } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FacultyCredentials } from '../verifiableCredentials/FacultyCredentials';
+import CourseAssignment from './faculty/CourseAssignment';
 import MonitoringSection from './faculty/MonitoringSection';
 import StudentManagement from './faculty/StudentManagement';
-import CourseAssignment from './faculty/CourseAssignment';
-import { IssueCredentialModal } from '../verifiableCredentials/IssueCredentialModal';
-import { FacultyCredentials } from '../verifiableCredentials/FacultyCredentials';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import { useNavigate } from 'react-router-dom';
 
 import { Certificate } from '@/types';
 
@@ -145,7 +144,12 @@ const FacultyDashboard = () => {
 
     setLoading(true);
     try {
-      let filterIds: string[] | null = null;
+      let query = supabase
+        .from('certificates')
+        .select(`*, student:student_id ( id, full_name, email, student_id )`)
+        .order('uploaded_at', { ascending: false });
+
+      // For basic faculty, only show certificates from their assigned students
       if (profile.faculty_level !== 'senior' && profile.faculty_level !== 'admin') {
         // Get assigned students through the student_mentor_assignments table
         const { data: facultyData, error: facultyError } = await supabase
@@ -166,6 +170,8 @@ const FacultyDashboard = () => {
           .select('student_id')
           .eq('mentor_id', facultyData.id);
 
+        console.log('Faculty assignments query result:', { assignmentsData, assignmentsError });
+
         if (assignmentsError) {
           console.error('Error fetching assignments:', assignmentsError);
           setCertificates([]);
@@ -174,23 +180,43 @@ const FacultyDashboard = () => {
         }
 
         const ids = (assignmentsData || []).map((assignment: any) => assignment.student_id);
-        filterIds = ids.length ? ids : [];
-        if (filterIds.length === 0) {
-          setCertificates([]);
+        console.log('Assigned student IDs:', ids);
+        
+        if (ids.length === 0) {
+          console.log('No assigned students found, showing all certificates for debugging');
+          // For debugging: show all certificates if no assignments
+          const { data: allCerts, error: allCertsError } = await supabase
+            .from('certificates')
+            .select(`*, student:student_id ( id, full_name, email, student_id )`)
+            .order('uploaded_at', { ascending: false });
+          
+          if (allCertsError) {
+            console.error('Error fetching all certificates:', allCertsError);
+            setCertificates([]);
+          } else {
+            console.log('All certificates in database:', allCerts);
+            setCertificates((allCerts as any[]) || []);
+          }
           setLoading(false);
           return;
         }
+        
+        query = query.in('student_id', ids);
       }
 
-      let query = supabase
-        .from('certificates')
-        .select(`*, student:student_id ( id, full_name, email, student_id )`)
-        .order('uploaded_at', { ascending: false });
-      if (filterIds) {
-        query = query.in('student_id', filterIds);
-      }
       const { data, error } = await query;
       if (error) throw error;
+      
+      console.log('Fetched certificates:', data);
+      console.log('Certificate details:', data?.map(cert => ({
+        id: cert.id,
+        title: cert.title,
+        status: cert.status,
+        verified_by: cert.verified_by,
+        verified_at: cert.verified_at,
+        student_id: cert.student_id,
+        student: cert.student
+      })));
       setCertificates((data as any[]) || []);
     } catch (err) {
       console.error('Error fetching certificates:', err);
@@ -396,7 +422,47 @@ const FacultyDashboard = () => {
   };
 
   const pendingCertificates = certificates.filter(cert => cert.status === 'pending');
-  const processedCertificates = certificates.filter(cert => cert.status !== 'pending');
+  const processedCertificates = certificates.filter(cert => 
+    cert.status !== 'pending' && 
+    (cert.verified_by === profile?.id || profile?.faculty_level === 'senior' || profile?.faculty_level === 'admin')
+  );
+  
+  // Temporary: Show all non-pending certificates for debugging
+  const allProcessedCertificates = certificates.filter(cert => cert.status !== 'pending');
+
+  // Debug logging
+  console.log('Faculty Dashboard Debug:', {
+    totalCertificates: certificates.length,
+    pendingCount: pendingCertificates.length,
+    processedCount: processedCertificates.length,
+    allProcessedCount: allProcessedCertificates.length,
+    currentFacultyId: profile?.id,
+    facultyLevel: profile?.faculty_level,
+    allCertificates: certificates.map(cert => ({
+      id: cert.id,
+      title: cert.title,
+      status: cert.status,
+      verified_by: cert.verified_by,
+      verified_at: cert.verified_at,
+      student: cert.student?.full_name
+    })),
+    allProcessedCertificates: allProcessedCertificates.map(cert => ({
+      id: cert.id,
+      title: cert.title,
+      status: cert.status,
+      verified_by: cert.verified_by,
+      verified_at: cert.verified_at,
+      student: cert.student?.full_name
+    })),
+    processedCertificates: processedCertificates.map(cert => ({
+      id: cert.id,
+      title: cert.title,
+      status: cert.status,
+      verified_by: cert.verified_by,
+      verified_at: cert.verified_at,
+      student: cert.student?.full_name
+    }))
+  });
 
   return (
     <div className="max-w-7xl mx-auto p-6 space-y-6">
@@ -559,13 +625,16 @@ const FacultyDashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {processedCertificates.length === 0 ? (
+              {allProcessedCertificates.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   No processed certificates yet
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {processedCertificates.map((cert) => (
+                  <div className="text-sm text-blue-600 mb-4">
+                    Debug: Showing {allProcessedCertificates.length} processed certificates (filtered: {processedCertificates.length})
+                  </div>
+                  {allProcessedCertificates.map((cert) => (
                     <div key={cert.id} className="border rounded-lg p-4">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
@@ -578,8 +647,17 @@ const FacultyDashboard = () => {
                             Student: {cert.student.full_name} ({cert.student.email})
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Category: {cert.category.replace('_', ' ')} • Processed: {new Date(cert.uploaded_at).toLocaleDateString()}
+                            Category: {cert.category.replace('_', ' ')} • Uploaded: {new Date(cert.uploaded_at).toLocaleDateString()}
+                            {cert.verified_at && ` • Processed: ${new Date(cert.verified_at).toLocaleDateString()}`}
+                            {cert.verified_by && ` • Verified by: ${cert.verified_by}`}
                           </p>
+                          {cert.remark && (
+                            <div className="mt-2 p-2 bg-green-50 border border-green-200 rounded">
+                              <p className="text-sm text-green-800">
+                                <strong>Faculty Remark:</strong> {cert.remark}
+                              </p>
+                            </div>
+                          )}
                           {cert.rejection_reason && (
                             <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded">
                               <p className="text-sm text-red-800">

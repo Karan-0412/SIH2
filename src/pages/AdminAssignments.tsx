@@ -1,37 +1,32 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import {
-  Plus,
-  Search,
-  UserCheck,
-  Users,
-  GraduationCap,
-  Filter,
-  TrendingUp,
-  Clock,
-  Shield,
-  Activity,
-  RefreshCw,
-  Download,
-  Upload,
-  Target,
-  Link as LinkIcon,
-  CheckCircle,
-  AlertCircle,
-  BarChart3,
-  Calendar,
-  Award,
-  Zap
-} from 'lucide-react';
-import AssignmentTable from '@/components/admin/AssignmentTable';
 import AssignMentorModal from '@/components/admin/AssignMentorModal';
+import AssignmentTable from '@/components/admin/AssignmentTable';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import {
+    Activity,
+    AlertCircle,
+    BarChart3,
+    CheckCircle,
+    Clock,
+    Download,
+    GraduationCap,
+    Link as LinkIcon,
+    Plus,
+    RefreshCw,
+    Search,
+    Target,
+    TrendingUp,
+    Upload,
+    UserCheck,
+    Users
+} from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 
 type Profile = Tables<'profiles'>;
 type Faculty = Tables<'faculty'>;
@@ -161,10 +156,15 @@ const AdminAssignments: React.FC = () => {
         // Update existing assignment
         const { error } = await supabase
           .from('student_mentor_assignments')
-          .update({ mentor_id: mentorId })
+          .update({ mentor_id: mentorId, updated_at: new Date().toISOString() })
           .eq('student_id', studentId);
 
         if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Mentor reassigned successfully',
+        });
       } else {
         // Create new assignment
         const { error } = await supabase
@@ -172,12 +172,12 @@ const AdminAssignments: React.FC = () => {
           .insert([{ student_id: studentId, mentor_id: mentorId }]);
 
         if (error) throw error;
+        
+        toast({
+          title: 'Success',
+          description: 'Mentor assigned successfully',
+        });
       }
-
-      toast({
-        title: 'Success',
-        description: 'Mentor assigned successfully',
-      });
 
       fetchData();
       setShowAssignModal(false);
@@ -234,6 +234,12 @@ const AdminAssignments: React.FC = () => {
   const unassignedStudents = students.filter(student =>
     !assignments.some(assignment => assignment.student_id === student.id)
   );
+
+  // Debug logging
+  console.log('Total students:', students.length);
+  console.log('Total assignments:', assignments.length);
+  console.log('Unassigned students count:', unassignedStudents.length);
+  console.log('Unassigned students:', unassignedStudents);
 
   const assignmentRate = students.length > 0 ? (assignments.length / students.length) * 100 : 0;
   const mentorUtilization = faculty.length > 0 ? (assignments.length / faculty.length) : 0;
@@ -495,8 +501,9 @@ const AdminAssignments: React.FC = () => {
       <AssignMentorModal
         open={showAssignModal}
         onOpenChange={setShowAssignModal}
-        students={unassignedStudents}
+        students={students}
         faculty={faculty}
+        assignments={assignments}
         onAssign={handleAssignMentor}
       />
     </div>
