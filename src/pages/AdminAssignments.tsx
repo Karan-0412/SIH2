@@ -149,16 +149,26 @@ const AdminAssignments: React.FC = () => {
 
   const handleAssignMentor = async (studentId: string, mentorId: string) => {
     try {
+      console.log('=== ASSIGNMENT DEBUG START ===');
+      console.log('Assignment attempt:', {
+        studentId,
+        mentorId,
+        currentAssignments: assignments.length
+      });
+
       // Check if assignment already exists
       const existingAssignment = assignments.find(a => a.student_id === studentId);
+      console.log('Existing assignment check:', { existingAssignment });
 
       if (existingAssignment) {
         // Update existing assignment
+        console.log('Updating existing assignment...');
         const { error } = await supabase
           .from('student_mentor_assignments')
           .update({ mentor_id: mentorId, updated_at: new Date().toISOString() })
           .eq('student_id', studentId);
 
+        console.log('Update result:', { error });
         if (error) throw error;
         
         toast({
@@ -167,10 +177,13 @@ const AdminAssignments: React.FC = () => {
         });
       } else {
         // Create new assignment
-        const { error } = await supabase
+        console.log('Creating new assignment...');
+        const { data, error } = await supabase
           .from('student_mentor_assignments')
-          .insert([{ student_id: studentId, mentor_id: mentorId }]);
+          .insert([{ student_id: studentId, mentor_id: mentorId }])
+          .select();
 
+        console.log('Insert result:', { data, error });
         if (error) throw error;
         
         toast({
@@ -179,10 +192,11 @@ const AdminAssignments: React.FC = () => {
         });
       }
 
+      console.log('=== ASSIGNMENT DEBUG END ===');
       fetchData();
       setShowAssignModal(false);
     } catch (error) {
-      console.error('Error assigning mentor:', error);
+      console.error('❌ Error assigning mentor:', error);
       toast({
         title: 'Error',
         description: 'Failed to assign mentor',

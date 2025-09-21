@@ -1,19 +1,19 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import type { Tables } from '@/integrations/supabase/types';
@@ -127,7 +127,7 @@ const AssignMentorModal: React.FC<AssignMentorModalProps> = ({
                   <span>{selectedStudentData.email}</span>
                 </div>
                 <div className="text-xs text-gray-500 mt-1">
-                  Department: {selectedStudentData.department || 'Computer Science'}
+                  Department: {(selectedStudentData as any).department || 'Computer Science'}
                 </div>
                 {currentMentor && (
                   <div className="text-xs text-blue-600 mt-1">

@@ -151,57 +151,21 @@ const FacultyDashboard = () => {
 
       // For basic faculty, only show certificates from their assigned students
       if (profile.faculty_level !== 'senior' && profile.faculty_level !== 'admin') {
-        // Get assigned students through the student_mentor_assignments table
-        const { data: facultyData, error: facultyError } = await supabase
-          .from('faculty')
-          .select('id')
-          .eq('email', profile.email)
-          .single();
-
-        if (facultyError || !facultyData) {
-          console.log('No faculty record found, showing no certificates');
+        console.log('=== FACULTY CERTIFICATE DEBUG START ===');
+        const { studentIds } = await fetchFacultyAssignments();
+        
+        console.log('Assigned student IDs for certificates:', studentIds);
+        
+        if (studentIds.length === 0) {
+          console.log('❌ No assigned students found for this faculty');
           setCertificates([]);
           setLoading(false);
           return;
         }
 
-        const { data: assignmentsData, error: assignmentsError } = await supabase
-          .from('student_mentor_assignments')
-          .select('student_id')
-          .eq('mentor_id', facultyData.id);
-
-        console.log('Faculty assignments query result:', { assignmentsData, assignmentsError });
-
-        if (assignmentsError) {
-          console.error('Error fetching assignments:', assignmentsError);
-          setCertificates([]);
-          setLoading(false);
-          return;
-        }
-
-        const ids = (assignmentsData || []).map((assignment: any) => assignment.student_id);
-        console.log('Assigned student IDs:', ids);
-        
-        if (ids.length === 0) {
-          console.log('No assigned students found, showing all certificates for debugging');
-          // For debugging: show all certificates if no assignments
-          const { data: allCerts, error: allCertsError } = await supabase
-            .from('certificates')
-            .select(`*, student:student_id ( id, full_name, email, student_id )`)
-            .order('uploaded_at', { ascending: false });
-          
-          if (allCertsError) {
-            console.error('Error fetching all certificates:', allCertsError);
-            setCertificates([]);
-          } else {
-            console.log('All certificates in database:', allCerts);
-            setCertificates((allCerts as any[]) || []);
-          }
-          setLoading(false);
-          return;
-        }
-        
-        query = query.in('student_id', ids);
+        console.log('✅ Filtering certificates for assigned students only');
+        query = query.in('student_id', studentIds);
+        console.log('=== FACULTY CERTIFICATE DEBUG END ===');
       }
 
       const { data, error } = await query;
@@ -230,6 +194,90 @@ const FacultyDashboard = () => {
     }
   };
 
+  // Unified data fetching function
+  const fetchFacultyAssignments = async () => {
+    console.log('🔍 fetchFacultyAssignments called with profile:', {
+      profileId: profile?.id,
+      email: profile?.email,
+      facultyLevel: profile?.faculty_level
+    });
+
+    if (!profile) {
+      console.log('❌ No profile found');
+      return { students: [], studentIds: [] };
+    }
+
+    try {
+      // Get faculty record
+      console.log('🔍 Looking up faculty by email:', profile.email);
+      const { data: facultyData, error: facultyError } = await supabase
+        .from('faculty')
+        .select('id, email, name, department')
+        .eq('email', profile.email)
+        .single();
+
+      console.log('🔍 Faculty record lookup result:', {
+        facultyData,
+        facultyError,
+        facultyId: facultyData?.id
+      });
+
+      if (facultyError || !facultyData) {
+        console.log('❌ No faculty record found:', facultyError);
+        return { students: [], studentIds: [] };
+      }
+
+      // Get assigned students with their details
+      console.log('🔍 Querying assignments for faculty ID:', facultyData.id);
+      const { data: assignmentsData, error: assignmentsError } = await supabase
+        .from('student_mentor_assignments')
+        .select(`
+          student_id,
+          student:profiles!student_mentor_assignments_student_id_fkey(
+            id,
+            full_name,
+            email,
+            student_id,
+            department
+          )
+        `)
+        .eq('mentor_id', facultyData.id);
+
+      console.log('🔍 Assignments query result:', {
+        assignmentsData,
+        assignmentsError,
+        assignmentCount: assignmentsData?.length || 0,
+        rawData: assignmentsData
+      });
+
+      if (assignmentsError) {
+        console.error('❌ Error fetching assignments:', assignmentsError);
+        return { students: [], studentIds: [] };
+      }
+
+      const students = (assignmentsData || [])
+        .map(assignment => assignment.student)
+        .filter(Boolean) || [];
+
+      const studentIds = (assignmentsData || [])
+        .map(assignment => assignment.student_id)
+        .filter(Boolean) || [];
+
+      console.log('✅ Unified assignment fetch result:', {
+        facultyId: facultyData.id,
+        studentsCount: students.length,
+        studentIdsCount: studentIds.length,
+        students: students.map(s => ({ id: s.id, name: s.full_name })),
+        studentIds: studentIds
+      });
+
+      return { students, studentIds };
+    } catch (error) {
+      console.error('❌ Error in fetchFacultyAssignments:', error);
+      return { students: [], studentIds: [] };
+    }
+  };
+
   const mockFetchStudents = async () => {
     await mockDelay(300);
     setStudents([
@@ -248,81 +296,24 @@ const FacultyDashboard = () => {
     }
 
     try {
-      // Get faculty record by email (simpler approach)
-      console.log('Looking up faculty by email:', profile.email);
-      const { data: facultyData, error: facultyError } = await supabase
-        .from('faculty')
-        .select('id, email, name, department, designation')
-        .eq('email', profile.email)
-        .single();
-
-      if (facultyError && facultyError.code === 'PGRST116') {
-        // No faculty record found, show helpful message
-        console.log('No faculty record found for user');
-        toast({
-          title: 'Faculty Record Not Found',
-          description: 'No faculty record found for your account. Please contact administrator to set up your faculty profile.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (facultyError) {
-        console.error('Error fetching faculty:', facultyError);
-        toast({
-          title: 'Error fetching faculty',
-          description: 'Failed to load faculty information. Please ensure you are registered as faculty.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      if (!facultyData) {
-        console.error('No faculty record found for user');
-        toast({
-          title: 'Faculty Not Found',
-          description: 'No faculty record found for your account. Please contact administrator.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Get assigned students through the student_mentor_assignments table
-      const { data: assignmentsData, error: assignmentsError } = await supabase
-        .from('student_mentor_assignments')
-        .select(`
-          *,
-          student:profiles!student_mentor_assignments_student_id_fkey(
-            id,
-            full_name,
-            email,
-            student_id,
-            department
-          )
-        `)
-        .eq('mentor_id', facultyData.id)
-        .order('created_at', { ascending: false });
-
-      if (assignmentsError) {
-        console.error('Error fetching assignments:', assignmentsError);
-        toast({
-          title: 'Error fetching students',
-          description: 'Failed to load assigned students',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Extract students from assignments
-      const studentsData = assignmentsData?.map(assignment => assignment.student).filter(Boolean) || [];
-      setStudents(studentsData as Student[]);
+      console.log('=== FACULTY STUDENT DEBUG START ===');
+      const { students } = await fetchFacultyAssignments();
+      
+      console.log('✅ Setting students:', {
+        studentsCount: students.length,
+        students: students.map(s => ({ id: s.id, name: s.full_name }))
+      });
+      
+      setStudents(students as Student[]);
+      console.log('=== FACULTY STUDENT DEBUG END ===');
     } catch (err) {
-      console.error('Error fetching students:', err);
+      console.error('❌ Error fetching students:', err);
       toast({
         title: 'Error fetching students',
         description: (err as any)?.message || JSON.stringify(err),
         variant: 'destructive',
       });
+      setStudents([]);
     }
   };
 
